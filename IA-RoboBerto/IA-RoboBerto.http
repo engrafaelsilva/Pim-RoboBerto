@@ -1,0 +1,6 @@
+@IA_RoboBerto_HostAddress = http://localhost:5129
+
+GET {{IA_RoboBerto_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
