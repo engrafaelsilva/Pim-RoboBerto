@@ -1,8 +1,7 @@
-﻿using IA_RoboBerto.Models;
+﻿
 using IA_RoboBerto.Repository;
 using IA_RoboBerto.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace IA_RoboBerto.Controllers
 {
