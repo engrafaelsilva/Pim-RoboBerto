@@ -7,10 +7,10 @@ using System.Text.Json;
 // Importa recursos para programação assíncrona (async/await)
 using System.Threading.Tasks;
 
-namespace IA_RoboBerto.Services // Define o namespace (organiza a classe dentro do projeto)
+namespace IA_RoboBerto.Servico // Define o namespace (organiza a classe dentro do projeto)
 {
     // Classe responsável por se comunicar com a API do Gemini
-    public class ApiGeminiService
+    public class ApiGeminiServico
     {
         // Cliente HTTP usado para enviar requisições à API
         private readonly HttpClient _httpClient;
@@ -18,7 +18,7 @@ namespace IA_RoboBerto.Services // Define o namespace (organiza a classe dentro 
         private readonly string _apiKey;
 
         // Construtor da classe: recebe HttpClient e IConfiguration (injeção de dependência)
-        public ApiGeminiService(HttpClient httpClient, IConfiguration config)
+        public ApiGeminiServico(HttpClient httpClient, IConfiguration config)
         {
             _httpClient = httpClient; // Atribui o HttpClient recebido ao campo interno
             _apiKey = config["Gemini:ApiKey"]; // Busca a chave da API do Gemini no appsettings.json

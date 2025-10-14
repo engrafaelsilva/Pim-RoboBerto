@@ -1,4 +1,4 @@
-﻿namespace IA_RoboBerto.Controllers
+﻿namespace IA_RoboBerto.Controladores
 {
     public class UsuarioController
     {
