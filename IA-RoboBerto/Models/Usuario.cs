@@ -21,7 +21,7 @@ namespace IA_RoboBerto.Models
         // Indica se o usuário é um cliente (padrão) ou um técnico/administrador
         public bool EhTecnico { get; set; } = false;
 
-        // Relação 1-para-M (um usuário pode ter muitos chamados)
+        // Relação 1-para-M (um usuário pode ter muitos chamados
         public ICollection<Chamado> Chamados { get; set; } = new List<Chamado>();
     }
 }
