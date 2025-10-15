@@ -1,4 +1,6 @@
-﻿namespace IA_RoboBerto.Models
+﻿using IA_RoboBerto.Modelos;
+
+namespace IA_RoboBerto.Models
 {
     public class Departamento
     {

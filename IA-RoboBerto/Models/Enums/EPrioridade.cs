@@ -1,4 +1,4 @@
-﻿namespace IA_RoboBerto.Models.Enums
+﻿namespace IA_RoboBerto.Modelos.Enums
 {
     public enum EPrioridade
     {
