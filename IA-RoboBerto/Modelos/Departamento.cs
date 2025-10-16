@@ -4,7 +4,7 @@
     {
         public Guid Id { get; set; }
         public string Nome { get; set; }
-        public IList<Usuario> Departamentos { get; set; } = new List<Usuario>();
+        public IList<Usuario> Usuarios { get; set; } = new List<Usuario>();
         public Departamento()
         {
         }

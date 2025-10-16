@@ -2,9 +2,11 @@
 {
     public enum EStatusChamado
     {
-        ABERTO = 1,
+        ABERTO =1,
+        SUGESTAO_GERADA,
+        PENDENTE_TECNICO,
+        EM_ANDAMENTO,
         FECHADO,
-        CANCELADO,
-        EM_ANDAMENTO
+        CANCELADO
     }
 }

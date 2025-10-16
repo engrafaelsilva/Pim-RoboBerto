@@ -1,3 +1,10 @@
+using IA_RoboBerto.Contratos.ContratosRepositorio;
+using IA_RoboBerto.Contratos.ContratosServicos;
+using IA_RoboBerto.Repositorio;
+using IA_RoboBerto.Repositorio.Context;
+using IA_RoboBerto.Servico;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +13,14 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
+builder.Services.AddScoped<IRoleServico,RoleServico>();
+builder.Services.AddScoped<IDepartamentoServico, DepartamentoServico>();
+builder.Services.AddScoped<IDepartamentoRepositorio, DepartamentoRepositorio>();
 
 var app = builder.Build();
 
@@ -21,5 +36,6 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
 
 app.Run();
