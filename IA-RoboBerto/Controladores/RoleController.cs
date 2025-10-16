@@ -1,5 +1,8 @@
-﻿using IA_RoboBerto.Modelos;
+﻿using IA_RoboBerto.Contratos.ContratosServicos;
+using IA_RoboBerto.DTOs;
+using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio;
+using IA_RoboBerto.Servico;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
@@ -8,17 +11,17 @@ namespace IA_RoboBerto.Controladores
     [Route("[controller]")]
     public class RoleController : ControllerBase
     {
-        private readonly RoleRepositorio _repo;
+        private readonly IRoleServico _servico;
 
-        public RoleController(RoleRepositorio repo)
+        public RoleController(IRoleServico servico)
         {
-            _repo = repo;
+            _servico = servico;
         }
 
         [HttpGet]
-        public IEnumerable<Role> Get()
+        public IEnumerable<RoleDTO> Get()
         {
-            return _repo.listarTodos();
+            return _servico.ListarTodos();
         }
     }
 }

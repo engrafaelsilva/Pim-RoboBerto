@@ -1,22 +1,22 @@
-﻿using IA_RoboBerto.Modelos;
+﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
+using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio.Context;
 
 namespace IA_RoboBerto.Repositorio
 {
-    public class RoleRepositorio
+    public class RoleRepositorio : IRoleRepositorio
     {
-        private readonly RoboBertoContext _context;
+    private readonly RoboBertoContext _context;
 
-        public RoleRepositorio(RoboBertoContext context)
+    public RoleRepositorio(RoboBertoContext context)
+    {
+        _context = context;
+    }
+
+        public IEnumerable<Role> ListarTodos()
         {
-            _context = context;
+            return _context.Role.ToList();
         }
-
-        public IEnumerable<Role> listarTodos()
-        {
-            return _context.Roles.ToList();
-        }
-
     }
 }
 

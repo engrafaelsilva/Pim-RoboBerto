@@ -3,18 +3,17 @@ using IA_RoboBerto.Repositorio;
 
 namespace IA_RoboBerto.Servico
 {
-    public class RoleService
+    public class UsuarioServico
     {
-        private readonly RoleRepositorio _repo;
-        public RoleService(RoleRepositorio repo)
+        private readonly UsuarioRepositorio _repo;
+        public UsuarioServico(UsuarioRepositorio repo)
         {
             _repo = repo;
         }
 
-        public IEnumerable<Role> ListarTodosRoles()
+        public IEnumerable<Usuario> ListarTodos()
         {
             return _repo.listarTodos();
         }
-
     }
 }

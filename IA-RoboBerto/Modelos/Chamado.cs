@@ -1,7 +1,7 @@
 ﻿using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Models.Enums;
 
-namespace IA_RoboBerto.Models
+namespace IA_RoboBerto.Modelos
 {
     public class Chamado
     {

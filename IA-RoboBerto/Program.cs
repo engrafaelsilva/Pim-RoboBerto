@@ -1,3 +1,5 @@
+using IA_RoboBerto.Contratos.ContratosRepositorio;
+using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.Repositorio;
 using IA_RoboBerto.Repositorio.Context;
 using IA_RoboBerto.Servico;
@@ -15,8 +17,10 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
 
-builder.Services.AddScoped<RoleRepositorio>(); 
-builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
+builder.Services.AddScoped<IRoleServico,RoleServico>();
+builder.Services.AddScoped<IDepartamentoServico, DepartamentoServico>();
+builder.Services.AddScoped<IDepartamentoRepositorio, DepartamentoRepositorio>();
 
 var app = builder.Build();
 
