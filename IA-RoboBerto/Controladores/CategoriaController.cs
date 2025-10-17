@@ -1,15 +1,13 @@
 ﻿using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
-using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
-
     [ApiController]
     [Route("[controller]")]
-    public class CategoriaController : Controller
+    public class CategoriaController : ControllerBase
     {
         private readonly ICategoriaServico _servico;
 
@@ -19,11 +17,49 @@ namespace IA_RoboBerto.Controladores
         }
 
         [HttpGet]
-        public ActionResult<PagedList<CategoriaDTO>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
+        public async Task<ActionResult<PagedList<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
-            var resultado = _servico.ListarTodos(paginaAtual, tamanho);
+            var resultado = await _servico.ListarTodosAsync(paginaAtual, tamanho);
             return Ok(resultado);
+        }
 
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<CategoriaMinDTO>> GetById(Guid id)
+        {
+            var categoria = await _servico.ObterPorIdAsync(id);
+            if (categoria == null) return NotFound();
+            return Ok(categoria);
+        }
+
+        [HttpGet("nome/{nome}")]
+        public async Task<ActionResult<CategoriaMinDTO>> GetByNome(string nome)
+        {
+            var categoria = await _servico.ObterPorNomeAsync(nome);
+            if (categoria == null) return NotFound();
+            return Ok(categoria);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<CategoriaMinDTO>> Post([FromBody] CategoriaMinDTO dto)
+        {
+            var criada = await _servico.AdicionarAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = criada.Id }, criada);
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<CategoriaMinDTO>> Put(Guid id, [FromBody] CategoriaMinDTO dto)
+        {
+            if (id != dto.Id) return BadRequest();
+            var atualizada = await _servico.AtualizarAsync(id, dto);
+            return Ok(atualizada);
+        }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            var sucesso = await _servico.RemoverAsync(id);
+            if (!sucesso) return NotFound();
+            return NoContent();
         }
     }
 }

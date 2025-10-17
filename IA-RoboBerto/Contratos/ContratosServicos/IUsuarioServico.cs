@@ -5,6 +5,6 @@ namespace IA_RoboBerto.Contratos.ContratosServicos
 {
     public interface IUsuarioServico
     {
-        PagedList<UsuarioMaxDTO> ListarTodos(int paginaAtual, int tamanho);
+        Task<PagedList<UsuarioMaxDTO>> ListarTodosAsync(int paginaAtual, int tamanho);
     }
 }

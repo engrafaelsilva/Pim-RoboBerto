@@ -15,14 +15,14 @@ namespace IA_RoboBerto.Repositorio
             _context = context;
         }
 
-     public PagedList<Usuario> ListarTodos(int paginaAtual, int tamanho)
+     public async Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho)
      {
-         var resultado = _context.Usuario.Include(u => u.Roles)
+         var resultado = await _context.Usuario.Include(u => u.Roles)
                                          .Include(u => u.Departamento)
              .Skip(tamanho * paginaAtual)
              .Take(tamanho)
-             .ToList();
-         var totalRegistros = _context.Usuario.Count();
+             .ToListAsync();
+         var totalRegistros = await _context.Usuario.CountAsync();
          var resultadoPaginado = new PagedList<Usuario>(resultado, paginaAtual, tamanho, totalRegistros);
          return resultadoPaginado;
      }

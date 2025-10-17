@@ -5,6 +5,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
     public interface IRoleRepositorio
     {
-        IEnumerable<Role> ListarTodos();
+        Task<IEnumerable<Role>> ListarTodosAsync();
     }
 }

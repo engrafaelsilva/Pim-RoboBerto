@@ -32,6 +32,9 @@ builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 builder.Services.AddScoped<IChamadoServico, ChamadoServico>();
 builder.Services.AddScoped<IChamadoRepositorio, ChamadoRepositorio>();
 
+builder.Services.AddScoped<IMensagensServico, MensagensServico>();
+builder.Services.AddScoped<IMensagensRepositorio, MensagensRepositorio>();
+
 
 var app = builder.Build();
 

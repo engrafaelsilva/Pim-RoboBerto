@@ -2,24 +2,23 @@
 
 namespace IA_RoboBerto.DTOs
 {
-    public class CategoriaDTO
+    public class CategoriaMinDTO
     {
         public Guid Id { get; set; }
         public string Nome { get; set; }
 
-        public IList<Chamado> Chamados { get; set; } = new List<Chamado>();
 
 
-        public CategoriaDTO()
+        public CategoriaMinDTO()
         {
         }
-        public CategoriaDTO(string nome)
+        public CategoriaMinDTO(string nome)
         {
             Id = Guid.NewGuid();
             Nome = nome;
         }
 
-        public CategoriaDTO(Categoria entidade)
+        public CategoriaMinDTO(Categoria entidade)
         {
             Id = entidade.Id;
             Nome = entidade.Nome;

@@ -3,9 +3,9 @@ using IA_RoboBerto.Modelos;
 
 namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
-    public interface IMensagemRepositorio
+    public interface IMensagensRepositorio
     {
-        PagedList<Mensagem> ListarTodos(int pagina, int tamanho);
+        Task <PagedList<Mensagem>> ListarTodosAsync(int pagina, int tamanho);
     }
 }
  

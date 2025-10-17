@@ -5,6 +5,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
     public interface IChamadoRepositorio
     {
-        PagedList<Chamado> ListarTodos(int pagina, int tamanho);
+        Task<PagedList<Chamado>> ListarTodosAsync(int pagina, int tamanho);
     }
 }

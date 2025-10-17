@@ -15,9 +15,9 @@ namespace IA_RoboBerto.Servico
             _repo = repo;
         }
 
-      public PagedList<UsuarioMaxDTO> ListarTodos(int paginaAtual, int tamanho)
+      public async Task<PagedList<UsuarioMaxDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
-            var resultado = _repo.ListarTodos(paginaAtual, tamanho);
+            var resultado = await _repo.ListarTodosAsync(paginaAtual, tamanho);
 
             var resultadoDTO = resultado.Select(x => new UsuarioMaxDTO(x)).ToList();
             return new PagedList<UsuarioMaxDTO>(

@@ -21,9 +21,9 @@ namespace IA_RoboBerto.Controladores
         }
 
         [HttpGet]
-        public ActionResult<PagedList<ChamadoDTO>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
+        public async Task<ActionResult<PagedList<ChamadoDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
-            var resultado = _servico.ListarTodos(paginaAtual, tamanho);
+            var resultado = await _servico.ListarTodosAsync(paginaAtual, tamanho);
             return Ok(resultado);
         }
 

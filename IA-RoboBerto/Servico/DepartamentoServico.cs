@@ -15,9 +15,9 @@ namespace IA_RoboBerto.Servico
             _repo = repo;
         }
 
-        public PagedList<DepartamentoDTO> ListarTodosDepComUsuarios(int paginaAtual, int tamanho)
+        public async Task<PagedList<DepartamentoDTO>> ListarTodosDepComUsuariosAsync(int paginaAtual, int tamanho)
         {
-            var resultado = _repo.ListarTodosDepComUsuarios(paginaAtual,tamanho);
+            var resultado = await _repo.ListarTodosDepComUsuariosAsync(paginaAtual,tamanho);
 
             var resultadoDTO = resultado.Select(x => new DepartamentoDTO(x)).ToList();
 

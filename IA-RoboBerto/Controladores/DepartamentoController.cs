@@ -19,9 +19,9 @@ namespace IA_RoboBerto.Controladores
             }
 
             [HttpGet]
-            public ActionResult<PagedList<DepartamentoDTO>> Get([FromQuery]int paginaAtual = 0, [FromQuery] int tamanho = 2)
+            public async Task<ActionResult<PagedList<DepartamentoDTO>>> Get([FromQuery]int paginaAtual = 0, [FromQuery] int tamanho = 2)
             {
-            var resultado = _servico.ListarTodosDepComUsuarios(paginaAtual, tamanho);
+            var resultado = await _servico.ListarTodosDepComUsuariosAsync(paginaAtual, tamanho);
             return Ok(resultado);
 
         }

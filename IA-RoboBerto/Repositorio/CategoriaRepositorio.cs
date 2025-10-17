@@ -14,17 +14,72 @@ namespace IA_RoboBerto.Repositorio
         {
             _context = context;
         }
+      
 
-        public PagedList<Categoria> ListarTodos(int paginaAtual, int tamanho)
+        public async Task<PagedList<Categoria>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
-            var resultado = _context.Categoria.Include(c => c.Chamados)
+            var resultado = await _context.Categoria.Include(c => c.Chamados)
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
-                .ToList();
-            var totalRegistros = _context.Departamento.Count();
+                .ToListAsync();
+            var totalRegistros = await _context.Departamento.CountAsync();
             var resultadoPaginado = new PagedList<Categoria>(resultado, paginaAtual, tamanho, totalRegistros);
 
             return resultadoPaginado;
         }
+        // ================== FIND BY NOME ==================
+        public async Task<Categoria?> ObterPorNomeAsync(string nome)
+        {
+            return await _context.Categoria
+                .Include(c => c.Chamados)
+                .FirstOrDefaultAsync(c => c.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
+        }
+
+        public async Task<bool> IdExiste(Guid id)
+        {
+            return await _context.Categoria
+                .AnyAsync(c => c.Id == id);
+        }
+
+
+
+        // ================== FIND BY ID ==================
+        public async Task<Categoria?> ObterPorIdAsync(Guid id)
+        {
+            return await _context.Categoria
+                .Include(c => c.Chamados)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        // ================== CREATE ==================
+        public async Task<Categoria> AdicionarAsync(Categoria categoria)
+      {
+          await _context.Categoria.AddAsync(categoria);
+          await _context.SaveChangesAsync();
+          return categoria;
+      }
+   //
+   //   // ================== UPDATE ==================
+     public async Task<Categoria?> AtualizarAsync(Categoria categoria)
+     {
+         var existente = await _context.Categoria.FindAsync(categoria.Id);
+         if (existente == null) return null;
+  
+         existente.Nome = categoria.Nome;
+         _context.Categoria.Update(existente);
+         await _context.SaveChangesAsync();
+         return existente;
+     }
+  
+   //   // ================== DELETE ==================
+      public async Task<bool> RemoverAsync(Guid id)
+      {
+          var existente = await _context.Categoria.FindAsync(id);
+          if (existente == null) return false;
+   
+          _context.Categoria.Remove(existente);
+          await _context.SaveChangesAsync();
+          return true;
+      }
     }
 }

@@ -19,9 +19,9 @@ namespace IA_RoboBerto.Controladores
         }
 
         [HttpGet]
-        public IEnumerable<RoleDTO> Get()
+        public async Task<IEnumerable<RoleDTO>> Get()
         {
-            return _servico.ListarTodos();
+            return await _servico.ListarTodosAsync();
         }
     }
 }

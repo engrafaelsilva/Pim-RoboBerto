@@ -5,6 +5,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
     public interface IUsuarioRepositorio
     {
-        PagedList<Usuario> ListarTodos(int paginaAtual, int tamanho);
+        Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho);
     }
 }

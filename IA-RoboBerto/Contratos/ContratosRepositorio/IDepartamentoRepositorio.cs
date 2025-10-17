@@ -5,6 +5,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
     public interface IDepartamentoRepositorio
     {
-        PagedList<Departamento> ListarTodosDepComUsuarios(int pagina, int tamanho);
+        Task<PagedList<Departamento>> ListarTodosDepComUsuariosAsync(int pagina, int tamanho);
     }
 }

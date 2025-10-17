@@ -14,9 +14,9 @@ namespace IA_RoboBerto.Servico
             _repo = repo;
         }
 
-        public IEnumerable<RoleDTO> ListarTodos()
+        public async Task<IEnumerable<RoleDTO>> ListarTodosAsync()
         {
-            var resultado = _repo.ListarTodos();
+            var resultado = await _repo.ListarTodosAsync();
             return resultado.Select(x => new RoleDTO(x));
         }
 

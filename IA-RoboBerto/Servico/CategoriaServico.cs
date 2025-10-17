@@ -1,6 +1,7 @@
 ﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
+using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 
 namespace IA_RoboBerto.Servico
@@ -13,18 +14,67 @@ namespace IA_RoboBerto.Servico
             _repo = repo;
         }
 
-        public PagedList<CategoriaDTO> ListarTodos(int paginaAtual, int tamanho)
+        public async Task<CategoriaMinDTO> AdicionarAsync(CategoriaMinDTO dto)
         {
-            var resultado = _repo.ListarTodos(paginaAtual, tamanho);
+            var cat = new Categoria();
+            CopiarDtoPraEntidade(cat,dto);
+            cat = await _repo.AdicionarAsync(cat);
+            return new CategoriaMinDTO(cat);
+        }
 
-            var resultadoDTO = resultado.Select(x => new CategoriaDTO(x)).ToList();
 
-            return new PagedList<CategoriaDTO>(
+        public async Task<CategoriaMinDTO?> AtualizarAsync(Guid id, CategoriaMinDTO dto)
+        {
+            Categoria cat = await _repo.ObterPorIdAsync(id);
+            CopiarDtoPraEntidade(cat, dto);
+            cat = await _repo.AtualizarAsync(cat);
+            return new CategoriaMinDTO(cat);
+        }
+
+        public async Task<PagedList<CategoriaMinDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
+        {
+            var resultado = await _repo.ListarTodosAsync(paginaAtual, tamanho);
+
+            var resultadoDTO = resultado.Select(x => new CategoriaMinDTO(x)).ToList();
+
+            return new PagedList<CategoriaMinDTO>(
                 resultadoDTO,
                 resultado.PaginaAtual,
                 resultado.PaginaTamanho,
                 resultado.TotalCount
             );
+        }
+        public async Task<CategoriaMinDTO?> ObterPorNomeAsync(string nome)
+        {
+            Categoria cat = await _repo.ObterPorNomeAsync(nome);
+
+            return new CategoriaMinDTO(cat);
+        }
+
+        public async Task<CategoriaMinDTO?> ObterPorIdAsync(Guid id)
+        {
+            Categoria cat = await _repo.ObterPorIdAsync(id);
+
+            return new CategoriaMinDTO(cat);
+        }
+
+        public async Task<bool> RemoverAsync(Guid id)
+        {
+            if(!await _repo.IdExiste(id))
+            {
+                return false;
+                throw new Exception("Recurso não encontrado");
+            }
+
+            await _repo.RemoverAsync(id);
+            return true;
+        }
+
+
+        private void CopiarDtoPraEntidade(Categoria categoria, CategoriaMinDTO dto)
+        {
+            categoria.Id = dto.Id;
+            categoria.Nome = dto.Nome;
         }
     }
 }
