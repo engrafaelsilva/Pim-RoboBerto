@@ -1,5 +1,6 @@
 using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Contratos.ContratosServicos;
+using IA_RoboBerto.Middlewares;
 using IA_RoboBerto.Repositorio;
 using IA_RoboBerto.Repositorio.Context;
 using IA_RoboBerto.Servico;
@@ -44,12 +45,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseMiddleware(typeof(GlobalErrorHandlingMiddleware));
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
-
 
 app.Run();

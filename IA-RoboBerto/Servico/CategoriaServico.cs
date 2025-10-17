@@ -1,8 +1,11 @@
 ﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
+using IA_RoboBerto.Exceções;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace IA_RoboBerto.Servico
 {
@@ -26,6 +29,11 @@ namespace IA_RoboBerto.Servico
         public async Task<CategoriaMinDTO?> AtualizarAsync(Guid id, CategoriaMinDTO dto)
         {
             Categoria cat = await _repo.ObterPorIdAsync(id);
+
+            if (cat == null)
+            {
+                throw new ResourceNotFoundException("Recurso não encontrado");
+            }
             CopiarDtoPraEntidade(cat, dto);
             cat = await _repo.AtualizarAsync(cat);
             return new CategoriaMinDTO(cat);
@@ -47,6 +55,10 @@ namespace IA_RoboBerto.Servico
         public async Task<CategoriaMinDTO?> ObterPorNomeAsync(string nome)
         {
             Categoria cat = await _repo.ObterPorNomeAsync(nome);
+            if (cat == null)
+            {
+                throw new ResourceNotFoundException("Recurso não encontrado");
+            }
 
             return new CategoriaMinDTO(cat);
         }
@@ -54,6 +66,11 @@ namespace IA_RoboBerto.Servico
         public async Task<CategoriaMinDTO?> ObterPorIdAsync(Guid id)
         {
             Categoria cat = await _repo.ObterPorIdAsync(id);
+
+            if (cat == null)
+            {
+                throw new ResourceNotFoundException("Recurso não encontrado");
+            }
 
             return new CategoriaMinDTO(cat);
         }
@@ -63,10 +80,17 @@ namespace IA_RoboBerto.Servico
             if(!await _repo.IdExiste(id))
             {
                 return false;
-                throw new Exception("Recurso não encontrado");
+                throw new ResourceNotFoundException("Recurso não encontrado");
+            }
+            try
+            {
+                await _repo.RemoverAsync(id);
+            } catch(DbUpdateException ex) when(ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
+            {
+                return false;
+                throw new DataBaseException("Falha de integridade referencial");
             }
 
-            await _repo.RemoverAsync(id);
             return true;
         }
 

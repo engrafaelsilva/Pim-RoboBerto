@@ -14,7 +14,7 @@ namespace IA_RoboBerto.Repositorio
         {
             _context = context;
         }
-      
+
 
         public async Task<PagedList<Categoria>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
@@ -27,7 +27,6 @@ namespace IA_RoboBerto.Repositorio
 
             return resultadoPaginado;
         }
-        // ================== FIND BY NOME ==================
         public async Task<Categoria?> ObterPorNomeAsync(string nome)
         {
             return await _context.Categoria
@@ -41,9 +40,6 @@ namespace IA_RoboBerto.Repositorio
                 .AnyAsync(c => c.Id == id);
         }
 
-
-
-        // ================== FIND BY ID ==================
         public async Task<Categoria?> ObterPorIdAsync(Guid id)
         {
             return await _context.Categoria
@@ -51,15 +47,13 @@ namespace IA_RoboBerto.Repositorio
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        // ================== CREATE ==================
         public async Task<Categoria> AdicionarAsync(Categoria categoria)
       {
           await _context.Categoria.AddAsync(categoria);
           await _context.SaveChangesAsync();
           return categoria;
       }
-   //
-   //   // ================== UPDATE ==================
+
      public async Task<Categoria?> AtualizarAsync(Categoria categoria)
      {
          var existente = await _context.Categoria.FindAsync(categoria.Id);
@@ -71,7 +65,7 @@ namespace IA_RoboBerto.Repositorio
          return existente;
      }
   
-   //   // ================== DELETE ==================
+
       public async Task<bool> RemoverAsync(Guid id)
       {
           var existente = await _context.Categoria.FindAsync(id);
