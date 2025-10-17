@@ -69,8 +69,7 @@ namespace IA_RoboBerto.Repositorio
       public async Task<bool> RemoverAsync(Guid id)
       {
           var existente = await _context.Categoria.FindAsync(id);
-          if (existente == null) return false;
-   
+            if (existente == null) return false;
           _context.Categoria.Remove(existente);
           await _context.SaveChangesAsync();
           return true;

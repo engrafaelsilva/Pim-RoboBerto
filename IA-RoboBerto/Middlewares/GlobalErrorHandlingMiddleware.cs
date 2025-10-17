@@ -35,7 +35,7 @@ namespace IA_RoboBerto.Middlewares
 
             var exceptionTipo = exception.GetType();
 
-            if (exceptionTipo == typeof(DBConcurrencyException))
+            if (exceptionTipo == typeof(DataBaseException))
             {
                 status = HttpStatusCode.BadRequest;    
             }

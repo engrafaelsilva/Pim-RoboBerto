@@ -27,7 +27,59 @@ namespace IA_RoboBerto.Repositorio
 
             return resultadoPaginado;
         }
+        public async Task<Departamento?> ObterPorNomeAsync(string nome)
+        {
+            return await _context.Departamento
+                .Include(d => d.Usuarios)
+                .FirstOrDefaultAsync(d => d.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
+        }
 
+        public async Task<bool> IdExiste(Guid id)
+        {
+            return await _context.Departamento
+                .AnyAsync(d => d.Id == id);
+        }
 
+        public async Task<Departamento?> ObterPorIdAsync(Guid id)
+        {
+            return await _context.Departamento
+                .Include(d => d.Usuarios)
+                .FirstOrDefaultAsync(d => d.Id == id);
+        }
+
+        public async Task<Departamento> AdicionarAsync(Departamento departamento)
+        {
+            await _context.Departamento.AddAsync(departamento);
+            await _context.SaveChangesAsync();
+            return departamento;
+        }
+
+        public async Task<Departamento?> AtualizarAsync(Departamento departamento)
+        {
+            var existente = await _context.Departamento.FindAsync(departamento.Id);
+            if (existente == null) return null;
+
+            // Atualize os campos que fizerem sentido — aqui atualizo Nome como no exemplo de Categoria
+            existente.Nome = departamento.Nome;
+
+            // Se houver outros campos (descrição, código, etc.), atualize aqui também:
+            // existente.Descricao = departamento.Descricao;
+
+            _context.Departamento.Update(existente);
+            await _context.SaveChangesAsync();
+            return existente;
+        }
+
+        public async Task<bool> RemoverAsync(Guid id)
+        {
+            var existente = await _context.Departamento.FindAsync(id);
+            if (existente == null) return false;
+
+            _context.Departamento.Remove(existente);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
+
 }
+
