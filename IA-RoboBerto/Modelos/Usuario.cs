@@ -11,12 +11,12 @@ namespace IA_RoboBerto.Modelos
         public string Telefone { get; set; }
         public DateTime DataCriacao { get; set; }
         public Departamento Departamento { get; set; }
-        public Role Role { get; set; }
+        public ISet<Role> Roles { get; } = new HashSet<Role>();
         public Usuario()
         {
         }
 
-        public Usuario(string nome, string email, string senhaHash, string telefone, DateTime dataCriacao, Departamento departamento, Role role)
+        public Usuario(string nome, string email, string senhaHash, string telefone, DateTime dataCriacao, Departamento departamento)
         {
             Id = Guid.NewGuid();
             Nome = nome;
@@ -25,7 +25,7 @@ namespace IA_RoboBerto.Modelos
             Telefone = telefone;
             DataCriacao = dataCriacao;
             Departamento = departamento;
-            Role = role;
+
         }
 
 

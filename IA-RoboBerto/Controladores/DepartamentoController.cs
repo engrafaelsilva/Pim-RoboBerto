@@ -1,6 +1,7 @@
 ﻿using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos;
+using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Repositorio;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,9 +19,11 @@ namespace IA_RoboBerto.Controladores
             }
 
             [HttpGet]
-            public IEnumerable<DepartamentoDTO> Get()
+            public ActionResult<PagedList<DepartamentoDTO>> Get([FromQuery]int paginaAtual = 0, [FromQuery] int tamanho = 2)
             {
-                return _servico.ListarTodos();
-            }
+            var resultado = _servico.ListarTodosDepComUsuarios(paginaAtual, tamanho);
+            return Ok(resultado);
+
         }
+    }
 }

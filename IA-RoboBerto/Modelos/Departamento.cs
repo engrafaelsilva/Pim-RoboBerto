@@ -4,7 +4,7 @@
     {
         public Guid Id { get; set; }
         public string Nome { get; set; }
-        public IList<Usuario> Usuarios { get; set; } = new List<Usuario>();
+        public ISet<Usuario> Usuarios { get; } = new HashSet<Usuario>();
         public Departamento()
         {
         }
@@ -12,6 +12,7 @@
         {
             Id = Guid.NewGuid();
             Nome = nome;
+            
         }
 
     }

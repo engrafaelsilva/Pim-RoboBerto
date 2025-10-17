@@ -2,25 +2,24 @@
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos.Paginação;
-using System.Linq;
 
 namespace IA_RoboBerto.Servico
 {
-    public class ChamadoServico : IChamadoServico
+    public class CategoriaServico : ICategoriaServico
     {
-        private readonly IChamadoRepositorio _repo;
-        public ChamadoServico(IChamadoRepositorio repo)
+        private readonly ICategoriaRepositorio _repo;
+        public CategoriaServico(ICategoriaRepositorio repo)
         {
             _repo = repo;
         }
 
-        public PagedList<ChamadoDTO> ListarTodos(int paginaAtual, int tamanho)
+        public PagedList<CategoriaDTO> ListarTodos(int paginaAtual, int tamanho)
         {
             var resultado = _repo.ListarTodos(paginaAtual, tamanho);
 
-            var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
+            var resultadoDTO = resultado.Select(x => new CategoriaDTO(x)).ToList();
 
-            return new PagedList<ChamadoDTO>(
+            return new PagedList<CategoriaDTO>(
                 resultadoDTO,
                 resultado.PaginaAtual,
                 resultado.PaginaTamanho,

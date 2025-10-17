@@ -7,7 +7,7 @@ namespace IA_RoboBerto.DTOs
     {
         public Guid Id { get; set; }
         public string Nome { get; set; }
-        public IList<Usuario> Usuarios { get; set; } = new List<Usuario>();
+        public IList<UsuarioMinDTO> Usuarios { get; } = new List<UsuarioMinDTO>();
         public DepartamentoDTO()
         {
         }
@@ -20,6 +20,10 @@ namespace IA_RoboBerto.DTOs
         {
             Id = entidade.Id;
             Nome = entidade.Nome;
+            foreach(Usuario u in entidade.Usuarios) 
+            {
+                Usuarios.Add(new UsuarioMinDTO(u));
+            }
         }
     }
 }

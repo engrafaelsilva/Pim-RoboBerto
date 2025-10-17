@@ -1,29 +1,29 @@
-﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
-using IA_RoboBerto.Contratos.ContratosServicos;
+﻿using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
-using IA_RoboBerto.Repositorio;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
+
     [ApiController]
     [Route("[controller]")]
-    public class UsuarioController : ControllerBase
+    public class CategoriaController : Controller
     {
-        private readonly IUsuarioServico _servico;
+        private readonly ICategoriaServico _servico;
 
-        public UsuarioController(IUsuarioServico servico)
+        public CategoriaController(ICategoriaServico servico)
         {
             _servico = servico;
         }
 
         [HttpGet]
-        public ActionResult<PagedList<UsuarioMaxDTO>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
+        public ActionResult<PagedList<CategoriaDTO>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
             var resultado = _servico.ListarTodos(paginaAtual, tamanho);
             return Ok(resultado);
+
         }
     }
 }

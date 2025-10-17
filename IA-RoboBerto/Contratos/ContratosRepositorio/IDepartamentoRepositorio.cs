@@ -1,9 +1,10 @@
 ﻿using IA_RoboBerto.Modelos;
+using IA_RoboBerto.Modelos.Paginação;
 
 namespace IA_RoboBerto.Contratos.ContratosRepositorio
 {
     public interface IDepartamentoRepositorio
     {
-        IEnumerable<Departamento> ListarTodos();
+        PagedList<Departamento> ListarTodosDepComUsuarios(int pagina, int tamanho);
     }
 }

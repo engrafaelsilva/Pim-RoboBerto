@@ -19,8 +19,19 @@ builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(con
 
 builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
 builder.Services.AddScoped<IRoleServico,RoleServico>();
+
 builder.Services.AddScoped<IDepartamentoServico, DepartamentoServico>();
 builder.Services.AddScoped<IDepartamentoRepositorio, DepartamentoRepositorio>();
+
+builder.Services.AddScoped<IUsuarioServico, UsuarioServico>();
+builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
+
+builder.Services.AddScoped<ICategoriaServico, CategoriaServico>();
+builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
+
+builder.Services.AddScoped<IChamadoServico, ChamadoServico>();
+builder.Services.AddScoped<IChamadoRepositorio, ChamadoRepositorio>();
+
 
 var app = builder.Build();
 

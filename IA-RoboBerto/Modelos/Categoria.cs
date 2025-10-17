@@ -9,7 +9,7 @@ namespace IA_RoboBerto.Modelos
         public Guid Id { get; set; }
         public string Nome { get; set; }
 
-        public IList<Chamado> Chamados { get; set; } = new List<Chamado>();
+        public ISet<Chamado> Chamados { get; } = new HashSet<Chamado>();
 
 
         public Categoria()

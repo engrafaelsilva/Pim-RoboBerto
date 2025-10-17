@@ -7,7 +7,7 @@ namespace IA_RoboBerto.Modelos
     {
         public Guid Id { get; set; }
         public Usuario Autor { get; set; }
-        public Usuario Tecnico { get; set; }
+        public Usuario? Tecnico { get; set; }
         public Categoria Categoria { get; set; }
         public EStatusChamado Status { get; set; }
         public EPrioridade Prioridade { get; set; }
@@ -15,10 +15,10 @@ namespace IA_RoboBerto.Modelos
         public string SugestaoGemini { get; set; }
         public string Descricao { get; set; }
         public DateTime DataAbertura { get; set; }
-        public DateTime DataFechamento { get; set; }
+        public DateTime? DataFechamento { get; set; }
         public DateTime SlaVenceEm { get; set; }
-        public bool SugestaoResolveu { get; set; }
-        public IList<Mensagem> Mensagens { get; set; } = new List<Mensagem>();
+        public bool? SugestaoResolveu { get; set; }
+        public ISet<Mensagem> Mensagens { get;} = new HashSet<Mensagem>();
 
         public Chamado()
         {

@@ -1,7 +1,9 @@
 ﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Controladores;
 using IA_RoboBerto.Modelos;
+using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Repositorio.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace IA_RoboBerto.Repositorio
 {
@@ -14,9 +16,16 @@ namespace IA_RoboBerto.Repositorio
             _context = context;
         }
 
-        public IEnumerable<Departamento> ListarTodos()
+        public PagedList<Departamento> ListarTodosDepComUsuarios(int paginaAtual, int tamanho)
         {
-            return _context.Departamento.ToList();
+            var resultado = _context.Departamento.Include(d => d.Usuarios)
+                .Skip(tamanho*paginaAtual)
+                .Take(tamanho)
+                .ToList();
+            var totalRegistros = _context.Departamento.Count();
+            var resultadoPaginado = new PagedList<Departamento>(resultado,paginaAtual,tamanho,totalRegistros);
+
+            return resultadoPaginado;
         }
 
 

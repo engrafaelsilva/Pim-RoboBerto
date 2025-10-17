@@ -3,8 +3,8 @@ using IA_RoboBerto.Modelos.Paginação;
 
 namespace IA_RoboBerto.Contratos.ContratosServicos
 {
-    public interface IDepartamentoServico
+    public interface IMensagensServico
     {
-        PagedList<DepartamentoDTO> ListarTodosDepComUsuarios(int paginaAtual, int tamanho);
+        PagedList<MensagemDTO> ListarTodos(int paginaAtual, int tamanho);
     }
 }

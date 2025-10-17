@@ -6,28 +6,24 @@ using IA_RoboBerto.Contratos.ContratosRepositorio;
 
 namespace IA_RoboBerto.Repositorio
 {
-    public class ChamadoRepositorio : IChamadoRepositorio
+    public class CategoriaRepositorio : ICategoriaRepositorio
     {
-
         private readonly RoboBertoContext _context;
 
-        public ChamadoRepositorio(RoboBertoContext context)
+        public CategoriaRepositorio(RoboBertoContext context)
         {
             _context = context;
         }
 
-        public PagedList<Chamado> ListarTodos(int paginaAtual, int tamanho)
+        public PagedList<Categoria> ListarTodos(int paginaAtual, int tamanho)
         {
-            var resultado = _context.Chamado
-                .Include(c => c.Autor)
-                .Include(c => c.Tecnico)
-                .Include(c => c.Categoria)
-                .Include(c => c.Mensagens)
+            var resultado = _context.Categoria.Include(c => c.Chamados)
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
                 .ToList();
             var totalRegistros = _context.Departamento.Count();
-            var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
+            var resultadoPaginado = new PagedList<Categoria>(resultado, paginaAtual, tamanho, totalRegistros);
+
             return resultadoPaginado;
         }
     }
