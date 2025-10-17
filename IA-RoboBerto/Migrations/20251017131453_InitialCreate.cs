@@ -11,70 +11,75 @@ namespace IA_RoboBerto.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "categoria",
-                columns: table => new
-                {
-                    cat_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    cat_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_categoria", x => x.cat_codigo);
-                });
+            migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\";");
+
 
             migrationBuilder.CreateTable(
-                name: "departamento",
-                columns: table => new
-                {
-                    dep_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    dep_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_departamento", x => x.dep_codigo);
-                });
+     name: "categoria",
+     columns: table => new
+     {
+         cat_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+         cat_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+     },
+     constraints: table =>
+     {
+         table.PrimaryKey("PK_categoria", x => x.cat_codigo);
+     });
+
 
             migrationBuilder.CreateTable(
-                name: "role",
-                columns: table => new
-                {
-                    role_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    role_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_role", x => x.role_codigo);
-                });
+       name: "departamento",
+       columns: table => new
+       {
+           dep_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+           dep_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+       },
+       constraints: table =>
+       {
+           table.PrimaryKey("PK_departamento", x => x.dep_codigo);
+       });
 
             migrationBuilder.CreateTable(
-                name: "usuario",
-                columns: table => new
-                {
-                    usu_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    usu_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    usu_email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    usu_senha_hash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    usu_telefone = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    usu_datacriacao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    dep_codigo = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_usuario", x => x.usu_codigo);
-                    table.ForeignKey(
-                        name: "FK_usuario_departamento_dep_codigo",
-                        column: x => x.dep_codigo,
-                        principalTable: "departamento",
-                        principalColumn: "dep_codigo",
-                        onDelete: ReferentialAction.SetNull);
-                });
+      name: "role",
+      columns: table => new
+      {
+          role_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+          role_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+      },
+      constraints: table =>
+      {
+          table.PrimaryKey("PK_role", x => x.role_codigo);
+      });
+
+
+            migrationBuilder.CreateTable(
+     name: "usuario",
+     columns: table => new
+     {
+         usu_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+         usu_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+         usu_email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+         usu_senha_hash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+         usu_telefone = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+         usu_datacriacao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+         dep_codigo = table.Column<Guid>(type: "uuid", nullable: true)
+     },
+     constraints: table =>
+     {
+         table.PrimaryKey("PK_usuario", x => x.usu_codigo);
+         table.ForeignKey(
+             name: "FK_usuario_departamento_dep_codigo",
+             column: x => x.dep_codigo,
+             principalTable: "departamento",
+             principalColumn: "dep_codigo",
+             onDelete: ReferentialAction.SetNull);
+     });
 
             migrationBuilder.CreateTable(
                 name: "chamado",
                 columns: table => new
                 {
-                    cha_codigo = table.Column<Guid>(type: "uuid", nullable: false),
+                    cha_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     cha_usuario_autor = table.Column<Guid>(type: "uuid", nullable: false),
                     cha_usuario_tecnico = table.Column<Guid>(type: "uuid", nullable: true),
                     cat_codigo = table.Column<Guid>(type: "uuid", nullable: false),
@@ -83,9 +88,9 @@ namespace IA_RoboBerto.Migrations
                     cha_titulo = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     cha_sugestao = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     cha_descricao = table.Column<string>(type: "text", nullable: false),
-                    cha_aberto_em = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    cha_aberto_em = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     cha_resolvido_em = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    cha_sla_vence_em = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    cha_sla_vence_em = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     cha_resolvido_com_ia = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
@@ -110,6 +115,8 @@ namespace IA_RoboBerto.Migrations
                         principalColumn: "usu_codigo",
                         onDelete: ReferentialAction.SetNull);
                 });
+
+
 
             migrationBuilder.CreateTable(
                 name: "role_usuario",
@@ -136,30 +143,31 @@ namespace IA_RoboBerto.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "mensagem",
-                columns: table => new
-                {
-                    men_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    usu_codigo = table.Column<Guid>(type: "uuid", nullable: false),
-                    men_data_hora_texto = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    men_texto = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    cha_codigo = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_mensagem", x => x.men_codigo);
-                    table.ForeignKey(
-                        name: "FK_mensagem_chamado_cha_codigo",
-                        column: x => x.cha_codigo,
-                        principalTable: "chamado",
-                        principalColumn: "cha_codigo",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_mensagem_usuario_usu_codigo",
-                        column: x => x.usu_codigo,
-                        principalTable: "usuario",
-                        principalColumn: "usu_codigo");
-                });
+    name: "mensagem",
+    columns: table => new
+    {
+        men_codigo = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+        usu_codigo = table.Column<Guid>(type: "uuid", nullable: false),
+        men_data_hora_texto = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+        men_texto = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+        cha_codigo = table.Column<Guid>(type: "uuid", nullable: true)
+    },
+    constraints: table =>
+    {
+        table.PrimaryKey("PK_mensagem", x => x.men_codigo);
+        table.ForeignKey(
+            name: "FK_mensagem_chamado_cha_codigo",
+            column: x => x.cha_codigo,
+            principalTable: "chamado",
+            principalColumn: "cha_codigo",
+            onDelete: ReferentialAction.Cascade);
+        table.ForeignKey(
+            name: "FK_mensagem_usuario_usu_codigo",
+            column: x => x.usu_codigo,
+            principalTable: "usuario",
+            principalColumn: "usu_codigo");
+    });
+
 
             migrationBuilder.CreateIndex(
                 name: "IX_chamado_cat_codigo",

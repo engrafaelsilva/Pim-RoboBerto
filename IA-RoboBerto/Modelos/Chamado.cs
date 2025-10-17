@@ -18,7 +18,7 @@ namespace IA_RoboBerto.Modelos
         public DateTime? DataFechamento { get; set; }
         public DateTime SlaVenceEm { get; set; }
         public bool? SugestaoResolveu { get; set; }
-        public ISet<Mensagem> Mensagens { get;} = new HashSet<Mensagem>();
+        public ISet<Mensagem> Mensagens { get; set; } = new HashSet<Mensagem>();
 
         public Chamado()
         {

@@ -11,7 +11,7 @@ namespace IA_RoboBerto.Modelos
         public string Telefone { get; set; }
         public DateTime DataCriacao { get; set; }
         public Departamento Departamento { get; set; }
-        public ISet<Role> Roles { get; } = new HashSet<Role>();
+        public ISet<Role> Roles { get; set; } = new HashSet<Role>();
         public Usuario()
         {
         }

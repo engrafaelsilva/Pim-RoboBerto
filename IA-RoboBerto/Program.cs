@@ -45,6 +45,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<RoboBertoContext>();
+
+    // tenta conectar e aplicar migrations pendentes
+    if (await ctx.Database.CanConnectAsync())
+    {
+        var pending = (await ctx.Database.GetPendingMigrationsAsync()).ToList();
+        if (pending.Any())
+        {
+            await ctx.Database.MigrateAsync();
+        }
+
+        await RoboBertoDbInitializer.SeedAsync(ctx);
+    }
+}
+
+
 app.UseMiddleware(typeof(GlobalErrorHandlingMiddleware));
 
 app.UseHttpsRedirection();
