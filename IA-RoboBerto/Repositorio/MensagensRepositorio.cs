@@ -25,5 +25,20 @@ namespace IA_RoboBerto.Repositorio
 
             return resultadoPaginado;
         }
+    
+        public async Task<Mensagem?> ObterPorIdAsync(Guid id)
+        {
+            return await _context.Mensagem
+                .Include(m => m.Autor)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<Mensagem> AdicionarAsync(Mensagem mensagem)
+        {
+            await _context.Mensagem.AddAsync(mensagem);
+            await _context.SaveChangesAsync();
+            return mensagem;
+        }
+
     }
 }

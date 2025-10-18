@@ -78,7 +78,7 @@ namespace IA_RoboBerto.Servico
 
         public async Task<bool> RemoverAsync(Guid id)
         {
-            if (!await _repo.IdExiste(id))
+            if (!await _repo.IdExisteAsync(id))
             {
                 return false;
                 throw new ResourceNotFoundException("Recurso não encontrado");

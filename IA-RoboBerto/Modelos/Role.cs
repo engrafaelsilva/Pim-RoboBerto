@@ -12,9 +12,9 @@ namespace IA_RoboBerto.Modelos
         public Role()
         {
         }
-        public Role(string name)
+        public Role(Guid id, string name)
         {
-            Id = Guid.NewGuid();
+            Id = id;
             Nome = name;
         }
     }

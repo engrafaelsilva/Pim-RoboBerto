@@ -34,7 +34,7 @@ namespace IA_RoboBerto.Repositorio
                 .FirstOrDefaultAsync(d => d.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 
-        public async Task<bool> IdExiste(Guid id)
+        public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Departamento
                 .AnyAsync(d => d.Id == id);
@@ -67,6 +67,7 @@ namespace IA_RoboBerto.Repositorio
 
             _context.Departamento.Update(existente);
             await _context.SaveChangesAsync();
+
             return existente;
         }
 

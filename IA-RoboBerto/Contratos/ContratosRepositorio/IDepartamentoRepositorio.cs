@@ -8,7 +8,7 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<PagedList<Departamento>> ListarTodosDepComUsuariosAsync(int pagina, int tamanho);
         Task<Departamento?> ObterPorNomeAsync(string nome);
 
-        Task<bool> IdExiste(Guid id);
+        Task<bool> IdExisteAsync(Guid id);
 
         Task<Departamento?> ObterPorIdAsync(Guid id);
 

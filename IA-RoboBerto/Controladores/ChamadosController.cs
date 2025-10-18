@@ -27,6 +27,38 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
+
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<ChamadoDTO>> GetById(Guid id)
+        {
+            var chamado = await _servico.ObterPorIdAsync(id);
+            return Ok(chamado);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoDTO dto)
+        {
+            var criado = await _servico.AbrirChamadoAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<ChamadoDTO>> Put(Guid id, [FromBody] ChamadoDTO dto)
+        {
+            var atualizado = await _servico.AtualizarUsuAsync(id, dto);
+            return Ok(atualizado);
+        }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            await _servico.RemoverAsync(id);
+            return NoContent();
+        }
+
+
+
+
         //   private readonly ChamadoRepository _repository;
         //   private readonly ApiGeminiService _geminiService;
         //

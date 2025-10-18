@@ -6,21 +6,21 @@ namespace IA_RoboBerto.DTOs
     {
         public Guid Id { get; set; }
 
-       public string Name { get; set; }
+       public string Nome { get; set; }
         public UsuarioMinDTO()
         {
         }
-        public UsuarioMinDTO(string name)
+        public UsuarioMinDTO(string nome)
         {
             Id = Guid.NewGuid();
-            Name = name;
+            Nome = nome;
         }
 
         public UsuarioMinDTO(Usuario entidade)
         {
             if (entidade == null) return;
             Id = entidade.Id;
-            Name = entidade.Nome;
+            Nome = entidade.Nome;
         }
     }
 }

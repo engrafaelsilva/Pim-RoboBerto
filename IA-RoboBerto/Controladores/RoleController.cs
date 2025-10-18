@@ -23,5 +23,19 @@ namespace IA_RoboBerto.Controladores
         {
             return await _servico.ListarTodosAsync();
         }
+
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<RoleDTO>> GetById(Guid id)
+        {
+            var usuario = await _servico.ObterPorIdAsync(id);
+            return Ok(usuario);
+        }
+        [HttpGet("nome/{nome}")]
+        public async Task<ActionResult<RoleDTO>> GetByNome(string nome)
+        {
+            var role = await _servico.ObterPorNomeAsync(nome);
+            if (role == null) return NotFound();
+            return Ok(role);
+        }
     }
 }

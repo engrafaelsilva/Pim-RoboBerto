@@ -11,6 +11,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<Categoria> AdicionarAsync(Categoria categoria);
         Task<Categoria?> AtualizarAsync(Categoria categoria);
         Task<bool> RemoverAsync(Guid id);
-        Task<bool> IdExiste(Guid id);
+        Task<bool> IdExisteAsync(Guid id);
     }
 }

@@ -22,7 +22,8 @@ namespace IA_RoboBerto.Modelos
 
         public Chamado()
         {
-        }
+
+    }
 
         public Chamado(Usuario autor, Usuario tecnico, Categoria categoria, EStatusChamado status, EPrioridade prioridade, string titulo, string sugestaoGemini, string descricao, DateTime dataAbertura, DateTime dataFechamento, DateTime slaVenceEm, bool sugestaoResolveu)
         {

@@ -18,6 +18,15 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Role.ToListAsync();
         }
+
+        public async Task<Role?> ObterPorIdAsync(Guid id)
+        {
+            return await _context.Role.FirstOrDefaultAsync(r => r.Id == id);
+        }
+        public async Task<Role?> ObterPorNomeAsync(string nome)
+        {
+            return await _context.Role.FirstOrDefaultAsync(r => r.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
+        }
     }
 }
 

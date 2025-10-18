@@ -25,5 +25,36 @@ namespace IA_RoboBerto.Controladores
             var resultado = await _servico.ListarTodosAsync(paginaAtual, tamanho);
             return Ok(resultado);
         }
+
+       
+           [HttpGet("{id:guid}")]
+           public async Task<ActionResult<UsuarioMaxDTO>> GetById(Guid id)
+           {
+               var usuario = await _servico.ObterPorIdAsync(id);
+               return Ok(usuario);
+           }
+        
+           [HttpPost]
+           public async Task<ActionResult<UsuarioInsertDTO>> Post([FromBody] UsuarioInsertDTO dto)
+           {
+               var criado = await _servico.AdicionarAsync(dto);
+               return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
+           }
+        
+           [HttpPut("{id:guid}")]
+           public async Task<ActionResult<UsuarioMaxDTO>> Put(Guid id, [FromBody] UsuarioMaxDTO dto)
+           {
+               var atualizado = await _servico.AtualizarAsync(id, dto);
+               return Ok(atualizado);
+           }
+        
+           [HttpDelete("{id:guid}")]
+           public async Task<ActionResult> Delete(Guid id)
+           {
+               await _servico.RemoverAsync(id);
+               return NoContent();
+           }
+
+
     }
 }
