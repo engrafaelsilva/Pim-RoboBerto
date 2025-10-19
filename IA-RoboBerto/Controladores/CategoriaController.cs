@@ -1,10 +1,12 @@
 ﻿using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos.Paginação;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class CategoriaController : ControllerBase
@@ -15,7 +17,7 @@ namespace IA_RoboBerto.Controladores
         {
             _servico = servico;
         }
-
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedList<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
