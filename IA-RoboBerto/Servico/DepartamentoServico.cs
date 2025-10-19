@@ -90,7 +90,6 @@ namespace IA_RoboBerto.Servico
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
             {
-                return false;
                 throw new DataBaseException("Falha de integridade referencial");
             }
 

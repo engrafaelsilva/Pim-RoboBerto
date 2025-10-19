@@ -6,6 +6,7 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
     public interface IUsuarioRepositorio
     {
         Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho);
+        Task<Usuario?> ObterPorEmailAsync(string email);
         Task<Usuario?> ObterPorIdAsync(Guid id);
         Task<Usuario> AdicionarAsync(Usuario usuario);
         Task<Usuario?> AtualizarAsync(Usuario usuario);

@@ -4,12 +4,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio.Context;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 public static class RoboBertoDbInitializer
 {
     public static async Task SeedAsync(RoboBertoContext context)
     {
+        var hasher = new PasswordHasher<Usuario>();
+
         // evita inserir duplicado
         if (await context.Chamado.AnyAsync()) return;
 
@@ -34,34 +37,34 @@ public static class RoboBertoDbInitializer
         {
             Nome = "Alice",
             Email = "alice@empresa.com",
-            SenhaHash = "senha123",
             Telefone = "11999999999",
             DataCriacao = DateTime.UtcNow,
             Departamento = depTI,
             Roles = new HashSet<Role> { roleADM }
         };
+        userAlice.SenhaHash = hasher.HashPassword(userAlice, "senha123");
 
         var userBob = new Usuario
         {
             Nome = "Bob",
             Email = "bob@empresa.com",
-            SenhaHash = "senha123",
             Telefone = "11988888888",
             DataCriacao = DateTime.UtcNow,
             Departamento = depRH,
             Roles = new HashSet<Role> { roleTecnico }
         };
+        userBob.SenhaHash = hasher.HashPassword(userBob, "senha123");
 
         var userCarlos = new Usuario
         {
             Nome = "Carlos",
             Email = "carlos@empresa.com",
-            SenhaHash = "senha123",
             Telefone = "11977777777",
             DataCriacao = DateTime.UtcNow,
             Departamento = depFinanceiro,
             Roles = new HashSet<Role> { roleColab }
         };
+        userCarlos.SenhaHash = hasher.HashPassword(userCarlos, "senha123");
 
         await context.Usuario.AddRangeAsync(userAlice, userBob, userCarlos);
         await context.SaveChangesAsync();

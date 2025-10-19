@@ -5,6 +5,8 @@ using IA_RoboBerto.Exceções;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Models.Enums;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Linq;
 
 namespace IA_RoboBerto.Servico
@@ -74,8 +76,17 @@ namespace IA_RoboBerto.Servico
           if (!await _ChamadoRepo.IdExisteAsync(id))
               throw new ResourceNotFoundException("Recurso não encontrado");
      
-          return await _ChamadoRepo.RemoverAsync(id);
-      }
+            try
+            {
+
+                await _ChamadoRepo.RemoverAsync(id);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
+            {
+                throw new DataBaseException("Falha de integridade referencial");
+            }
+            return true;
+        }
      
       private async Task CopiarDtoPraEntidadeUpdateUsuario(Chamado chamado, ChamadoDTO dto)
       {

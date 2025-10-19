@@ -41,6 +41,14 @@ namespace IA_RoboBerto.Repositorio
                 .FirstOrDefaultAsync(u => u.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 
+        public async Task<Usuario?> ObterPorEmailAsync(string email)
+        {
+            return await _context.Usuario
+                .Include(u => u.Roles)
+                .Include(u => u.Departamento)
+                .FirstOrDefaultAsync(u => u.Email.ToUpper().Trim() == email.ToUpper().Trim());
+        }
+
         public async Task<Usuario> AdicionarAsync(Usuario usuario)
         {
             await _context.Usuario.AddAsync(usuario);

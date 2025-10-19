@@ -5,6 +5,7 @@ using IA_RoboBerto.Exceções;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Repositorio;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -15,14 +16,16 @@ namespace IA_RoboBerto.Servico
         private readonly IUsuarioRepositorio _UsuarioRepo;
         private readonly IDepartamentoRepositorio _DepartamentoRepo;
         private readonly IRoleRepositorio _RoleRepo;
-        public UsuarioServico(IUsuarioRepositorio usuRepo, IDepartamentoRepositorio departamentoRepo, IRoleRepositorio roleRepo)
+        private readonly IPasswordHasher<Usuario> _passwordHasher;
+        public UsuarioServico(IUsuarioRepositorio usuRepo, IDepartamentoRepositorio departamentoRepo, IRoleRepositorio roleRepo, IPasswordHasher<Usuario> passwordHasher)
         {
             _UsuarioRepo = usuRepo;
             _DepartamentoRepo = departamentoRepo;
             _RoleRepo = roleRepo;
+            _passwordHasher = passwordHasher;
         }
 
-      public async Task<PagedList<UsuarioMaxDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
+        public async Task<PagedList<UsuarioMaxDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _UsuarioRepo.ListarTodosAsync(paginaAtual, tamanho);
 
@@ -41,10 +44,23 @@ namespace IA_RoboBerto.Servico
             return new UsuarioMaxDTO(usuario);
         }
 
+        public async Task<UsuarioMaxDTO?> ObterPorNomeAsync(string nome)
+        {
+            var usuario = await _UsuarioRepo.ObterPorNomeAsync(nome);
+            if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
+            return new UsuarioMaxDTO(usuario);
+        }
+        public async Task<UsuarioMaxDTO?> ObterPorEmailAsync(string email)
+        {
+            var usuario = await _UsuarioRepo.ObterPorEmailAsync(email);
+            if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
+            return new UsuarioMaxDTO(usuario);
+        }
+
         public async Task<UsuarioInsertDTO> AdicionarAsync(UsuarioInsertDTO dto)
         {
             var usuario = new Usuario();
-           await CopiarDtoPraEntidadeInsert(usuario, dto);
+            await CopiarDtoPraEntidadeInsert(usuario, dto);
 
             usuario = await _UsuarioRepo.AdicionarAsync(usuario);
             return new UsuarioInsertDTO(usuario);
@@ -94,15 +110,35 @@ namespace IA_RoboBerto.Servico
             usuario.Email = dto.Email;
             usuario.Telefone = dto.Telefone;
             usuario.DataCriacao = DateTime.UtcNow;
-            usuario.SenhaHash = dto.SenhaHash;
+            usuario.SenhaHash = _passwordHasher.HashPassword(usuario, dto.SenhaHash);
 
             usuario.Departamento = await _DepartamentoRepo.ObterPorNomeAsync(dto.Departamento.Nome);
 
 
-                foreach (var roleDto in dto.Roles)
+            foreach (var roleDto in dto.Roles)
+            {
+                var role = await _RoleRepo.ObterPorNomeAsync(roleDto.Nome);
+                usuario.Roles.Add(role);
+            }
+        }
+        public async Task<Usuario?> ValidarUsuarioAsync(string email, string senha)
+        {
+            {
+                var usuario = await _UsuarioRepo.ObterPorEmailAsync(email);
+                if (usuario == null)
                 {
-                    var role = await _RoleRepo.ObterPorNomeAsync(roleDto.Nome);
-                        usuario.Roles.Add(role);
+                    throw new UnauthorizedAccessException("Email ou senha inválidos");
+
+                }
+
+                var senhaCombinaComHash = _passwordHasher.VerifyHashedPassword(usuario, usuario.SenhaHash, senha);
+
+                if (senhaCombinaComHash == PasswordVerificationResult.Failed)
+                {
+                    throw new UnauthorizedAccessException("Email ou senha inválidos");
+
+                }
+                return usuario;
             }
         }
     }
