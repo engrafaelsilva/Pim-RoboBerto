@@ -25,6 +25,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetById(Guid id)
         {
@@ -33,6 +34,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(categoria);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetByNome(string nome)
         {
@@ -41,6 +43,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(categoria);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpPost]
         public async Task<ActionResult<CategoriaMinDTO>> Post([FromBody] CategoriaMinDTO dto)
         {
@@ -48,6 +51,7 @@ namespace IA_RoboBerto.Controladores
             return CreatedAtAction(nameof(GetById), new { id = criada.Id }, criada);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<CategoriaMinDTO>> Put(Guid id, [FromBody] CategoriaMinDTO dto)
         {
@@ -56,6 +60,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(atualizada);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {

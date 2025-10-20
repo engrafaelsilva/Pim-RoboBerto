@@ -18,7 +18,8 @@ namespace IA_RoboBerto.Servico
             var key = Encoding.ASCII.GetBytes(Configuracoes.Secret);
             var claims = new List<Claim>
             {
-                 new Claim(ClaimTypes.Name, usuario.Nome)
+                 new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                 new Claim(ClaimTypes.Email, usuario.Email)
             };
 
             foreach(var role in usuario.Roles)

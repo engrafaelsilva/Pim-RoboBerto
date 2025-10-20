@@ -41,7 +41,17 @@ namespace IA_RoboBerto.Middlewares
             }
             else if (exceptionTipo == typeof(ResourceNotFoundException))
             {
-                status = HttpStatusCode.BadRequest;
+                status = HttpStatusCode.NotFound;
+            }
+
+            else if (exceptionTipo == typeof(ForbiddenException))
+            {
+                status = HttpStatusCode.Forbidden;
+            }
+
+            else if (exceptionTipo == typeof(UserNotFoundException))
+            {
+                status = HttpStatusCode.Unauthorized;
             }
             else 
             {

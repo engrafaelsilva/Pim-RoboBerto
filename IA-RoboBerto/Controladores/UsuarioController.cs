@@ -4,10 +4,12 @@ using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Repositorio;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UsuarioController : ControllerBase
@@ -19,6 +21,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedList<UsuarioMaxDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -27,6 +30,7 @@ namespace IA_RoboBerto.Controladores
         }
 
 
+        [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<UsuarioMaxDTO>> GetById(Guid id)
         {
@@ -34,6 +38,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(usuario);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpPost]
         public async Task<ActionResult<UsuarioInsertDTO>> Post([FromBody] UsuarioInsertDTO dto)
         {
@@ -41,6 +46,7 @@ namespace IA_RoboBerto.Controladores
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<UsuarioMaxDTO>> Put(Guid id, [FromBody] UsuarioMaxDTO dto)
         {
@@ -48,6 +54,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(atualizado);
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {

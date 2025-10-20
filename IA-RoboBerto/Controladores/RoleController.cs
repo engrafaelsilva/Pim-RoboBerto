@@ -3,10 +3,12 @@ using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio;
 using IA_RoboBerto.Servico;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class RoleController : ControllerBase
@@ -17,19 +19,21 @@ namespace IA_RoboBerto.Controladores
         {
             _servico = servico;
         }
-
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<IEnumerable<RoleDTO>> Get()
         {
             return await _servico.ListarTodosAsync();
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<RoleDTO>> GetById(Guid id)
         {
             var usuario = await _servico.ObterPorIdAsync(id);
             return Ok(usuario);
         }
+        [Authorize(Roles = "ADM")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<RoleDTO>> GetByNome(string nome)
         {

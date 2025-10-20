@@ -3,6 +3,7 @@ using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio.Context;
 using Microsoft.EntityFrameworkCore;
 using IA_RoboBerto.Contratos.ContratosRepositorio;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace IA_RoboBerto.Repositorio
 {
@@ -28,6 +29,28 @@ namespace IA_RoboBerto.Repositorio
                 .Take(tamanho)
                 .ToListAsync();
             var totalRegistros = await _context.Departamento.CountAsync();
+            var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
+            return resultadoPaginado;
+        }
+
+
+        public async Task<PagedList<Chamado>> ListarMeusChamadosAsync(Guid id, int paginaAtual, int tamanho)
+        {
+            var resultado = _context.Chamado
+                .Include(c => c.Autor)
+                .Include(c => c.Tecnico)
+                .Include(c => c.Categoria)
+                .Include(c => c.Mensagens)
+                .Where(c => c.Autor.Id == id);
+
+            var totalRegistros = await resultado.CountAsync();
+
+            var itens = await resultado
+                .OrderByDescending(c => c.DataAbertura)
+                .Skip(paginaAtual * tamanho)
+                .Take(tamanho)
+                .ToListAsync();
+
             var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
             return resultadoPaginado;
         }

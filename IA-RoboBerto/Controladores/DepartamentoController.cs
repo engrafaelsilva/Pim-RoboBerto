@@ -1,10 +1,12 @@
 ﻿using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos.Paginação;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class DepartamentoController : ControllerBase
@@ -16,7 +18,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
-        // Listar todos com paginação
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<PagedList<DepartamentoDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -24,7 +26,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        // Obter por ID
+        [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<DepartamentoDTO>> GetById(Guid id)
         {
@@ -33,7 +35,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(departamento);
         }
 
-        // Obter por nome
+        [Authorize(Roles = "ADM")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<DepartamentoDTO>> GetByNome(string nome)
         {
@@ -42,7 +44,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(departamento);
         }
 
-        // Adicionar novo departamento
+        [Authorize(Roles = "ADM")]
         [HttpPost]
         public async Task<ActionResult<DepartamentoDTO>> Post([FromBody] DepartamentoDTO dto)
         {
@@ -50,7 +52,7 @@ namespace IA_RoboBerto.Controladores
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
 
-        // Atualizar departamento existente
+        [Authorize(Roles = "ADM")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<DepartamentoDTO>> Put(Guid id, [FromBody] DepartamentoDTO dto)
         {
@@ -59,7 +61,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(atualizado);
         }
 
-        // Remover departamento
+        [Authorize(Roles = "ADM")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {

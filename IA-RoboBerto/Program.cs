@@ -51,6 +51,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<ITokenServico, TokenServico>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
 builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
@@ -69,9 +70,11 @@ builder.Services.AddScoped<IChamadoServico, ChamadoServico>();
 builder.Services.AddScoped<IChamadoRepositorio, ChamadoRepositorio>();
 builder.Services.AddScoped<IMensagensServico, MensagensServico>();
 builder.Services.AddScoped<IMensagensRepositorio, MensagensRepositorio>();
+
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "apiagenda", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Roboberto", Version = "v1" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {

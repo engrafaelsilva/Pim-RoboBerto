@@ -1,5 +1,6 @@
 ﻿using IA_RoboBerto.Modelos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IA_RoboBerto.Repositorio.Context
 {
@@ -13,7 +14,9 @@ namespace IA_RoboBerto.Repositorio.Context
         public DbSet<Mensagem> Mensagem { get; set; }
         public RoboBertoContext(DbContextOptions<RoboBertoContext> options) : base(options)
         {
+      
         }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

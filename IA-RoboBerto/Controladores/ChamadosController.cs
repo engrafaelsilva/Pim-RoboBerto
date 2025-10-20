@@ -3,11 +3,14 @@
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos.Paginação;
+using IA_RoboBerto.Servico;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace IA_RoboBerto.Controladores
 {
-
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class ChamadosController : Controller
@@ -20,6 +23,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedList<ChamadoDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -27,7 +31,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-
+        [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ChamadoDTO>> GetById(Guid id)
         {
@@ -35,20 +39,31 @@ namespace IA_RoboBerto.Controladores
             return Ok(chamado);
         }
 
+        [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
+        [Authorize]
+        [HttpGet("meus")]
+        public async Task<ActionResult<PagedList<ChamadoDTO>>> MeusChamados([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 10)
+        {
+         
+            var resultado = await _servico.ListarMeusChamadosAsync(paginaAtual, tamanho);
+            return Ok(resultado);
+        }
+
+        [Authorize(Roles = "ADM,COLABORADOR")]
         [HttpPost]
         public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoDTO dto)
         {
             var criado = await _servico.AbrirChamadoAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
-
+        [Authorize(Roles = "ADM,COLABORADOR")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ChamadoDTO>> Put(Guid id, [FromBody] ChamadoDTO dto)
         {
             var atualizado = await _servico.AtualizarUsuAsync(id, dto);
             return Ok(atualizado);
         }
-
+        [Authorize(Roles = "ADM")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {

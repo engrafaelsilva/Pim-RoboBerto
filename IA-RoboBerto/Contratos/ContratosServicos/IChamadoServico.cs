@@ -9,6 +9,7 @@ namespace IA_RoboBerto.Contratos.ContratosServicos
         Task<ChamadoDTO?> ObterPorIdAsync(Guid id);
         Task<ChamadoDTO?> AtualizarUsuAsync(Guid id, ChamadoDTO dto);
         Task<ChamadoDTO> AbrirChamadoAsync(ChamadoDTO dto);
+        Task<PagedList<ChamadoDTO>> ListarMeusChamadosAsync(int paginaAtual, int tamanho);
         Task<bool> RemoverAsync(Guid id);
     }
 }

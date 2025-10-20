@@ -13,21 +13,23 @@ namespace IA_RoboBerto.Servico
 {
     public class ChamadoServico : IChamadoServico
     {
-       // .Include(c => c.Autor)
-       // .Include(c => c.Tecnico)
-       // .Include(c => c.Categoria)
-       // .Include(c => c.Mensagens)
+        // .Include(c => c.Autor)
+        // .Include(c => c.Tecnico)
+        // .Include(c => c.Categoria)
+        // .Include(c => c.Mensagens)
         private readonly IChamadoRepositorio _ChamadoRepo;
         private readonly IUsuarioRepositorio _UsuarioRepo;
         private readonly ICategoriaRepositorio _CategoriaRepo;
         private readonly IMensagensRepositorio _MensagensRepo;
+        private readonly IAuthService _authService;
 
-        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo)
+        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService)
         {
             _ChamadoRepo = chamadoRepo;
             _UsuarioRepo = usuarioRepos;
             _CategoriaRepo = categoriaRepo;
             _MensagensRepo = mensagensRepo;
+            _authService = authService;
         }
 
         public async Task<PagedList<ChamadoDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
@@ -43,39 +45,55 @@ namespace IA_RoboBerto.Servico
                 resultado.TotalCount
             );
         }
-      public async Task<ChamadoDTO?> ObterPorIdAsync(Guid id)
-      {
-          var usuario = await _ChamadoRepo.ObterPorIdAsync(id);
-          if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
-          return new ChamadoDTO(usuario);
-      }
-     
-      public async Task<ChamadoDTO> AbrirChamadoAsync(ChamadoDTO dto)
-      {
-          var chamado = new Chamado();
-          await CopiarDtoPraEntidadeInsert(chamado, dto);
+
+        public async Task<PagedList<ChamadoDTO>> ListarMeusChamadosAsync(int paginaAtual, int tamanho)
+        {
+            var usuarioAutenticado = await _authService.ObterUsuarioLogadoAsync();
+
+            var resultado = await _ChamadoRepo.ListarMeusChamadosAsync(usuarioAutenticado.Id, paginaAtual, tamanho);
+
+            var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
+
+            return new PagedList<ChamadoDTO>(
+                resultadoDTO,
+                resultado.PaginaAtual,
+                resultado.PaginaTamanho,
+                resultado.TotalCount
+            );
+        }
+        public async Task<ChamadoDTO?> ObterPorIdAsync(Guid id)
+        {
+            var usuario = await _ChamadoRepo.ObterPorIdAsync(id);
+            if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
+            return new ChamadoDTO(usuario);
+        }
+
+        public async Task<ChamadoDTO> AbrirChamadoAsync(ChamadoDTO dto)
+        {
+            var chamado = new Chamado();
+            await CopiarDtoPraEntidadeInsert(chamado, dto);
 
             chamado = await _ChamadoRepo.AdicionarAsync(chamado);
             return new ChamadoDTO(chamado);
-      }
-     
-      public async Task<ChamadoDTO?> AtualizarUsuAsync(Guid id, ChamadoDTO dto)
-      {
-          var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
-          if (chamado == null) throw new ResourceNotFoundException("Recurso não encontrado");
-     
-          await CopiarDtoPraEntidadeUpdateUsuario(chamado, dto);
-     
-          var atualizado = await _ChamadoRepo.AtualizarUsuAsync(chamado);
-     
-          return new ChamadoDTO(atualizado);
-      }
-     
-      public async Task<bool> RemoverAsync(Guid id)
-      {
-          if (!await _ChamadoRepo.IdExisteAsync(id))
-              throw new ResourceNotFoundException("Recurso não encontrado");
-     
+        }
+
+        public async Task<ChamadoDTO?> AtualizarUsuAsync(Guid id, ChamadoDTO dto)
+        {
+            var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
+            if (chamado == null) throw new ResourceNotFoundException("Recurso não encontrado");
+
+            await CopiarDtoPraEntidadeUpdateUsuario(chamado, dto);
+
+            var atualizado = await _ChamadoRepo.AtualizarUsuAsync(chamado);
+
+            return new ChamadoDTO(atualizado);
+        }
+
+        public async Task<bool> RemoverAsync(Guid id)
+        {
+            if (!await _ChamadoRepo.IdExisteAsync(id))
+                throw new ResourceNotFoundException("Recurso não encontrado");
+
             try
             {
 
@@ -87,11 +105,11 @@ namespace IA_RoboBerto.Servico
             }
             return true;
         }
-     
-      private async Task CopiarDtoPraEntidadeUpdateUsuario(Chamado chamado, ChamadoDTO dto)
-      {
 
-          
+        private async Task CopiarDtoPraEntidadeUpdateUsuario(Chamado chamado, ChamadoDTO dto)
+        {
+
+
             chamado.Categoria = await _CategoriaRepo.ObterPorIdAsync(dto.Autor.Id);
             chamado.Status = dto.Status;
             chamado.Prioridade = dto.Prioridade;
@@ -132,9 +150,9 @@ namespace IA_RoboBerto.Servico
             chamado.Descricao = dto.Descricao;
             chamado.DataAbertura = dto.DataAbertura;
             chamado.DataFechamento = dto.DataFechamento;
-            chamado.SlaVenceEm =  dto.SlaVenceEm;
+            chamado.SlaVenceEm = dto.SlaVenceEm;
             chamado.SugestaoResolveu = dto.SugestaoResolveu;
-            foreach(Mensagem menDto in chamado.Mensagens)
+            foreach (Mensagem menDto in chamado.Mensagens)
             {
                 Mensagem mensagem = await _MensagensRepo.ObterPorIdAsync(menDto.Id);
                 chamado.Mensagens.Add(mensagem);
