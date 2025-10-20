@@ -5,8 +5,8 @@ namespace IA_RoboBerto.Modelos
 {
     public class Chamado
     {
-        public Guid Id { get; set; }
-        public Usuario Autor { get; set; }
+        public Guid Id { get;}
+        public Usuario Autor { get; set;}
         public Usuario? Tecnico { get; set; }
         public Categoria Categoria { get; set; }
         public EStatusChamado Status { get; set; }

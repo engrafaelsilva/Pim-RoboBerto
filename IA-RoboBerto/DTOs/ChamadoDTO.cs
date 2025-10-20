@@ -46,7 +46,7 @@ namespace IA_RoboBerto.DTOs
             Id = entidade.Id;
             Autor = new UsuarioMinDTO(entidade.Autor);
             Tecnico = entidade.Tecnico != null ? new UsuarioMinDTO(entidade.Tecnico) : null;
-            Categoria = new CategoriaNomeDTO(entidade.Categoria);
+            Categoria = new CategoriaNomeDTO(entidade.Categoria.Nome);
             Status = entidade.Status;
             Prioridade = entidade.Prioridade;
             Titulo = entidade.Titulo;

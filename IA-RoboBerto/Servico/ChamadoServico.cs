@@ -89,6 +89,14 @@ namespace IA_RoboBerto.Servico
             return new ChamadoDTO(atualizado);
         }
 
+        public async Task<ChamadoDTO?> CancelarChamadoAsync(Guid id)
+        {
+
+            var atualizado = await _ChamadoRepo.AtualizarStatusChamadoAsync(id,EStatusChamado.CANCELADO);
+            return new ChamadoDTO(atualizado);
+        }
+
+
         public async Task<bool> RemoverAsync(Guid id)
         {
             if (!await _ChamadoRepo.IdExisteAsync(id))
@@ -110,7 +118,7 @@ namespace IA_RoboBerto.Servico
         {
 
 
-            chamado.Categoria = await _CategoriaRepo.ObterPorIdAsync(dto.Autor.Id);
+            chamado.Categoria = await _CategoriaRepo.ObterPorNomeAsync(dto.Categoria.Nome);
             chamado.Status = dto.Status;
             chamado.Prioridade = dto.Prioridade;
 

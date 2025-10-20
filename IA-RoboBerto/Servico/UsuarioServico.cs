@@ -127,7 +127,7 @@ namespace IA_RoboBerto.Servico
                 var usuario = await _UsuarioRepo.ObterPorEmailAsync(email);
                 if (usuario == null)
                 {
-                    throw new UnauthorizedAccessException("Email ou senha inválidos");
+                    throw new UserNotFoundException("Email ou senha inválidos");
 
                 }
 
@@ -135,7 +135,7 @@ namespace IA_RoboBerto.Servico
 
                 if (senhaCombinaComHash == PasswordVerificationResult.Failed)
                 {
-                    throw new UnauthorizedAccessException("Email ou senha inválidos");
+                    throw new UserNotFoundException("Email ou senha inválidos");
 
                 }
                 return usuario;

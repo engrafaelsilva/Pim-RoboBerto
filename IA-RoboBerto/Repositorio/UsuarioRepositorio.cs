@@ -18,7 +18,8 @@ namespace IA_RoboBerto.Repositorio
      public async Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho)
      {
          var resultado = await _context.Usuario.Include(u => u.Roles)
-                                         .Include(u => u.Departamento)
+             .Include(u => u.Departamento)
+             .AsNoTracking()
              .Skip(tamanho * paginaAtual)
              .Take(tamanho)
              .ToListAsync();
@@ -31,6 +32,7 @@ namespace IA_RoboBerto.Repositorio
             return await _context.Usuario
                 .Include(u => u.Roles)
                 .Include(u => u.Departamento)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
         public async Task<Usuario?> ObterPorNomeAsync(string nome)
@@ -38,6 +40,7 @@ namespace IA_RoboBerto.Repositorio
             return await _context.Usuario
                 .Include(u => u.Roles)
                 .Include(u => u.Departamento)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 
@@ -46,6 +49,7 @@ namespace IA_RoboBerto.Repositorio
             return await _context.Usuario
                 .Include(u => u.Roles)
                 .Include(u => u.Departamento)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email.ToUpper().Trim() == email.ToUpper().Trim());
         }
 
@@ -84,7 +88,9 @@ namespace IA_RoboBerto.Repositorio
 
         public async Task<bool> IdExisteAsync(Guid id)
         {
-            return await _context.Usuario.AnyAsync(u => u.Id == id);
+            return await _context.Usuario
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == id);
         }
     }
 }

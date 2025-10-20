@@ -18,7 +18,9 @@ namespace IA_RoboBerto.Repositorio
 
         public async Task<PagedList<Categoria>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
-            var resultado = await _context.Categoria.Include(c => c.Chamados)
+            var resultado = await _context.Categoria
+                .Include(c => c.Chamados)
+                .AsNoTracking()
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
                 .ToListAsync();
@@ -31,12 +33,14 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Categoria
                 .Include(c => c.Chamados)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 
         public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Categoria
+                .AsNoTracking()
                 .AnyAsync(c => c.Id == id);
         }
 
@@ -44,6 +48,7 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Categoria
                 .Include(c => c.Chamados)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 

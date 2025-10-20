@@ -4,6 +4,7 @@ using IA_RoboBerto.Repositorio.Context;
 using Microsoft.EntityFrameworkCore;
 using IA_RoboBerto.Contratos.ContratosRepositorio;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using IA_RoboBerto.Models.Enums;
 
 namespace IA_RoboBerto.Repositorio
 {
@@ -27,6 +28,7 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Mensagens)
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
+                .AsNoTracking()
                 .ToListAsync();
             var totalRegistros = await _context.Departamento.CountAsync();
             var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
@@ -37,6 +39,7 @@ namespace IA_RoboBerto.Repositorio
         public async Task<PagedList<Chamado>> ListarMeusChamadosAsync(Guid id, int paginaAtual, int tamanho)
         {
             var resultado = _context.Chamado
+                .AsNoTracking()
                 .Include(c => c.Autor)
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
@@ -62,6 +65,7 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
@@ -82,7 +86,6 @@ namespace IA_RoboBerto.Repositorio
             existente.Status = chamado.Status;
             existente.Prioridade = chamado.Prioridade;
 
-            _context.Chamado.Update(existente);
             await _context.SaveChangesAsync();
             return existente;
         }
@@ -99,7 +102,18 @@ namespace IA_RoboBerto.Repositorio
 
         public async Task<bool> IdExisteAsync(Guid id)
         {
-            return await _context.Chamado.AnyAsync(u => u.Id == id);
+            return await _context.Chamado
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == id);
+        }
+
+        public async Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status)
+        {
+            var existente = await ObterPorIdAsync(id);
+            if (existente == null) return null;
+            existente.Status = status;
+            await _context.SaveChangesAsync();
+            return existente;
         }
     }
 }

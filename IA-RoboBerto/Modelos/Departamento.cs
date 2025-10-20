@@ -4,7 +4,7 @@
     {
         public Guid Id { get; set; }
         public string Nome { get; set; }
-        public ISet<Usuario> Usuarios { get; } = new HashSet<Usuario>();
+        public ISet<Usuario> Usuarios { get; set; } = new HashSet<Usuario>();
         public Departamento()
         {
         }

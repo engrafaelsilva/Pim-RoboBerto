@@ -1,4 +1,4 @@
-using IA_RoboBerto.Autentica��o;
+﻿using IA_RoboBerto.Autenticação;
 using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.Middlewares;
@@ -74,7 +74,35 @@ builder.Services.AddScoped<IMensagensRepositorio, MensagensRepositorio>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Roboberto", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { 
+        Title = "Roboberto", 
+        Version = "v1",
+        Description = @"
+Essa API permite gerenciar usuários, departamentos, categorias e chamados, com controle de acesso baseado em roles (ADM, TECNICO e COLABORADOR) e autenticação via JWT.
+
+💡 **Instruções de autenticação:**
+- Para efetuar login, use o endpoint de login enviando o email do usuário e a senha padrão `senha123` (as senhas no banco estão armazenadas como hash).
+- O token JWT retornado deve ser incluído no header `Authorization: Bearer {token}` para acessar endpoints protegidos.
+- Use [jwt.io](https://jwt.io) para decodificar o token e verificar as claims:
+    - `unique_name`: nome do usuário
+    - `role`: função do usuário (ADM, TECNICO ou COLABORADOR)
+    - `nbf`, `exp`, `iat`: datas de validade do token
+
+🔒 **Controle de acesso por roles:**
+- **ADM**: pode gerenciar departamentos, usuários, categorias e todos os chamados.
+- **TECNICO**: pode visualizar e acatar chamados atribuídos a ele, interagir via chat com o colaborador.
+- **COLABORADOR**: pode abrir, visualizar e tentar resolver seus próprios chamados.
+
+⚠️ **Códigos de resposta relevantes:**
+- `401 Unauthorized`: o token não foi fornecido ou está inválido.
+- `403 Forbidden`: o usuário está autenticado, mas não tem permissão para acessar este recurso.
+
+📝 **Dica para testes:**
+- Os emails estão cadastrados no banco com a senha `senha123`.  
+- Após login, sempre inclua o token JWT nos requests de endpoints que requerem autenticação ou roles específicas.
+"
+
+    });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {

@@ -3,6 +3,7 @@
 using IA_RoboBerto.Contratos.ContratosServicos;
 using IA_RoboBerto.DTOs;
 using IA_RoboBerto.Modelos.Paginação;
+using IA_RoboBerto.Models.Enums;
 using IA_RoboBerto.Servico;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -69,6 +70,15 @@ namespace IA_RoboBerto.Controladores
         {
             await _servico.RemoverAsync(id);
             return NoContent();
+        }
+
+        [Authorize(Roles = "ADM,COLABORADOR")]
+        [HttpPatch("{id:guid}/status")]
+        public async Task<ActionResult<ChamadoDTO>> CancelarChamado(Guid id)
+        {
+            var atualizado = await _servico.CancelarChamadoAsync(id);
+
+            return Ok(atualizado); // retorna o chamado atualizado
         }
 
 

@@ -3,7 +3,7 @@
     public class Mensagem
     {
   
-        public Guid Id { get; set; }
+        public Guid Id { get; set;}
         public Usuario Autor { get; set; }
         public  DateTime DataHoraMensagem { get; set; }
         public string Texto { get; set; }

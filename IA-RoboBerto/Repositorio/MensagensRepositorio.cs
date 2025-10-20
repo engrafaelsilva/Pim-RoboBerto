@@ -17,6 +17,7 @@ namespace IA_RoboBerto.Repositorio
         public async Task <PagedList<Mensagem>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _context.Mensagem
+                .AsNoTracking()
                 .Skip(tamanho * paginaAtual).Include(m => m.Autor)
                 .Take(tamanho)
                 .ToListAsync();
@@ -30,6 +31,7 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Mensagem
                 .Include(m => m.Autor)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 

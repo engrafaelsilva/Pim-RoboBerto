@@ -9,6 +9,8 @@ namespace IA_RoboBerto.Controladores
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+
+
     public class CategoriaController : ControllerBase
     {
         private readonly ICategoriaServico _servico;

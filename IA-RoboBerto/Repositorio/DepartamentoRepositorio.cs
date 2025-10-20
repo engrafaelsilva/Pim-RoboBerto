@@ -19,8 +19,10 @@ namespace IA_RoboBerto.Repositorio
         public async Task<PagedList<Departamento>> ListarTodosDepComUsuariosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _context.Departamento.Include(d => d.Usuarios)
+                .AsNoTracking()
                 .Skip(tamanho*paginaAtual)
                 .Take(tamanho)
+                .AsNoTracking()
                 .ToListAsync();
             var totalRegistros = await _context.Departamento.CountAsync();
             var resultadoPaginado = new PagedList<Departamento>(resultado,paginaAtual,tamanho,totalRegistros);
@@ -31,12 +33,14 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Departamento
                 .Include(d => d.Usuarios)
+                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 
         public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Departamento
+                 .AsNoTracking()
                 .AnyAsync(d => d.Id == id);
         }
 
@@ -44,6 +48,7 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Departamento
                 .Include(d => d.Usuarios)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
 
