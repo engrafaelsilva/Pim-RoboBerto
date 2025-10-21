@@ -1,62 +1,59 @@
-﻿// Importa a biblioteca para trabalhar com requisições HTTP (GET, POST, etc.)
-using System.Net.Http;
-// Importa funcionalidades para manipulação de texto e codificação (UTF8, etc.)
+﻿using System.Net.Http;
 using System.Text;
-// Importa a biblioteca para serializar e desserializar JSON no .NET
 using System.Text.Json;
-// Importa recursos para programação assíncrona (async/await)
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
-namespace IA_RoboBerto.Services // Define o namespace (organiza a classe dentro do projeto)
+namespace IA_RoboBerto.Services
 {
-    // Classe responsável por se comunicar com a API do Gemini
     public class ApiGeminiService
     {
-        // Cliente HTTP usado para enviar requisições à API
         private readonly HttpClient _httpClient;
-        // Chave da API (lida do appsettings.json)
         private readonly string _apiKey;
 
-        // Construtor da classe: recebe HttpClient e IConfiguration (injeção de dependência)
-        public ApiGeminiService(HttpClient httpClient, IConfiguration config)
+        public ApiGeminiService(IConfiguration configuration)
         {
-            _httpClient = httpClient; // Atribui o HttpClient recebido ao campo interno
-            _apiKey = config["Gemini:ApiKey"]; // Busca a chave da API do Gemini no appsettings.json
+            _httpClient = new HttpClient();
+            _apiKey = configuration["Gemini:ApiKey"];
         }
 
-        // Método assíncrono que envia uma pergunta (prompt) para o Gemini
-        public async Task<string> PerguntarGeminiAsync(string prompt)
+        public async Task<string> EnviarPerguntaAsync(string pergunta)
         {
-            // Cria o objeto que será enviado no corpo da requisição
-            // Esse formato segue o esperado pela API do Gemini
-            var request = new
+            var requestBody = new
             {
-                contents = new[] {
+                contents = new[]
+                {
                     new {
-                        role = "user", // Define o papel como "usuário"
-                        parts = new[] { new { text = prompt } } // Envia o texto digitado no prompt
+                        parts = new[]
+                        {
+                            new { text = pergunta }
+                        }
                     }
                 }
             };
 
-            // Converte o objeto 'request' em JSON e define que o conteúdo é UTF-8 e do tipo "application/json"
-            var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+            var json = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Envia a requisição POST para a API do Gemini, passando a chave da API na URL
             var response = await _httpClient.PostAsync(
-                $"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={_apiKey}",
+                $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}",
                 content
             );
 
-            // Garante que a resposta seja bem-sucedida (200 OK).
-            // Caso contrário, lança uma exceção.
-            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadAsStringAsync();
 
-            // Lê o corpo da resposta como string (JSON retornado pelo Gemini)
-            var responseString = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                return $"Erro: {response.StatusCode} - {result}";
 
-            // Retorna a resposta em formato de string
-            return responseString;
+            using var doc = JsonDocument.Parse(result);
+            var output = doc.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return output;
         }
     }
 }
