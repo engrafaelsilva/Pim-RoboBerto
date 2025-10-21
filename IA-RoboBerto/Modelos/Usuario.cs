@@ -5,11 +5,25 @@ namespace IA_RoboBerto.Modelos
     public class Usuario
     {
         public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Erro: O nome é obrigatório.")]
+        [StringLength(255)]
         public string Nome { get; set; }
+
+        [Required(ErrorMessage = "Erro: O e-mail é obrigatório.")]
+        [EmailAddress(ErrorMessage = "Erro: Insira um e-mail valido")]
         public string Email { get; set; }
+
+        [Required(ErrorMessage = "Erro: A senha é obrigatório.")]
+        [StringLength(255)]
         public string SenhaHash { get; set; }
+
+        [Required(ErrorMessage = "Erro: O telefone é obrigatório.")]
+        [StringLength(255)]
         public string Telefone { get; set; }
         public DateTime DataCriacao { get; set; }
+
+        [Required(ErrorMessage = "O departamento é obrigatório.")]
         public Departamento Departamento { get; set; }
         public ISet<Role> Roles { get; set; } = new HashSet<Role>();
         public Usuario()

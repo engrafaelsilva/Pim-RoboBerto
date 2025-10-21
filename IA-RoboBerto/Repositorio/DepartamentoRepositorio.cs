@@ -33,7 +33,6 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Departamento
                 .Include(d => d.Usuarios)
-                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
 

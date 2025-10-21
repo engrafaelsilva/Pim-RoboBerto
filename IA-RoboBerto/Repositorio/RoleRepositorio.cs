@@ -17,20 +17,20 @@ namespace IA_RoboBerto.Repositorio
         public async Task<IEnumerable<Role>> ListarTodosAsync()
         {
             return await _context.Role
-                .AsNoTracking()
+                
                 .ToListAsync();
         }
 
         public async Task<Role?> ObterPorIdAsync(Guid id)
         {
             return await _context.Role
-                .AsNoTracking()
+                
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
         public async Task<Role?> ObterPorNomeAsync(string nome)
         {
             return await _context.Role
-                .AsNoTracking()
+                
                 .FirstOrDefaultAsync(r => r.Nome.ToUpper().Trim() == nome.ToUpper().Trim());
         }
     }

@@ -73,7 +73,7 @@ namespace IA_RoboBerto.Controladores
         }
 
         [Authorize(Roles = "ADM,COLABORADOR")]
-        [HttpPatch("{id:guid}/status")]
+        [HttpPatch("{id:guid}/status")] 
         public async Task<ActionResult<ChamadoDTO>> CancelarChamado(Guid id)
         {
             var atualizado = await _servico.CancelarChamadoAsync(id);

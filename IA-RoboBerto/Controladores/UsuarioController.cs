@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
-    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UsuarioController : ControllerBase
@@ -38,10 +37,15 @@ namespace IA_RoboBerto.Controladores
             return Ok(usuario);
         }
 
-        [Authorize(Roles = "ADM")]
         [HttpPost]
         public async Task<ActionResult<UsuarioInsertDTO>> Post([FromBody] UsuarioInsertDTO dto)
         {
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var criado = await _servico.AdicionarAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
