@@ -22,13 +22,13 @@ namespace IA_RoboBerto.Repositorio
         public async Task<PagedList<Chamado>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _context.Chamado
+                .AsNoTracking()
                 .Include(c => c.Autor)
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
-                .AsNoTracking()
                 .ToListAsync();
             var totalRegistros = await _context.Departamento.CountAsync();
             var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
@@ -53,8 +53,7 @@ namespace IA_RoboBerto.Repositorio
                 .Skip(paginaAtual * tamanho)
                 .Take(tamanho)
                 .ToListAsync();
-
-            var resultadoPaginado = new PagedList<Chamado>(resultado, paginaAtual, tamanho, totalRegistros);
+            var resultadoPaginado = new PagedList<Chamado>(itens, paginaAtual, tamanho, totalRegistros);
             return resultadoPaginado;
         }
 
@@ -65,7 +64,6 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
@@ -103,7 +101,6 @@ namespace IA_RoboBerto.Repositorio
         public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Chamado
-                .AsNoTracking()
                 .AnyAsync(u => u.Id == id);
         }
 
@@ -112,6 +109,22 @@ namespace IA_RoboBerto.Repositorio
             var existente = await ObterPorIdAsync(id);
             if (existente == null) return null;
             existente.Status = status;
+            await _context.SaveChangesAsync();
+            return existente;
+        }
+
+        public async Task<Chamado?> ReabrirChamadoAsync(Chamado chamado)
+        {
+            var existente = await _context.Chamado.FindAsync(chamado.Id);
+            if (existente == null) return null;
+
+            existente.Tecnico = null;
+            existente.DataFechamento = null;
+            existente.Categoria = chamado.Categoria;
+            existente.Status = EStatusChamado.ABERTO;
+            existente.Prioridade = chamado.Prioridade;
+            //falta o sla
+
             await _context.SaveChangesAsync();
             return existente;
         }

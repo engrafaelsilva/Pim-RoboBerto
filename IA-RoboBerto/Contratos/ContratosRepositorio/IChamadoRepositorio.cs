@@ -13,6 +13,7 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<bool> RemoverAsync(Guid id);
         Task<PagedList<Chamado>> ListarMeusChamadosAsync(Guid id, int paginaAtual, int tamanho);
         Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status);
+        Task<Chamado?> ReabrirChamadoAsync(Chamado chamado);
         Task<bool> IdExisteAsync(Guid id);
     }
 }

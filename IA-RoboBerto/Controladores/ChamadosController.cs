@@ -73,7 +73,7 @@ namespace IA_RoboBerto.Controladores
         }
 
         [Authorize(Roles = "ADM,COLABORADOR")]
-        [HttpPatch("{id:guid}/status")] 
+        [HttpPatch("{id:guid}/cancelar")] 
         public async Task<ActionResult<ChamadoDTO>> CancelarChamado(Guid id)
         {
             var atualizado = await _servico.CancelarChamadoAsync(id);
@@ -81,6 +81,14 @@ namespace IA_RoboBerto.Controladores
             return Ok(atualizado); // retorna o chamado atualizado
         }
 
+        [Authorize(Roles = "ADM,COLABORADOR")]
+        [HttpPatch("{id:guid}/reabrir")]
+        public async Task<ActionResult<ChamadoDTO>> ReabrirChamado(Guid id)
+        {
+            var atualizado = await _servico.ReabrirChamadoAsync(id);
+
+            return Ok(atualizado); 
+        }
 
 
 

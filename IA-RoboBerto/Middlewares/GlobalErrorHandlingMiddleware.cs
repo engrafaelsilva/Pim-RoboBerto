@@ -1,4 +1,5 @@
 ﻿using IA_RoboBerto.Exceções;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Net;
 using System.Text.Json;
@@ -35,10 +36,14 @@ namespace IA_RoboBerto.Middlewares
 
             var exceptionTipo = exception.GetType();
 
-            if (exceptionTipo == typeof(DataBaseException))
+            if (exceptionTipo == typeof(DataBaseException) ||
+                      exceptionTipo == typeof(DbUpdateException) ||
+                      exceptionTipo == typeof(DbUpdateConcurrencyException) ||
+                      exceptionTipo == typeof(Npgsql.NpgsqlException))
             {
-                status = HttpStatusCode.BadRequest;    
+                status = HttpStatusCode.BadRequest;
             }
+
             else if (exceptionTipo == typeof(ResourceNotFoundException))
             {
                 status = HttpStatusCode.NotFound;
@@ -53,7 +58,7 @@ namespace IA_RoboBerto.Middlewares
             {
                 status = HttpStatusCode.Unauthorized;
             }
-            else 
+            else
             {
                 status = HttpStatusCode.InternalServerError;
 

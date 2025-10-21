@@ -91,11 +91,18 @@ namespace IA_RoboBerto.Servico
 
         public async Task<ChamadoDTO?> CancelarChamadoAsync(Guid id)
         {
-
+           
             var atualizado = await _ChamadoRepo.AtualizarStatusChamadoAsync(id,EStatusChamado.CANCELADO);
             return new ChamadoDTO(atualizado);
         }
 
+        public async Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id)
+        {
+            var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
+            if (chamado.Status != EStatusChamado.FECHADO) throw new BadHttpRequestException("O chamado deve estar fechado para reabri-lo");
+            var atualizado = await _ChamadoRepo.ReabrirChamadoAsync(chamado);
+            return new ChamadoDTO(atualizado);
+        }
 
         public async Task<bool> RemoverAsync(Guid id)
         {
