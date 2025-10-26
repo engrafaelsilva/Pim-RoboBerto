@@ -5,7 +5,7 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IA-RoboBerto", "IA-RoboBerto\IA-RoboBerto.csproj", "{4D46BFE8-8671-47CB-8599-20A81F86AE05}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Front", "Front\Front.csproj", "{51F9D217-2BCB-4728-99F9-D3B27C9E5E57}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Front", "Front\Front.csproj", "{51F9D217-2BCB-4728-99F9-D3B27C9E5E57}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -2,6 +2,6 @@
 {
     public interface IGeminiServico
     {
-        Task<string> GerarTextoAsync(string descricaoChamado);
+        Task<string> GerarTextoAsync(string nomeUsuario, string descricaoChamado);
     }
 }

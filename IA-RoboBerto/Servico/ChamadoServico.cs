@@ -128,54 +128,27 @@ namespace IA_RoboBerto.Servico
         private async Task CopiarDtoPraEntidadeUpdateUsuario(Chamado chamado, ChamadoDTO dto)
         {
 
-
             chamado.Categoria = await _CategoriaRepo.ObterPorNomeAsync(dto.Categoria.Nome);
+            if (chamado.Categoria == null) throw new ResourceNotFoundException("Recurso não encontrado");
             chamado.Status = dto.Status;
             chamado.Prioridade = dto.Prioridade;
-
-            //chamado.Autor = await _UsuarioRepo.ObterPorIdAsync(dto.Autor.Id);
-            //chamado.Tecnico = await _UsuarioRepo.ObterPorIdAsync(dto.Tecnico.Id);
-            //chamado.Titulo = dto.Titulo;
-            //chamado.SugestaoGemini = dto.SugestaoGemini;
-            //chamado.Descricao = dto.Descricao;
-            //chamado.DataAbertura = dto.DataAbertura;
-            //chamado.DataFechamento = dto.DataFechamento;
-            //chamado.SlaVenceEm =  dto.SlaVenceEm;
-            //chamado.SugestaoResolveu = dto.SugestaoResolveu;
-            //foreach(Mensagem menDto in chamado.Mensagens)
-            //{
-            //    //Mensagem mensagem = await _MensagensRepo.ob
-            //   // chamado.Mensagens.Add(mensagem);
-            //}
-
-
 
         }
         private async Task CopiarDtoPraEntidadeInsert(Chamado chamado, ChamadoInsertDTO dto)
         {
-         // if (dto.Tecnico != null && !string.IsNullOrEmpty(dto.Tecnico.Nome))
-         // {
-         //     chamado.Tecnico = await _UsuarioRepo.ObterPorNomeAsync(dto.Tecnico.Nome);
-         //     if (chamado == null) throw new ResourceNotFoundException("Recurso não encontrado");
-         // }
+    
             chamado.Categoria = await _CategoriaRepo.ObterPorNomeAsync(dto.Categoria.Nome);
-            chamado.Autor = await _UsuarioRepo.ObterPorNomeAsync(dto.Autor.Nome);
-            
+            if (chamado.Categoria == null) throw new ResourceNotFoundException("Recurso não encontrado");
+
+            chamado.Autor = await _authService.ObterUsuarioLogadoAsync();
             chamado.Descricao = dto.Descricao;
-            chamado.Status = dto.Status;
+            chamado.Status = EStatusChamado.SUGESTAO_GERADA;
             chamado.Prioridade = dto.Prioridade;
             chamado.Titulo = dto.Titulo;
-            chamado.SugestaoGemini = await _geminiServico.GerarTextoAsync(dto.Descricao);
-            chamado.DataAbertura = dto.DataAbertura;
-        //    chamado.DataFechamento = dto.DataFechamento;
+            chamado.SugestaoGemini = await _geminiServico.GerarTextoAsync(chamado.Autor.Nome, dto.Descricao);
+            chamado.DataAbertura = DateTime.UtcNow;
             chamado.SlaVenceEm = _slaService.CalcularSLA(chamado);
-            chamado.SugestaoResolveu = dto.SugestaoResolveu;
-         //   chamado.Mensagens = null;
-       //   foreach (Mensagem menDto in chamado.Mensagens)
-       //   {
-       //       Mensagem mensagem = await _MensagensRepo.ObterPorIdAsync(menDto.Id);
-       //       chamado.Mensagens.Add(mensagem);
-       //   }
+            chamado.SugestaoResolveu = null;
 
         }
     }

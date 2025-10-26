@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace IA_RoboBerto.Controladores
 {
-   // [Authorize]
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class ChamadosController : Controller
@@ -50,7 +50,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        //[Authorize(Roles = "ADM,COLABORADOR")]
+        [Authorize(Roles = "ADM,COLABORADOR")]
         [HttpPost]
         public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoInsertDTO dto)
         {
@@ -78,7 +78,7 @@ namespace IA_RoboBerto.Controladores
         {
             var atualizado = await _servico.CancelarChamadoAsync(id);
 
-            return Ok(atualizado); // retorna o chamado atualizado
+            return Ok(atualizado); 
         }
 
         [Authorize(Roles = "ADM,COLABORADOR")]

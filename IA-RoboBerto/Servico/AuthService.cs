@@ -20,10 +20,10 @@ namespace IA_RoboBerto.Servico
         public async Task<Usuario?> ObterUsuarioLogadoAsync()
         {
             var idUsuarioFromClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var senhaGuid = Guid.Parse(idUsuarioFromClaim);
-            if(senhaGuid == null) throw new ForbiddenException("Acesso negado");
+            var id = Guid.Parse(idUsuarioFromClaim);
+            if(id == null) throw new ForbiddenException("Acesso negado");
 
-            var usuario = await _usuarioRepo.ObterPorIdAsync(senhaGuid);
+            var usuario = await _usuarioRepo.ObterPorIdAsync(id);
             if (usuario == null) throw new UserNotFoundException("Usuário não encontrado");
 
             return usuario;

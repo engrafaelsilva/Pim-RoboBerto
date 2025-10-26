@@ -51,7 +51,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddHttpClient<IGeminiServico, GeminiServico>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(10);
+    client.Timeout = TimeSpan.FromSeconds(20);
 });
 
 builder.Services.AddScoped<ITokenServico, TokenServico>();

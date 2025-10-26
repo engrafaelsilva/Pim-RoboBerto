@@ -18,10 +18,10 @@ namespace IA_RoboBerto.Servico
             _model = configuracao["Gemini:Model"];
         }
 
-        public async Task<string> GerarTextoAsync(string descricaoChamado)
+        public async Task<string> GerarTextoAsync(string nomeUsuario, string descricaoChamado)
         {
             var prompt = $@"
-                Você atua no setor de help desk. Sua função é receber a queixa do usuário e fornecer uma solução para o problema apresentado. A resposta deve ser curta, direta e eficiente, para que o usuário consiga tentar resolver por conta própria, por fim, sem emojis e asteriscos que representem negrito. Comece a mensagem sendo direto se apresntando de forma bem curta, menos de uma linha e apresente a solução. Queixa do usuário: {descricaoChamado} ";
+                Você atua no setor de help desk. Sua função é receber a queixa do usuário e fornecer uma solução para o problema apresentado. A resposta deve ser curta, direta e eficiente, para que o usuário consiga tentar resolver por conta própria, por fim, sem emojis e asteriscos que representem negrito e nem quebras de linhas (barra N). Comece a mensagem sendo direto se apresntando dizendo oi e o nome do usuario. se apresente em menos de uma linha e dps apresente a solução, e por fim,se a descrição fugir de contexto/queixa tecnica, diga uq enao faz parte do escopo tecnico ou sei la. Queixa do usuário: {descricaoChamado}, nome do usuário: {nomeUsuario} ";
 
             var requestBody = new
             {
