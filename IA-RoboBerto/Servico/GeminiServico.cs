@@ -21,7 +21,7 @@ namespace IA_RoboBerto.Servico
         public async Task<string> GerarTextoAsync(string descricaoChamado)
         {
             var prompt = $@"
-                Você atua no setor de help desk. Sua função é receber a queixa do usuário e fornecer uma solução para o problema apresentado. A resposta deve ser curta, direta e eficiente, para que o usuário consiga tentar resolver por conta própria.Além disso a resposta sua deve conter no máximo 255 caracteres para respeitar o banco de dados, por fim, sem emojis e asteriscos que representem negrito. Comece a mensagem sendo direto se apresntando de forma bem curta, menos de uma linha e apresente a solução. Queixa do usuário: {descricaoChamado} ";
+                Você atua no setor de help desk. Sua função é receber a queixa do usuário e fornecer uma solução para o problema apresentado. A resposta deve ser curta, direta e eficiente, para que o usuário consiga tentar resolver por conta própria, por fim, sem emojis e asteriscos que representem negrito. Comece a mensagem sendo direto se apresntando de forma bem curta, menos de uma linha e apresente a solução. Queixa do usuário: {descricaoChamado} ";
 
             var requestBody = new
             {
