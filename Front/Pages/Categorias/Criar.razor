@@ -1,0 +1,78 @@
+﻿@page "/Categoria/Create"
+@using IA_RoboBerto.DTOs
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3 class="mb-4">Nova Categoria</h3>
+
+<EditForm Model="categoriaModel" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <InputText class="form-control" @bind-Value="categoriaModel.Nome" />
+        <ValidationMessage For="@(() => categoriaModel.Nome)" />
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+            @if (isSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>Salvando...</span>
+            }
+            else
+            {
+                <span>Salvar</span>
+            }
+        </button>
+
+        <button type="button" class="btn btn-light ms-2" @onclick="HandleCancel">Cancelar</button>
+    </div>
+
+</EditForm>
+
+@code {
+    private CategoriaMinDTO categoriaModel = new CategoriaMinDTO();
+    
+    // 1. Adicione esta variável
+    private bool isSubmitting = false;
+
+    private async Task HandleSubmit()
+    {
+        // 2. Verifique se já está enviando
+        if (isSubmitting) return;
+
+        try
+        {
+            // 3. Trave o formulário
+            isSubmitting = true;
+
+            // Chama o endpoint POST do seu CategoriaController
+            var response = await Http.PostAsJsonAsync("https://localhost:7187/Categoria", categoriaModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Se a criação for bem-sucedida, volta para a lista de categorias
+                NavigationManager.NavigateTo("/categorias");
+            }
+            else
+            {
+                Console.WriteLine("Erro ao criar a categoria.");
+                // 4. Se der erro, destrave o formulário para tentar de novo
+                isSubmitting = false;
+            }
+        }
+        catch
+        {
+            // 5. Se der exceção, também destrave o formulário
+            isSubmitting = false;
+        }
+    }
+
+    private void HandleCancel()
+    {
+        // Volta para a lista de categorias sem salvar
+        NavigationManager.NavigateTo("/categorias");
+    }
+}

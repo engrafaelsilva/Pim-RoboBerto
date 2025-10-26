@@ -39,18 +39,20 @@ namespace IA_RoboBerto.Servico
             return new CategoriaMinDTO(cat);
         }
 
-        public async Task<PagedList<CategoriaMinDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
+        public async Task<PagedListDTO<CategoriaMinDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _repo.ListarTodosAsync(paginaAtual, tamanho);
 
             var resultadoDTO = resultado.Select(x => new CategoriaMinDTO(x)).ToList();
 
-            return new PagedList<CategoriaMinDTO>(
+            var listaPaginada = new PagedList<CategoriaMinDTO>(
                 resultadoDTO,
                 resultado.PaginaAtual,
                 resultado.PaginaTamanho,
                 resultado.TotalCount
             );
+
+            return new PagedListDTO<CategoriaMinDTO>( listaPaginada );
         }
         public async Task<CategoriaMinDTO?> ObterPorNomeAsync(string nome)
         {

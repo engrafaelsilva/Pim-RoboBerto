@@ -81,7 +81,7 @@ namespace IA_RoboBerto.Repositorio.Context
             
                   chamado.Property(c => c.Titulo).HasColumnName("cha_titulo").HasMaxLength(255).IsRequired();
                   chamado.Property(c => c.Status).HasColumnName("cha_status").IsRequired();
-                  chamado.Property(c => c.SugestaoGemini).HasColumnName("cha_sugestao").HasMaxLength(255).IsRequired();
+                  chamado.Property(c => c.SugestaoGemini).HasColumnName("cha_sugestao").HasColumnType("text").IsRequired();
                   chamado.Property(c => c.Descricao).HasColumnName("cha_descricao").IsRequired();
                   chamado.Property(c => c.DataAbertura).HasColumnName("cha_aberto_em").IsRequired();
                   chamado.Property(c => c.DataFechamento).HasColumnName("cha_resolvido_em");
@@ -112,7 +112,7 @@ namespace IA_RoboBerto.Repositorio.Context
                   mensagem.ToTable("mensagem");
                   mensagem.HasKey(m => m.Id);
                   mensagem.Property(m => m.Id).HasColumnName("men_codigo").IsRequired();
-                  mensagem.Property(m => m.Texto).HasColumnName("men_texto").HasMaxLength(255).IsRequired();
+                  mensagem.Property(m => m.Texto).HasColumnName("men_texto").HasColumnType("text").IsRequired();
                   mensagem.Property(m => m.DataHoraMensagem).HasColumnName("men_data_hora_texto").IsRequired();
             
                   // FK mensagem -> chamado (cha_codigo) (usando shadow FK caso Mensagem não tenha Chamado nav)

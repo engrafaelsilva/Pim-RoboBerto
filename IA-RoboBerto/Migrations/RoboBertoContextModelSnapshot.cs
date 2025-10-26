@@ -74,8 +74,7 @@ namespace IA_RoboBerto.Migrations
 
                     b.Property<string>("SugestaoGemini")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("cha_sugestao");
 
                     b.Property<bool?>("SugestaoResolveu")
@@ -139,8 +138,7 @@ namespace IA_RoboBerto.Migrations
 
                     b.Property<string>("Texto")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("men_texto");
 
                     b.Property<Guid?>("cha_codigo")

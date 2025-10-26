@@ -22,14 +22,18 @@ namespace IA_RoboBerto.Servico
         private readonly ICategoriaRepositorio _CategoriaRepo;
         private readonly IMensagensRepositorio _MensagensRepo;
         private readonly IAuthService _authService;
+        private readonly ISLAService _slaService;
+        private readonly IGeminiServico _geminiServico;
 
-        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService)
+        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService, ISLAService slaService, IGeminiServico geminiServico)
         {
             _ChamadoRepo = chamadoRepo;
             _UsuarioRepo = usuarioRepos;
             _CategoriaRepo = categoriaRepo;
             _MensagensRepo = mensagensRepo;
             _authService = authService;
+            _slaService = slaService;
+            _geminiServico = geminiServico;
         }
 
         public async Task<PagedList<ChamadoDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
@@ -68,7 +72,7 @@ namespace IA_RoboBerto.Servico
             return new ChamadoDTO(usuario);
         }
 
-        public async Task<ChamadoDTO> AbrirChamadoAsync(ChamadoDTO dto)
+        public async Task<ChamadoDTO> AbrirChamadoAsync(ChamadoInsertDTO dto)
         {
             var chamado = new Chamado();
             await CopiarDtoPraEntidadeInsert(chamado, dto);
@@ -99,7 +103,7 @@ namespace IA_RoboBerto.Servico
         public async Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
-            if (chamado.Status != EStatusChamado.FECHADO) throw new BadHttpRequestException("O chamado deve estar fechado para reabri-lo");
+            if (chamado.Status != EStatusChamado.CANCELADO) throw new BadHttpRequestException("O chamado deve estar fechado para reabri-lo");
             var atualizado = await _ChamadoRepo.ReabrirChamadoAsync(chamado);
             return new ChamadoDTO(atualizado);
         }
@@ -147,31 +151,31 @@ namespace IA_RoboBerto.Servico
 
 
         }
-        private async Task CopiarDtoPraEntidadeInsert(Chamado chamado, ChamadoDTO dto)
+        private async Task CopiarDtoPraEntidadeInsert(Chamado chamado, ChamadoInsertDTO dto)
         {
-            if (dto.Tecnico != null && !string.IsNullOrEmpty(dto.Tecnico.Nome))
-            {
-                chamado.Tecnico = await _UsuarioRepo.ObterPorNomeAsync(dto.Tecnico.Nome);
-                if (chamado == null) throw new ResourceNotFoundException("Recurso não encontrado");
-            }
+         // if (dto.Tecnico != null && !string.IsNullOrEmpty(dto.Tecnico.Nome))
+         // {
+         //     chamado.Tecnico = await _UsuarioRepo.ObterPorNomeAsync(dto.Tecnico.Nome);
+         //     if (chamado == null) throw new ResourceNotFoundException("Recurso não encontrado");
+         // }
             chamado.Categoria = await _CategoriaRepo.ObterPorNomeAsync(dto.Categoria.Nome);
             chamado.Autor = await _UsuarioRepo.ObterPorNomeAsync(dto.Autor.Nome);
-
-
+            
+            chamado.Descricao = dto.Descricao;
             chamado.Status = dto.Status;
             chamado.Prioridade = dto.Prioridade;
             chamado.Titulo = dto.Titulo;
-            chamado.SugestaoGemini = dto.SugestaoGemini;
-            chamado.Descricao = dto.Descricao;
+            chamado.SugestaoGemini = await _geminiServico.GerarTextoAsync(dto.Descricao);
             chamado.DataAbertura = dto.DataAbertura;
-            chamado.DataFechamento = dto.DataFechamento;
-            chamado.SlaVenceEm = dto.SlaVenceEm;
+        //    chamado.DataFechamento = dto.DataFechamento;
+            chamado.SlaVenceEm = _slaService.CalcularSLA(chamado);
             chamado.SugestaoResolveu = dto.SugestaoResolveu;
-            foreach (Mensagem menDto in chamado.Mensagens)
-            {
-                Mensagem mensagem = await _MensagensRepo.ObterPorIdAsync(menDto.Id);
-                chamado.Mensagens.Add(mensagem);
-            }
+         //   chamado.Mensagens = null;
+       //   foreach (Mensagem menDto in chamado.Mensagens)
+       //   {
+       //       Mensagem mensagem = await _MensagensRepo.ObterPorIdAsync(menDto.Id);
+       //       chamado.Mensagens.Add(mensagem);
+       //   }
 
         }
     }

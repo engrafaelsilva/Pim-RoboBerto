@@ -39,7 +39,6 @@ namespace IA_RoboBerto.Repositorio
         public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Departamento
-                 .AsNoTracking()
                 .AnyAsync(d => d.Id == id);
         }
 
@@ -47,7 +46,6 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Departamento
                 .Include(d => d.Usuarios)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
 

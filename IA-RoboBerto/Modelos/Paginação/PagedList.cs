@@ -5,15 +5,16 @@ namespace IA_RoboBerto.Modelos.Paginação
     public class PagedList<T> : List<T>
     {
 
-        public IEnumerable<T> Items { get; }
-        public int PaginaAtual { get; }
+        public IEnumerable<T> Items { get; set; } = new List<T>();
+        public int PaginaAtual { get; set; }
         public int TotalPaginas => (int)Math.Ceiling(TotalCount / (double)PaginaTamanho);
-        public int PaginaTamanho { get; }
-        public int TotalCount { get; }
+        public int PaginaTamanho { get; set;  }
+        public int TotalCount { get; set; }
 
+        public PagedList() { }
         public PagedList(IEnumerable<T> items, int paginaAtual, int paginaTamanho, int totalCount)
         {
-            Items = items;
+            Items = Items = items?.ToList() ?? new List<T>();
             PaginaAtual = paginaAtual;
             PaginaTamanho = paginaTamanho;
             TotalCount = totalCount;

@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace IA_RoboBerto.Controladores
 {
-    [Authorize]
+   // [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class ChamadosController : Controller
@@ -50,9 +50,9 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        [Authorize(Roles = "ADM,COLABORADOR")]
+        //[Authorize(Roles = "ADM,COLABORADOR")]
         [HttpPost]
-        public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoDTO dto)
+        public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoInsertDTO dto)
         {
             var criado = await _servico.AbrirChamadoAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);

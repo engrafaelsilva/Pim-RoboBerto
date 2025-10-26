@@ -49,9 +49,14 @@ builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddHttpClient<IGeminiServico, GeminiServico>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 builder.Services.AddScoped<ITokenServico, TokenServico>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ISLAService, SLAService>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
 builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 

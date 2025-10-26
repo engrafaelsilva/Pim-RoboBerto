@@ -1,0 +1,66 @@
+﻿@page "/categorias"
+@using IA_RoboBerto.DTOs
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h1 class="text-center mb-3">Lista de Categorias</h1>
+
+<a class="btn btn-primary mb-3" href="/Categoria/Create">Nova Categoria</a>
+
+@if (categorias == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in categorias)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Nome</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(item.Id,item.Nome)">Deletar</button>
+                         <a class="btn btn-sm btn-primary ms-2" href="/Categoria/Edit/@item.Id">Atualizar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CategoriaMinDTO> categorias;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categorias = await Http.GetFromJsonAsync<List<CategoriaMinDTO>>("https://localhost:7187/Categoria");
+    }
+
+    private async Task Delete(Guid id, string nome)
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", $"Deseja realmente deletar? {nome}");
+        if (!confirm) return;
+
+        var response = await Http.DeleteAsync($"https://localhost:7187/Categoria/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            // Atualiza a lista depois de deletar
+            categorias = await Http.GetFromJsonAsync<List<CategoriaMinDTO>>("https://localhost:7187/Categoria");
+            await JS.InvokeVoidAsync("console.log", $"Deletado {id}");
+        }
+        else
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            await JS.InvokeVoidAsync("alert", $"Erro ao deletar: {error}");
+        }
+    }
+}

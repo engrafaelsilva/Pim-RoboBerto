@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IA_RoboBerto.Controladores
 {
-    [Authorize]
+   // [Authorize]
     [ApiController]
     [Route("[controller]")]
 
@@ -19,15 +19,15 @@ namespace IA_RoboBerto.Controladores
         {
             _servico = servico;
         }
-        [Authorize(Roles = "ADM")]
+       // [Authorize(Roles = "ADM")]
         [HttpGet]
-        public async Task<ActionResult<PagedList<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
+        public async Task<ActionResult<PagedListDTO<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
             var resultado = await _servico.ListarTodosAsync(paginaAtual, tamanho);
-            return Ok(resultado);
+            return Ok(resultado.Items);
         }
 
-        [Authorize(Roles = "ADM")]
+     //   [Authorize(Roles = "ADM")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetById(Guid id)
         {
@@ -36,7 +36,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(categoria);
         }
 
-        [Authorize(Roles = "ADM")]
+       // [Authorize(Roles = "ADM")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetByNome(string nome)
         {
@@ -45,7 +45,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(categoria);
         }
 
-        [Authorize(Roles = "ADM")]
+        //[Authorize(Roles = "ADM")]
         [HttpPost]
         public async Task<ActionResult<CategoriaMinDTO>> Post([FromBody] CategoriaMinDTO dto)
         {
@@ -53,7 +53,7 @@ namespace IA_RoboBerto.Controladores
             return CreatedAtAction(nameof(GetById), new { id = criada.Id }, criada);
         }
 
-        [Authorize(Roles = "ADM")]
+       // [Authorize(Roles = "ADM")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<CategoriaMinDTO>> Put(Guid id, [FromBody] CategoriaMinDTO dto)
         {
@@ -62,7 +62,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(atualizada);
         }
 
-        [Authorize(Roles = "ADM")]
+      //  [Authorize(Roles = "ADM")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {
