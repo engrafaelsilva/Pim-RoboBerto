@@ -14,6 +14,7 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<PagedList<Chamado>> ListarMeusChamadosAsync(Guid id, int paginaAtual, int tamanho);
         Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status);
         Task<Chamado?> ReabrirChamadoAsync(Chamado chamado);
+        Task<List<Chamado>> ListarChamadosSlaExpiradoAsync();
         Task<bool> IdExisteAsync(Guid id);
     }
 }

@@ -107,16 +107,21 @@ namespace IA_RoboBerto.Repositorio
         public async Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status)
         {
             var existente = await ObterPorIdAsync(id);
-            if (existente == null) return null;
             existente.Status = status;
             await _context.SaveChangesAsync();
             return existente;
         }
 
+        public async Task<Chamado?> AtribuirTecnicoAsync(Chamado chamado,Usuario tecnico)
+        {
+            chamado.Tecnico = tecnico;
+            await _context.SaveChangesAsync();
+            return chamado;
+        }
+
         public async Task<Chamado?> ReabrirChamadoAsync(Chamado chamado)
         {
             var existente = await _context.Chamado.FindAsync(chamado.Id);
-            if (existente == null) return null;
 
             existente.Tecnico = null;
             existente.DataFechamento = null;
@@ -127,6 +132,18 @@ namespace IA_RoboBerto.Repositorio
 
             await _context.SaveChangesAsync();
             return existente;
+        }
+
+        public async Task<List<Chamado>> ListarChamadosSlaExpiradoAsync()
+        {
+            return await _context.Chamado
+                .Include(c => c.Autor)
+                .Include(c => c.Categoria)
+                .Include(c => c.Tecnico)
+                .Where(c => c.Tecnico == null
+                            && c.SlaVenceEm <= DateTime.UtcNow
+                            && c.Status != EStatusChamado.CANCELADO)
+                .ToListAsync();
         }
     }
 }

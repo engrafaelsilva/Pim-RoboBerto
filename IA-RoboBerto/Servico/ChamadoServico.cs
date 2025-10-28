@@ -13,10 +13,6 @@ namespace IA_RoboBerto.Servico
 {
     public class ChamadoServico : IChamadoServico
     {
-        // .Include(c => c.Autor)
-        // .Include(c => c.Tecnico)
-        // .Include(c => c.Categoria)
-        // .Include(c => c.Mensagens)
         private readonly IChamadoRepositorio _ChamadoRepo;
         private readonly IUsuarioRepositorio _UsuarioRepo;
         private readonly ICategoriaRepositorio _CategoriaRepo;
@@ -50,6 +46,15 @@ namespace IA_RoboBerto.Servico
             );
         }
 
+        public async Task<List<ChamadoDTO>> ListarChamadosSlaExpiradoAsync()
+        {
+            var resultado = await _ChamadoRepo.ListarChamadosSlaExpiradoAsync();
+
+            var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
+
+            return resultadoDTO;
+        }
+
         public async Task<PagedList<ChamadoDTO>> ListarMeusChamadosAsync(int paginaAtual, int tamanho)
         {
             var usuarioAutenticado = await _authService.ObterUsuarioLogadoAsync();
@@ -81,6 +86,14 @@ namespace IA_RoboBerto.Servico
             return new ChamadoDTO(chamado);
         }
 
+        public async Task<ChamadoDTO> AtribuirTecnicoAsync(Guid chamadoId)
+        {
+            var chamado = await _ChamadoRepo.ObterPorIdAsync(chamadoId);
+            var usuarioAutenticado = await _authService.ObterUsuarioLogadoAsync();
+            chamado.Tecnico = usuarioAutenticado;
+            return new ChamadoDTO(chamado);
+        }
+
         public async Task<ChamadoDTO?> AtualizarUsuAsync(Guid id, ChamadoDTO dto)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
@@ -103,6 +116,9 @@ namespace IA_RoboBerto.Servico
         public async Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
+
+
+
             if (chamado.Status != EStatusChamado.CANCELADO) throw new BadHttpRequestException("O chamado deve estar fechado para reabri-lo");
             var atualizado = await _ChamadoRepo.ReabrirChamadoAsync(chamado);
             return new ChamadoDTO(atualizado);
@@ -147,9 +163,8 @@ namespace IA_RoboBerto.Servico
             chamado.Titulo = dto.Titulo;
             chamado.SugestaoGemini = await _geminiServico.GerarTextoAsync(chamado.Autor.Nome, dto.Descricao);
             chamado.DataAbertura = DateTime.UtcNow;
-            chamado.SlaVenceEm = _slaService.CalcularSLA(chamado);
+            chamado.SlaVenceEm = new DateTime(2022, 10, 27, 22, 56, 52, DateTimeKind.Utc);
             chamado.SugestaoResolveu = null;
-
         }
     }
 }

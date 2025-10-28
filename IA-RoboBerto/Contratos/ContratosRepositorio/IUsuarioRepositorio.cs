@@ -11,6 +11,7 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<Usuario> AdicionarAsync(Usuario usuario);
         Task<Usuario?> AtualizarAsync(Usuario usuario);
         Task<Usuario?> ObterPorNomeAsync(string nome);
+        Task<Usuario?> ObterTecnicoAleatorioAsync();
         Task<bool> RemoverAsync(Guid id);
         Task<bool> IdExisteAsync(Guid id);
     }

@@ -24,7 +24,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,TECNICO")]
         [HttpGet]
         public async Task<ActionResult<PagedList<ChamadoDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -50,7 +50,16 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        [Authorize(Roles = "ADM,COLABORADOR")]
+        [Authorize(Roles = "ADM,TECNICO")]
+        [Authorize]
+        [HttpGet("expirados")]
+        public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosSLAExpirado()
+        {
+            var resultado = await _servico.ListarChamadosSlaExpiradoAsync();
+            return Ok(resultado);
+        }
+
+        [Authorize(Roles = "COLABORADOR,TECNICO")]
         [HttpPost]
         public async Task<ActionResult<ChamadoDTO>> Post([FromBody] ChamadoInsertDTO dto)
         {
@@ -58,6 +67,7 @@ namespace IA_RoboBerto.Controladores
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
         [Authorize(Roles = "ADM,COLABORADOR")]
+
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ChamadoDTO>> Put(Guid id, [FromBody] ChamadoDTO dto)
         {
@@ -80,6 +90,15 @@ namespace IA_RoboBerto.Controladores
 
             return Ok(atualizado); 
         }
+
+        [Authorize(Roles = "TECNICO")]
+        [HttpPatch("{id:guid}/acatar-chamado")]
+        public async Task<ActionResult<ChamadoDTO>> AtribuirTecnicoAsync(Guid id)
+        {
+            var atualizado = await _servico.AtribuirTecnicoAsync(id);
+            return Ok(atualizado);
+        }
+
 
         [Authorize(Roles = "ADM,COLABORADOR")]
         [HttpPatch("{id:guid}/reabrir")]

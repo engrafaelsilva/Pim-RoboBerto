@@ -57,6 +57,13 @@ namespace IA_RoboBerto.Servico
             return new UsuarioMaxDTO(usuario);
         }
 
+        public async Task<UsuarioMaxDTO?> ObterTecnicoAleatorioAsync ()
+        {
+            var usuario = await _UsuarioRepo.ObterTecnicoAleatorioAsync();
+            //if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
+            return new UsuarioMaxDTO(usuario);
+        }
+
         public async Task<UsuarioInsertDTO> AdicionarAsync(UsuarioInsertDTO dto)
         {
             var usuario = new Usuario();
@@ -111,7 +118,6 @@ namespace IA_RoboBerto.Servico
             usuario.Telefone = dto.Telefone;
             usuario.DataCriacao = DateTime.UtcNow;
             usuario.SenhaHash = _passwordHasher.HashPassword(usuario, dto.SenhaHash);
-
             usuario.Departamento = await _DepartamentoRepo.ObterPorNomeAsync(dto.Departamento.Nome);
 
 

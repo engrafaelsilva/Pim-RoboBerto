@@ -1,4 +1,5 @@
-﻿using IA_RoboBerto.Contratos.ContratosRepositorio;
+﻿using GoogleApi.Entities.Search.Common;
+using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
 using IA_RoboBerto.Repositorio.Context;
@@ -15,20 +16,20 @@ namespace IA_RoboBerto.Repositorio
             _context = context;
         }
 
-     public async Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho)
-     {
-         var resultado = await _context
-             .Usuario
-             .AsNoTracking()
-             .Include(u => u.Roles)
-             .Include(u => u.Departamento)
-             .Skip(tamanho * paginaAtual)
-             .Take(tamanho)
-             .ToListAsync();
-         var totalRegistros = await _context.Usuario.CountAsync();
-         var resultadoPaginado = new PagedList<Usuario>(resultado, paginaAtual, tamanho, totalRegistros);
-         return resultadoPaginado;
-     }
+        public async Task<PagedList<Usuario>> ListarTodosAsync(int paginaAtual, int tamanho)
+        {
+            var resultado = await _context
+                .Usuario
+                .AsNoTracking()
+                .Include(u => u.Roles)
+                .Include(u => u.Departamento)
+                .Skip(tamanho * paginaAtual)
+                .Take(tamanho)
+                .ToListAsync();
+            var totalRegistros = await _context.Usuario.CountAsync();
+            var resultadoPaginado = new PagedList<Usuario>(resultado, paginaAtual, tamanho, totalRegistros);
+            return resultadoPaginado;
+        }
         public async Task<Usuario?> ObterPorIdAsync(Guid id)
         {
             return await _context.Usuario
@@ -57,7 +58,7 @@ namespace IA_RoboBerto.Repositorio
             await _context.Usuario.AddAsync(usuario);
             await _context.SaveChangesAsync();
 
-             return usuario;
+            return usuario;
         }
 
         public async Task<Usuario?> AtualizarAsync(Usuario usuario)
@@ -90,5 +91,21 @@ namespace IA_RoboBerto.Repositorio
             return await _context.Usuario
                 .AnyAsync(u => u.Id == id);
         }
+        public async Task<Usuario?> ObterTecnicoAleatorioAsync()
+        {
+            var tecnico = await _context.Usuario
+                 .FromSqlRaw("select u.* " +
+                 "from usuario u " +
+                 "inner join role_usuario ru on u.usu_codigo = ru.usu_codigo " +
+                 "inner join role r on r.role_codigo = ru.role_codigo " +
+                 "where role_name like 'TECNICO' " +
+                 "order by random() " +
+                 "limit 1;")
+                 .FirstOrDefaultAsync();
+             
+            return tecnico;
+        }
+       
+
     }
 }

@@ -20,7 +20,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
-        [Authorize(Roles = "ADM")]
+     //   [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedList<UsuarioMaxDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -47,7 +47,7 @@ namespace IA_RoboBerto.Controladores
             }
 
             var criado = await _servico.AdicionarAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
+            return CreatedAtAction(nameof(GetById), new { id = criado.Nome }, criado);
         }
 
         [Authorize(Roles = "ADM")]
