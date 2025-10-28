@@ -47,7 +47,7 @@ namespace IA_RoboBerto.Controladores
             }
 
             var criado = await _servico.AdicionarAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = criado.Nome }, criado);
+            return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
 
         [Authorize(Roles = "ADM")]

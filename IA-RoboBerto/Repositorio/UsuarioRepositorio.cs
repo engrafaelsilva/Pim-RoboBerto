@@ -1,4 +1,5 @@
 ﻿using GoogleApi.Entities.Search.Common;
+using GoogleApi.Entities.Search.Video.Common;
 using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Modelos.Paginação;
@@ -91,6 +92,13 @@ namespace IA_RoboBerto.Repositorio
             return await _context.Usuario
                 .AnyAsync(u => u.Id == id);
         }
+
+        public async Task<bool> EmailExisteAsync(string email)
+        {
+            return await _context.Usuario
+                .AnyAsync(u => u.Email == email);
+        }
+
         public async Task<Usuario?> ObterTecnicoAleatorioAsync()
         {
             var tecnico = await _context.Usuario

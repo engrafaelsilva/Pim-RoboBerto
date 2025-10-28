@@ -20,8 +20,9 @@ public static class RoboBertoDbInitializer
         var depTI = new Departamento { Nome = "TI" };
         var depRH = new Departamento { Nome = "RH" };
         var depFinanceiro = new Departamento { Nome = "Financeiro" };
+        var depDefault = new Departamento { Nome = "DEFAULT" };
 
-        await context.Departamento.AddRangeAsync(depTI, depRH, depFinanceiro);
+        await context.Departamento.AddRangeAsync(depTI, depRH, depFinanceiro,depDefault);
         await context.SaveChangesAsync();
 
         // Roles

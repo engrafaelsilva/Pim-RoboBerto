@@ -14,5 +14,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<Usuario?> ObterTecnicoAleatorioAsync();
         Task<bool> RemoverAsync(Guid id);
         Task<bool> IdExisteAsync(Guid id);
+        Task<bool> EmailExisteAsync(string email);
     }
 }

@@ -66,6 +66,11 @@ namespace IA_RoboBerto.Servico
 
         public async Task<UsuarioInsertDTO> AdicionarAsync(UsuarioInsertDTO dto)
         {
+
+            if ((await _UsuarioRepo.EmailExisteAsync(dto.Email)))
+            {
+                throw new UniqueAttributeException("O email já existe no cadastro");
+            }
             var usuario = new Usuario();
             await CopiarDtoPraEntidadeInsert(usuario, dto);
 
@@ -118,12 +123,12 @@ namespace IA_RoboBerto.Servico
             usuario.Telefone = dto.Telefone;
             usuario.DataCriacao = DateTime.UtcNow;
             usuario.SenhaHash = _passwordHasher.HashPassword(usuario, dto.SenhaHash);
-            usuario.Departamento = await _DepartamentoRepo.ObterPorNomeAsync(dto.Departamento.Nome);
+            usuario.Departamento = await _DepartamentoRepo.ObterPorNomeAsync("DEFAULT");
 
 
             foreach (var roleDto in dto.Roles)
             {
-                var role = await _RoleRepo.ObterPorNomeAsync(roleDto.Nome);
+                var role = await _RoleRepo.ObterPorNomeAsync("COLABORADOR"); // colaborador por padrão
                 usuario.Roles.Add(role);
             }
         }

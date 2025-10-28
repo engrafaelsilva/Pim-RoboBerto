@@ -98,11 +98,13 @@ namespace IA_RoboBerto.Repositorio
             return true;
         }
 
+
         public async Task<bool> IdExisteAsync(Guid id)
         {
             return await _context.Chamado
                 .AnyAsync(u => u.Id == id);
         }
+
 
         public async Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status)
         {

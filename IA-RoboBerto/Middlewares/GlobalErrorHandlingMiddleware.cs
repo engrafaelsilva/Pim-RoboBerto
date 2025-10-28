@@ -58,6 +58,10 @@ namespace IA_RoboBerto.Middlewares
             {
                 status = HttpStatusCode.Unauthorized;
             }
+            else if (exceptionTipo == typeof(UniqueAttributeException))
+            {
+                status = HttpStatusCode.BadRequest;
+            }
             else
             {
                 status = HttpStatusCode.InternalServerError;
