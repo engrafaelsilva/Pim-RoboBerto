@@ -27,6 +27,7 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
+                    .ThenInclude(m => m.Autor)
                 .Skip(tamanho * paginaAtual)
                 .Take(tamanho)
                 .ToListAsync();
