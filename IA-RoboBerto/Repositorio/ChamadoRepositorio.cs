@@ -114,11 +114,29 @@ namespace IA_RoboBerto.Repositorio
             return existente;
         }
 
-        public async Task<Chamado?> AtribuirTecnicoAsync(Chamado chamado,Usuario tecnico)
+        public async Task<Chamado?> AtribuirTecnicoAsync(Chamado chamado, Usuario tecnico)
         {
             chamado.Tecnico = tecnico;
             await _context.SaveChangesAsync();
             return chamado;
+        }
+
+        public async Task<Chamado?> AdicionarComentarioAsync(Chamado chamado, Mensagem mensagem)
+        {
+            // Carrega o chamado rastreado
+            var chamadoTracked = await _context.Chamado
+                .Include(c => c.Mensagens)
+                .FirstOrDefaultAsync(c => c.Id == chamado.Id);
+
+            if (chamadoTracked == null) return null;
+
+            // Adiciona a mensagem diretamente na lista do chamado
+            chamadoTracked.Mensagens.Add(mensagem);
+
+            // Salva tudo de uma vez
+            await _context.SaveChangesAsync();
+
+            return chamadoTracked;
         }
 
         public async Task<Chamado?> ReabrirChamadoAsync(Chamado chamado)

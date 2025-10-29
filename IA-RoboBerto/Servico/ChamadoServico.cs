@@ -16,20 +16,21 @@ namespace IA_RoboBerto.Servico
         private readonly IChamadoRepositorio _ChamadoRepo;
         private readonly IUsuarioRepositorio _UsuarioRepo;
         private readonly ICategoriaRepositorio _CategoriaRepo;
-        private readonly IMensagensRepositorio _MensagensRepo;
         private readonly IAuthService _authService;
         private readonly ISLAService _slaService;
         private readonly IGeminiServico _geminiServico;
+        private readonly IMensagensServico _mensagemServico;
 
-        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService, ISLAService slaService, IGeminiServico geminiServico)
+        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService, ISLAService slaService, IGeminiServico geminiServico, IMensagensServico mensagemServico)
         {
             _ChamadoRepo = chamadoRepo;
             _UsuarioRepo = usuarioRepos;
             _CategoriaRepo = categoriaRepo;
-            _MensagensRepo = mensagensRepo;
+            _mensagemServico = mensagemServico;
             _authService = authService;
             _slaService = slaService;
             _geminiServico = geminiServico;
+            _mensagemServico = mensagemServico;
         }
 
         public async Task<PagedList<ChamadoDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
@@ -112,7 +113,14 @@ namespace IA_RoboBerto.Servico
             var atualizado = await _ChamadoRepo.AtualizarStatusChamadoAsync(id,EStatusChamado.CANCELADO);
             return new ChamadoDTO(atualizado);
         }
+        public async Task<ChamadoDTO?> ComentarNoChamadoAsync(Guid id,MensagemInsertDTO dtoMensagem)
+        {
+            var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
+            await _mensagemServico.ComentarAsync(chamado, dtoMensagem);
+            var chamadoAtualizado = await _ChamadoRepo.ObterPorIdAsync(id);
 
+            return new ChamadoDTO(chamadoAtualizado);
+        }
         public async Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
@@ -150,6 +158,7 @@ namespace IA_RoboBerto.Servico
             chamado.Prioridade = dto.Prioridade;
 
         }
+
         private async Task CopiarDtoPraEntidadeInsert(Chamado chamado, ChamadoInsertDTO dto)
         {
     

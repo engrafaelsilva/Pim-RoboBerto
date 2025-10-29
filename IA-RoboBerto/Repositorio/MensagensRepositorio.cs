@@ -31,7 +31,6 @@ namespace IA_RoboBerto.Repositorio
         {
             return await _context.Mensagem
                 .Include(m => m.Autor)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
@@ -40,6 +39,15 @@ namespace IA_RoboBerto.Repositorio
             await _context.Mensagem.AddAsync(mensagem);
             await _context.SaveChangesAsync();
             return mensagem;
+        }
+        public async Task<bool> RemoverAsync(Guid id)
+        {
+            var existente = await _context.Mensagem.FindAsync(id);
+            if (existente == null) return false;
+
+            _context.Mensagem.Remove(existente);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
     }
