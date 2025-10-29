@@ -26,9 +26,9 @@ namespace IA_RoboBerto.DTOs
         public string SenhaHash { get; set; }
      //   public DateTime DataCriacao { get; set; }
 
-        [Required(ErrorMessage = "O departamento é obrigatório.")]
-       // public DepartamentoNomeDTO Departamento { get; set; }
-        public IList<RoleDTO> Roles { get; set; } = new List<RoleDTO>();
+       // [Required(ErrorMessage = "O departamento é obrigatório.")]
+        // public DepartamentoNomeDTO Departamento { get; set; }
+      //  public IList<RoleDTO> Roles { get; set; } = new List<RoleDTO>();
 
         public UsuarioInsertDTO()
         {
@@ -50,10 +50,11 @@ namespace IA_RoboBerto.DTOs
             Email = entidade.Email;
             SenhaHash = entidade.SenhaHash;
             Telefone = entidade.Telefone;
-            foreach (Role role in entidade.Roles)
-            {
-                Roles.Add(new RoleDTO(role));
-            }
+         //   Departamento = new DepartamentoNomeDTO(entidade.Departamento);
+         // foreach (Role role in entidade.Roles)
+         // {
+         //     Roles.Add(new RoleDTO(role));
+         // }
         }
     }
 }

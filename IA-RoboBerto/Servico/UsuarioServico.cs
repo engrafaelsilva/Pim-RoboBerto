@@ -125,12 +125,9 @@ namespace IA_RoboBerto.Servico
             usuario.SenhaHash = _passwordHasher.HashPassword(usuario, dto.SenhaHash);
             usuario.Departamento = await _DepartamentoRepo.ObterPorNomeAsync("DEFAULT");
 
-
-            foreach (var roleDto in dto.Roles)
-            {
-                var role = await _RoleRepo.ObterPorNomeAsync("COLABORADOR"); // colaborador por padrão
-                usuario.Roles.Add(role);
-            }
+            var defaultRole = await _RoleRepo.ObterPorNomeAsync("COLABORADOR");
+            if (defaultRole != null)
+                usuario.Roles.Add(defaultRole);
         }
         public async Task<Usuario?> ValidarUsuarioAsync(string email, string senha)
         {
