@@ -6,12 +6,12 @@ using System.Security.Claims;
 
 namespace IA_RoboBerto.Servico
 {
-    public class AuthService : IAuthService
+    public class AuthServico : IAuthServico
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUsuarioRepositorio _usuarioRepo;
 
-        public AuthService(IHttpContextAccessor httpContextAccessor, IUsuarioRepositorio usuarioRepo)
+        public AuthServico(IHttpContextAccessor httpContextAccessor, IUsuarioRepositorio usuarioRepo)
         {
             _httpContextAccessor = httpContextAccessor;
             _usuarioRepo = usuarioRepo;

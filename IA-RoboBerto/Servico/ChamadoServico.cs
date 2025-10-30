@@ -16,12 +16,12 @@ namespace IA_RoboBerto.Servico
         private readonly IChamadoRepositorio _ChamadoRepo;
         private readonly IUsuarioRepositorio _UsuarioRepo;
         private readonly ICategoriaRepositorio _CategoriaRepo;
-        private readonly IAuthService _authService;
-        private readonly ISLAService _slaService;
+        private readonly IAuthServico _authService;
+        private readonly ISLAServico _slaService;
         private readonly IGeminiServico _geminiServico;
         private readonly IMensagensServico _mensagemServico;
 
-        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthService authService, ISLAService slaService, IGeminiServico geminiServico, IMensagensServico mensagemServico)
+        public ChamadoServico(IChamadoRepositorio chamadoRepo, IUsuarioRepositorio usuarioRepos, ICategoriaRepositorio categoriaRepo, IMensagensRepositorio mensagensRepo, IAuthServico authService, ISLAServico slaService, IGeminiServico geminiServico, IMensagensServico mensagemServico)
         {
             _ChamadoRepo = chamadoRepo;
             _UsuarioRepo = usuarioRepos;

@@ -8,11 +8,11 @@ namespace IA_RoboBerto.Servico
 {
     public class MensagensServico : IMensagensServico
     {
-        private readonly IAuthService _authService;
+        private readonly IAuthServico _authService;
         private readonly IChamadoRepositorio _chamadoRepo;
         private readonly IMensagensRepositorio _mensagemRepo;
 
-        public MensagensServico(IAuthService authService, IChamadoRepositorio chamadoRepo, IMensagensRepositorio mensagemRepo)
+        public MensagensServico(IAuthServico authService, IChamadoRepositorio chamadoRepo, IMensagensRepositorio mensagemRepo)
         {
             _authService = authService;
             _chamadoRepo = chamadoRepo;

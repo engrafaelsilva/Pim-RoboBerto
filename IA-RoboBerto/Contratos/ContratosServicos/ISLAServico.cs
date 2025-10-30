@@ -2,7 +2,7 @@
 
 namespace IA_RoboBerto.Contratos.ContratosServicos
 {
-    public interface ISLAService
+    public interface ISLAServico
     {
         DateTime CalcularSLA(Chamado chamado);
     }

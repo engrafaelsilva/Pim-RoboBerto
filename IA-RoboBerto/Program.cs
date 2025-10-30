@@ -55,8 +55,8 @@ builder.Services.AddHttpClient<IGeminiServico, GeminiServico>(client =>
 });
 
 builder.Services.AddScoped<ITokenServico, TokenServico>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ISLAService, SLAService>();
+builder.Services.AddScoped<IAuthServico, AuthServico>();
+builder.Services.AddScoped<ISLAServico, SLAServico>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
 builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
@@ -105,6 +105,8 @@ Essa API permite gerenciar usuários, departamentos, categorias e chamados, com 
 📝 **Dica para testes:**
 - Os emails estão cadastrados no banco com a senha `senha123`.  
 - Após login, sempre inclua o token JWT nos requests de endpoints que requerem autenticação ou roles específicas.
+![SEXO](https://i.kym-cdn.com/entries/icons/original/000/041/587/cover2.jpg)
+![](https://i.redd.it/o55127frwzv61.jpg)
 "
 
     });

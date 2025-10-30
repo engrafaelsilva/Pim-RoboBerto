@@ -3,7 +3,7 @@ using IA_RoboBerto.Modelos;
 
 namespace IA_RoboBerto.Servico
 {
-    public class SLAService : ISLAService
+    public class SLAServico : ISLAServico
     {
         public DateTime CalcularSLA(Chamado chamado)
         {
