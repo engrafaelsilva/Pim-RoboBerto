@@ -109,7 +109,7 @@ class _loginState extends State<login> {
                               _senhaController.text
                           );
 
-                          print(sucesso);
+                          print(viewModel.mensagemErro);
                           //Navigator.push(context,MaterialPageRoute(builder: (context) => registrar()),);
                         },
                   child: Padding(

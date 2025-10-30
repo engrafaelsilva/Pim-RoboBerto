@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:roboberto_ia/ViewModel/RegistrarViewModel.dart';
 
-class registrar extends StatefulWidget {
-  const registrar({Key? key}) : super(key: key);
+class RegistrarForm extends StatefulWidget {
+  const RegistrarForm({Key? key}) : super(key: key);
 
   @override
-  State<registrar> createState() => _registrarState();
+  State<RegistrarForm> createState() => _RegistrarFormState();
 }
 
-class _registrarState extends State<registrar> {
+class _RegistrarFormState extends State<RegistrarForm> {
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<RegistrarViewModel>();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Card(
@@ -19,14 +23,12 @@ class _registrarState extends State<registrar> {
           borderRadius: BorderRadius.circular(20.0),
         ),
         child: Padding(
-          // Padding interno do cartão
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            // Alinha os textos da esquerda para a esquerda
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Crie sua conta', // Texto alterado
+                'Crie sua conta',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -34,15 +36,35 @@ class _registrarState extends State<registrar> {
               ),
               SizedBox(height: 8),
               Text(
-                'Preencha os campos para se registrar', // Texto alterado
+                'Preencha os campos para se registrar',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
               ),
               SizedBox(height: 24),
-
-              // CAMPO DE EMAIL
+              Text(
+                'Usuário',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                decoration: InputDecoration(
+                  hintText: 'seu.usuario',
+                  fillColor: Colors.grey[200],
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                keyboardType: TextInputType.text,
+              ),
+              SizedBox(height: 16),
               Text(
                 'Email',
                 style: TextStyle(
@@ -59,14 +81,34 @@ class _registrarState extends State<registrar> {
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none, // Sem borda
+                    borderSide: BorderSide.none,
                   ),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
-
-              // CAMPO DE SENHA
+              Text(
+                'Telefone',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                decoration: InputDecoration(
+                  hintText: '(11) 99999-9999',
+                  fillColor: Colors.grey[200],
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              SizedBox(height: 16),
               Text(
                 'Senha',
                 style: TextStyle(
@@ -77,31 +119,7 @@ class _registrarState extends State<registrar> {
               ),
               SizedBox(height: 8),
               TextFormField(
-                obscureText: true, // Para esconder a senha
-                decoration: InputDecoration(
-                  hintText: '********',
-                  fillColor: Colors.grey[200],
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              SizedBox(height: 16), // Espaço adicionado
-
-              // NOVO CAMPO: CONFIRMAR SENHA
-              Text(
-                'Confirmar Senha',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black54,
-                ),
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                obscureText: true, // Para esconder a senha
+                obscureText: true,
                 decoration: InputDecoration(
                   hintText: '********',
                   fillColor: Colors.grey[200],
@@ -113,10 +131,8 @@ class _registrarState extends State<registrar> {
                 ),
               ),
               SizedBox(height: 24),
-
-              // BOTÃO REGISTRAR
               SizedBox(
-                width: double.infinity, // Faz o botão ter largura total
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     // TODO: Adicionar sua lógica de registro
@@ -124,7 +140,7 @@ class _registrarState extends State<registrar> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: Text(
-                      'Registrar', // Texto alterado
+                      'Registrar',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -140,7 +156,6 @@ class _registrarState extends State<registrar> {
                   ),
                 ),
               ),
-              // Dica removida
             ],
           ),
         ),

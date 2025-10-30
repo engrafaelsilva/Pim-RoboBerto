@@ -117,7 +117,7 @@ class _homePageState extends State<homePage> {
                   ),
 
 
-                  _isSelected[0] ? login():registrar(),
+                  _isSelected[0] ? login():RegistrarForm(),
 
                   SizedBox(height: 20),
                 ],
