@@ -14,8 +14,6 @@ namespace IA_RoboBerto.Repositorio
         {
             _context = context;
         }
-
-
         public async Task<PagedList<Categoria>> ListarTodosAsync(int paginaAtual, int tamanho)
         {
             var resultado = await _context.Categoria

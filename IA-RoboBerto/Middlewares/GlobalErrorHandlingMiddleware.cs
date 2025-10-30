@@ -62,6 +62,10 @@ namespace IA_RoboBerto.Middlewares
             {
                 status = HttpStatusCode.BadRequest;
             }
+            else if (exceptionTipo == typeof(BadHttpRequestException))
+            {
+                status = HttpStatusCode.BadRequest;
+            }
             else
             {
                 status = HttpStatusCode.InternalServerError;

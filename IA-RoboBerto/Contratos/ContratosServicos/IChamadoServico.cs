@@ -13,8 +13,11 @@ namespace IA_RoboBerto.Contratos.ContratosServicos
         Task<ChamadoDTO?> CancelarChamadoAsync(Guid id);
         Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id);
         Task<bool> RemoverAsync(Guid id);
-        Task<List<ChamadoDTO>> ListarChamadosSlaExpiradoAsync();
+        Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosExpiradosAsync();
+        Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosNaoExpiradosAsync();
         Task<ChamadoDTO> AtribuirTecnicoAsync(Guid chamadoId);
+        Task<ChamadoDTO> AlterarSugestaoResolveuEStatusAsync(Guid chamadoId, bool sugestaoResolveu);
         Task<ChamadoDTO?> ComentarNoChamadoAsync(Guid id, MensagemInsertDTO dtoMensagem);
+        Task<ChamadoDTO?> FecharChamadoAsync(Guid id);
     }
 }

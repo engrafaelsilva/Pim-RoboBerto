@@ -55,9 +55,19 @@ namespace IA_RoboBerto.Controladores
         [HttpGet("expirados")]
         public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosSLAExpirado()
         {
-            var resultado = await _servico.ListarChamadosSlaExpiradoAsync();
+            var resultado = await _servico.ListarChamadosPendentesTecnicosExpiradosAsync();
             return Ok(resultado);
         }
+
+        [Authorize(Roles = "ADM,TECNICO")]
+        [Authorize]
+        [HttpGet("pendentes-tecnico")]
+        public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosSLANaoExpirado()
+        {
+            var resultado = await _servico.ListarChamadosPendentesTecnicosNaoExpiradosAsync();
+            return Ok(resultado);
+        }
+
 
         [Authorize(Roles = "COLABORADOR,TECNICO,ADM")]
         [HttpPost]
@@ -93,7 +103,7 @@ namespace IA_RoboBerto.Controladores
 
         [Authorize(Roles = "TECNICO")]
         [HttpPatch("{id:guid}/acatar-chamado")]
-        public async Task<ActionResult<ChamadoDTO>> AtribuirTecnicoAsync(Guid id)
+        public async Task<ActionResult<ChamadoDTO>> AtribuirTecnico(Guid id)
         {
             var atualizado = await _servico.AtribuirTecnicoAsync(id);
             return Ok(atualizado);
@@ -118,6 +128,20 @@ namespace IA_RoboBerto.Controladores
             return Ok(chamadoAtualizado);
         }
 
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
+        [HttpPatch("{id:guid}/alterar-resolveu-sugestao")]
+        public async Task<ActionResult<ChamadoDTO>> AlterarSugestaoResolveu(Guid id, [FromBody] bool resolveuSugestao)
+        {
+            var chamadoAtualizado = await _servico.AlterarSugestaoResolveuEStatusAsync(id, resolveuSugestao);
+            return Ok(chamadoAtualizado);
+        }
 
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
+        [HttpPatch("{id:guid}/fechar-chamado")]
+        public async Task<ActionResult<ChamadoDTO>> FecharChamado(Guid id)
+        {
+            var chamadoAtualizado = await _servico.FecharChamadoAsync(id);
+            return Ok(chamadoAtualizado);
+        }
     }
 }

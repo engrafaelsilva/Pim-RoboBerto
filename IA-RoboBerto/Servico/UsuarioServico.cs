@@ -57,7 +57,7 @@ namespace IA_RoboBerto.Servico
             return new UsuarioMaxDTO(usuario);
         }
 
-        public async Task<UsuarioMaxDTO?> ObterTecnicoAleatorioAsync ()
+        public async Task<UsuarioMaxDTO?> ObterTecnicoAleatorioAsync()
         {
             var usuario = await _UsuarioRepo.ObterTecnicoAleatorioAsync();
             //if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");

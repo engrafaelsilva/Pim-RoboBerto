@@ -107,36 +107,53 @@ namespace IA_RoboBerto.Repositorio
         }
 
 
-        public async Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status)
+        public async Task<Chamado?> AlterarStatusParaCanceladoAsync(Guid id)
         {
             var existente = await ObterPorIdAsync(id);
-            existente.Status = status;
+            existente.Status = EStatusChamado.FECHADO;
+            await _context.SaveChangesAsync();
+            return existente;
+        }
+        public async Task<Chamado?> AlterarStatusParaFechadoAsync(Guid id)
+        {
+            var existente = await ObterPorIdAsync(id);
+            existente.Status = EStatusChamado.CANCELADO;
             await _context.SaveChangesAsync();
             return existente;
         }
 
-        public async Task<Chamado?> AtribuirTecnicoAsync(Chamado chamado, Usuario tecnico)
+        public async Task<Chamado?> AtribuirTecnicoEAlterarStatusAsync(Chamado chamado, Usuario tecnico)
         {
             chamado.Tecnico = tecnico;
+            chamado.Status = EStatusChamado.PENDENTE_TECNICO;
+            await _context.SaveChangesAsync();
+            return chamado;
+        }
+
+        public async Task<Chamado?> AlterarResolveuGeminiEStatusAsync(Chamado chamado, bool resolveuSugestao)
+        {
+            chamado.SugestaoResolveu = resolveuSugestao;
+            if (!resolveuSugestao)
+            {
+                chamado.Status = EStatusChamado.PENDENTE_TECNICO;
+            }
+            else
+            {
+                chamado.Status = EStatusChamado.FECHADO;
+            }
+
             await _context.SaveChangesAsync();
             return chamado;
         }
 
         public async Task<Chamado?> AdicionarComentarioAsync(Chamado chamado, Mensagem mensagem)
         {
-            // Carrega o chamado rastreado
             var chamadoTracked = await _context.Chamado
                 .Include(c => c.Mensagens)
                 .FirstOrDefaultAsync(c => c.Id == chamado.Id);
-
             if (chamadoTracked == null) return null;
-
-            // Adiciona a mensagem diretamente na lista do chamado
             chamadoTracked.Mensagens.Add(mensagem);
-
-            // Salva tudo de uma vez
             await _context.SaveChangesAsync();
-
             return chamadoTracked;
         }
 
@@ -146,16 +163,18 @@ namespace IA_RoboBerto.Repositorio
 
             existente.Tecnico = null;
             existente.DataFechamento = null;
-            existente.Categoria = chamado.Categoria;
+            existente.DataAbertura = DateTime.UtcNow;
             existente.Status = EStatusChamado.ABERTO;
-            existente.Prioridade = chamado.Prioridade;
-            //falta o sla
-
+            // existente.Categoria = chamado.Categoria;
+            // existente.Prioridade = chamado.Prioridade;
+            //  existente.SlaVenceEm = chamado.SlaVenceEm;
+            // existente.Descricao = chamado.Descricao;
+            //  existente.SugestaoGemini = chamado.SugestaoGemini;
             await _context.SaveChangesAsync();
             return existente;
         }
 
-        public async Task<List<Chamado>> ListarChamadosSlaExpiradoAsync()
+        public async Task<List<Chamado>> ListarChamadosPendentesTecnicosExpiradosAsync()
         {
             return await _context.Chamado
                 .Include(c => c.Autor)
@@ -163,7 +182,19 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Where(c => c.Tecnico == null
                             && c.SlaVenceEm <= DateTime.UtcNow
-                            && c.Status != EStatusChamado.CANCELADO)
+                            && c.Status == EStatusChamado.PENDENTE_TECNICO
+                            && c.SugestaoResolveu == false)
+                .ToListAsync();
+        }
+        public async Task<List<Chamado>> ListarChamadosPendentesTecnicosNaoExpiradosAsync()
+        {
+            return await _context.Chamado
+                .Include(c => c.Autor)
+                .Include(c => c.Categoria)
+                .Include(c => c.Tecnico)
+                .Where(c => c.Tecnico == null
+                            && c.Status == EStatusChamado.PENDENTE_TECNICO
+                            && c.SugestaoResolveu == false)
                 .ToListAsync();
         }
     }

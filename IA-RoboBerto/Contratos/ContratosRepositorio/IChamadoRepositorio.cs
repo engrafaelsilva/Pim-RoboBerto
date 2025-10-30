@@ -12,10 +12,14 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<Chamado?> AtualizarUsuAsync(Chamado chamado);
         Task<bool> RemoverAsync(Guid id);
         Task<PagedList<Chamado>> ListarMeusChamadosAsync(Guid id, int paginaAtual, int tamanho);
-        Task<Chamado?> AtualizarStatusChamadoAsync(Guid id, EStatusChamado status);
+        Task<Chamado?> AlterarResolveuGeminiEStatusAsync(Chamado chamado, bool resolveuSugestao);
+        Task<Chamado?> AlterarStatusParaCanceladoAsync(Guid id);
+        Task<Chamado?> AtribuirTecnicoEAlterarStatusAsync(Chamado chamado, Usuario tecnico);
         Task<Chamado?> ReabrirChamadoAsync(Chamado chamado);
-        Task<List<Chamado>> ListarChamadosSlaExpiradoAsync();
+        Task<List<Chamado>> ListarChamadosPendentesTecnicosExpiradosAsync();
+        Task<List<Chamado>> ListarChamadosPendentesTecnicosNaoExpiradosAsync();
         Task<bool> IdExisteAsync(Guid id);
+        Task<Chamado?> AlterarStatusParaFechadoAsync(Guid id);
         Task<Chamado?> AdicionarComentarioAsync(Chamado chamado, Mensagem mensagem);
     }
 }

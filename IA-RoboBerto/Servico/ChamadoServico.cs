@@ -47,9 +47,17 @@ namespace IA_RoboBerto.Servico
             );
         }
 
-        public async Task<List<ChamadoDTO>> ListarChamadosSlaExpiradoAsync()
+        public async Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosExpiradosAsync()
         {
-            var resultado = await _ChamadoRepo.ListarChamadosSlaExpiradoAsync();
+            var resultado = await _ChamadoRepo.ListarChamadosPendentesTecnicosExpiradosAsync();
+
+            var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
+
+            return resultadoDTO;
+        }
+        public async Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosNaoExpiradosAsync()
+        {
+            var resultado = await _ChamadoRepo.ListarChamadosPendentesTecnicosNaoExpiradosAsync();
 
             var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
 
@@ -95,6 +103,13 @@ namespace IA_RoboBerto.Servico
             return new ChamadoDTO(chamado);
         }
 
+        public async Task<ChamadoDTO> AlterarSugestaoResolveuEStatusAsync(Guid chamadoId, bool sugestaoResolveu)
+        {
+            var chamado = await _ChamadoRepo.ObterPorIdAsync(chamadoId);
+            chamado = await _ChamadoRepo.AlterarResolveuGeminiEStatusAsync(chamado, sugestaoResolveu);
+            return new ChamadoDTO(chamado);
+        }
+
         public async Task<ChamadoDTO?> AtualizarUsuAsync(Guid id, ChamadoDTO dto)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
@@ -109,8 +124,13 @@ namespace IA_RoboBerto.Servico
 
         public async Task<ChamadoDTO?> CancelarChamadoAsync(Guid id)
         {
-           
-            var atualizado = await _ChamadoRepo.AtualizarStatusChamadoAsync(id,EStatusChamado.CANCELADO);
+            var atualizado = await _ChamadoRepo.AlterarStatusParaCanceladoAsync(id);
+            return new ChamadoDTO(atualizado);
+        }
+
+        public async Task<ChamadoDTO?> FecharChamadoAsync(Guid id)
+        {
+            var atualizado = await _ChamadoRepo.AlterarStatusParaFechadoAsync(id);
             return new ChamadoDTO(atualizado);
         }
         public async Task<ChamadoDTO?> ComentarNoChamadoAsync(Guid id,MensagemInsertDTO dtoMensagem)
@@ -118,17 +138,14 @@ namespace IA_RoboBerto.Servico
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
             await _mensagemServico.ComentarAsync(chamado, dtoMensagem);
             var chamadoAtualizado = await _ChamadoRepo.ObterPorIdAsync(id);
-
             return new ChamadoDTO(chamadoAtualizado);
         }
         public async Task<ChamadoDTO?> ReabrirChamadoAsync(Guid id)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(id);
-
-
-
             if (chamado.Status != EStatusChamado.CANCELADO) throw new BadHttpRequestException("O chamado deve estar fechado para reabri-lo");
             var atualizado = await _ChamadoRepo.ReabrirChamadoAsync(chamado);
+            chamado.SlaVenceEm = _slaService.CalcularSLA(atualizado);
             return new ChamadoDTO(atualizado);
         }
 
@@ -139,7 +156,6 @@ namespace IA_RoboBerto.Servico
 
             try
             {
-
                 await _ChamadoRepo.RemoverAsync(id);
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
@@ -172,7 +188,7 @@ namespace IA_RoboBerto.Servico
             chamado.Titulo = dto.Titulo;
             chamado.SugestaoGemini = await _geminiServico.GerarTextoAsync(chamado.Autor.Nome, dto.Descricao);
             chamado.DataAbertura = DateTime.UtcNow;
-            chamado.SlaVenceEm = new DateTime(2022, 10, 27, 22, 56, 52, DateTimeKind.Utc);
+            chamado.SlaVenceEm = _slaService.CalcularSLA(chamado);
             chamado.SugestaoResolveu = null;
         }
     }
