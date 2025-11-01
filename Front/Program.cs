@@ -29,8 +29,6 @@ namespace Front
                 app.UseHsts();
             }
 
-
-        
             // Pipeline
             if (!app.Environment.IsDevelopment())
             {

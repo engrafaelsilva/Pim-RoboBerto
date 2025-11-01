@@ -1,0 +1,62 @@
+﻿@page "/chamados"
+
+<PageTitle>Gestão de Chamados</PageTitle>
+
+<h1>Lista de Chamados</h1>
+
+<p>Visualize e gerencie os chamados de suporte técnico.</p>
+
+<table class="table table-hover table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Data de Abertura</th>
+            <th>Usuário</th>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+            <th>Responsável</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>25/10/2025 10:34</td>
+            <td>João Silva</td>
+            <td>Erro ao acessar o sistema</td>
+            <td><span class="badge bg-danger">Aberto</span></td>
+            <td>Alta</td>
+            <td>Ana Paula</td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1">Ver</button>
+                <button class="btn btn-sm btn-warning me-1">Editar</button>
+                <button class="btn btn-sm btn-danger">Excluir</button>
+            </td>
+        </tr>
+        <tr>
+            <td>26/10/2025 09:15</td>
+            <td>Maria Costa</td>
+            <td>Computador lento</td>
+            <td><span class="badge bg-warning text-dark">Em andamento</span></td>
+            <td>Média</td>
+            <td>Lucas Rocha</td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1">Ver</button>
+                <button class="btn btn-sm btn-warning me-1">Editar</button>
+                <button class="btn btn-sm btn-danger">Excluir</button>
+            </td>
+        </tr>
+        <tr>
+            <td>27/10/2025 14:50</td>
+            <td>Carlos Mendes</td>
+            <td>Solicitação de novo usuário</td>
+            <td><span class="badge bg-success">Resolvido</span></td>
+            <td>Baixa</td>
+            <td>Fernanda Lima</td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1">Ver</button>
+                <button class="btn btn-sm btn-warning me-1">Editar</button>
+                <button class="btn btn-sm btn-danger">Excluir</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
