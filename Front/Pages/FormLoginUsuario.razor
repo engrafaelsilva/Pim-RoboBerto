@@ -1,0 +1,179 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Json
+
+<PageTitle>Login</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div class="card shadow-lg p-4 rounded-4" style="width: 380px;">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold text-primary">Acesse sua conta</h4>
+            <p class="text-muted">Entre para continuar usando o sistema</p>
+        </div>
+
+        <EditForm Model="@login" OnValidSubmit="ValidarLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label for="email" class="form-label fw-semibold">E-mail</label>
+                <InputText type="email" id="email" class="form-control rounded-pill" placeholder="Digite seu e-mail" @bind-Value="login.Email" />
+                <ValidationMessage For="@(() => login.Email)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="senha" class="form-label fw-semibold">Senha</label>
+                <InputText type="password" id="senha" class="form-control rounded-pill" placeholder="Digite sua senha" @bind-Value="login.Senha" />
+                <ValidationMessage For="@(() => login.Senha)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-semibold" disabled="@isLoading">
+                @(isLoading ? "Entrando..." : "Entrar")
+            </button>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(mensagem))
+        {
+            <div class="alert @(isSuccess ? "alert-success" : "alert-danger") mt-3 text-center">
+                @mensagem
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .logo {
+    width: 120px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .card {
+    background-color: #fff;
+    border: none;
+    }
+
+    .form-control {
+    padding: 10px 15px;
+    font-size: 0.95rem;
+    }
+
+    .btn-primary {
+    background-color: #4e73df;
+    border: none;
+    transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+    background-color: #375ac8;
+    transform: scale(1.02);
+    }
+
+    .alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    border-radius: .5rem;
+    }
+
+    .alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    border-radius: .5rem;
+    }
+</style>
+
+@code {
+
+    private LoginModel login = new();
+    private string mensagem = string.Empty;
+    private bool isSuccess = false;
+    private bool isLoading = false;
+
+    private async Task ValidarLogin()
+    {
+        mensagem = string.Empty;
+        isSuccess = false;
+        isLoading = true;
+
+        try
+        {
+            // 🔹 Chama sua API REST (ajuste o endpoint conforme seu backend)
+            var response = await Http.PostAsJsonAsync("https://seu-do/api/usuarios/login", login);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                mensagem = "❌ E-mail ou senha incorretos.";
+
+                // Limpa os campos no modelo de login
+                login.Email = string.Empty;
+                login.Senha = string.Empty;
+
+                // Atualiza a interface
+                StateHasChanged();
+
+                // Mostra a mensagem por 3 segundos e depois limpa
+                await Task.Delay(3000);
+                mensagem = string.Empty;
+                StateHasChanged();
+
+                return;
+            }
+
+            // Renomeado para evitar shadowing/confusão com outras variáveis
+            var usuarioRetorno = await response.Content.ReadFromJsonAsync<UsuarioRetorno>();
+
+            if (usuarioRetorno == null || string.IsNullOrWhiteSpace(usuarioRetorno.Tipo))
+            {
+                mensagem = "❌ Resposta inválida do servidor.";
+                return;
+            }
+
+            isSuccess = true;
+            mensagem = "✅ Login realizado com sucesso!";
+            await Task.Delay(800);
+
+            // 🔹 Redireciona conforme o tipo
+            if (usuarioRetorno.Tipo.Equals("Cliente", StringComparison.OrdinalIgnoreCase))
+                Navigation.NavigateTo("/painel-cliente");
+            else if (usuarioRetorno.Tipo.Equals("Tecnico", StringComparison.OrdinalIgnoreCase))
+                Navigation.NavigateTo("/painel-tecnico");
+            else
+                mensagem = "⚠️ Tipo de usuário desconhecido.";
+        }
+        catch (HttpRequestException)
+        {
+            mensagem = "❌ Não foi possível conectar ao servidor. Verifique sua conexão.";
+        }
+        catch (Exception)
+        {
+            mensagem = "❌ Ocorreu um erro inesperado. Tente novamente.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class LoginModel
+    {
+        [Required(ErrorMessage = "O e-mail é obrigatório.")]
+        [EmailAddress(ErrorMessage = "E-mail inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "A senha é obrigatória.")]
+        [MinLength(6, ErrorMessage = "A senha deve ter pelo menos 6 caracteres.")]
+        public string Senha { get; set; } = string.Empty;
+    }
+
+    public class UsuarioRetorno
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty; // Cliente ou Tecnico
+        public string Nome { get; set; } = string.Empty;
+    }
+}

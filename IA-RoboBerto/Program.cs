@@ -20,6 +20,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 var key = Encoding.ASCII.GetBytes(Configuracoes.Secret);
 
+// 🟢 Habilita CORS para permitir que o Blazor (porta 7016) acesse a API (porta 7187)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins("https://localhost:7016") // Porta do seu front Blazor
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Add services to the container.
 builder.Services.AddAuthentication(x =>
 {
@@ -166,7 +178,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 
+
 app.UseMiddleware(typeof(GlobalErrorHandlingMiddleware));
+
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 

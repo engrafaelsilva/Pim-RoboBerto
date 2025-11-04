@@ -1,0 +1,115 @@
+﻿@page "/chatboot"
+
+<PageTitle>ChatBoot</PageTitle>
+
+<h3 class="mb-3">ChatBoot IA</h3>
+
+<div class="chat-container shadow rounded-4 p-3">
+    <div class="chat-window" id="chatWindow">
+        <div class="message bot">
+            <div class="avatar">🤖</div>
+            <div class="bubble">
+                Olá! Sou seu assistente virtual. Como posso ajudar hoje?
+            </div>
+        </div>
+
+        <div class="message user">
+            <div class="avatar">🧑</div>
+            <div class="bubble">
+                
+            </div>
+        </div>
+
+        <div class="message bot">
+            <div class="avatar">🤖</div>
+            <div class="bubble">
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input mt-3 d-flex align-items-center">
+        <input type="text" class="form-control me-2 rounded-pill" placeholder="Digite sua mensagem..." />
+        <button class="btn btn-primary rounded-pill px-4">Enviar</button>
+    </div>
+</div>
+
+<style>
+    .chat-container {
+        max-width: 700px;
+        margin: 0 auto;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        height: 80vh;
+    }
+
+    .chat-window {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .message {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e0e0e0;
+        border-radius: 50%;
+        font-size: 20px;
+    }
+
+    .bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 20px;
+        line-height: 1.4;
+        word-wrap: break-word;
+        font-size: 15px;
+    }
+
+    .message.bot .bubble {
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+    }
+
+    .message.user .bubble {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .chat-input {
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+        background: #f8f9fa;
+    }
+
+    /* Scrollbar custom */
+    .chat-window::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-window::-webkit-scrollbar-thumb {
+        background-color: #ccc;
+        border-radius: 10px;
+    }
+</style>
+
+@code {
+    // Nenhuma lógica — somente o front-end da interface de chat
+}
