@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:roboberto_ia/ViewModel/LoginViewModel.dart';
+import 'package:roboberto_ia/View/UserHomePage.dart';
+import 'package:roboberto_ia/ViewModel/AuthViewModel.dart';
 
 class login extends StatefulWidget {
   const login({Key? key}) : super(key: key);
@@ -15,7 +16,7 @@ class _loginState extends State<login> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<LoginViewModel>();
+    final viewModel = context.watch<AuthViewModel>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -84,7 +85,7 @@ class _loginState extends State<login> {
               SizedBox(height: 8),
               TextFormField(
                 controller: _senhaController,
-                obscureText: true, //
+                obscureText: true,
                 decoration: InputDecoration(
                   hintText: '********',
                   fillColor: Colors.grey[200],
@@ -109,8 +110,23 @@ class _loginState extends State<login> {
                               _senhaController.text
                           );
 
-                          print(viewModel.mensagemErro);
-                          //Navigator.push(context,MaterialPageRoute(builder: (context) => registrar()),);
+
+                          if(!sucesso){
+                            if(viewModel.mensagemErro != null){
+                              final snackBar = SnackBar(
+                                content: Text(viewModel.mensagemErro),
+                                duration: Duration(seconds: 3),
+
+                              );
+
+                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                            }
+                          } else {
+                            var email = _emailController.text;
+                            _emailController.text = '';
+                            _senhaController.text = '';
+                            Navigator.push(context,MaterialPageRoute(builder: (context) => UserHomePage(userName: 'Teste', userEmail: email)),);
+                          }
                         },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),

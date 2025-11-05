@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'ViewModel/LoginViewModel.dart';
+import 'package:roboberto_ia/ViewModel/UserHomePageViewModel.dart';
+import 'ViewModel/AuthViewModel.dart';
 import 'View/home.dart';
 
 void main() {
-  runApp(ChangeNotifierProvider(
-    create: (context) => LoginViewModel(),
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => AuthViewModel()),
+      ChangeNotifierProvider(create: (context) => UserHomePageViewModel()),
+    ],
     child: MyApp(),
   ));
 }

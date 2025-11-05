@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'login.dart';
@@ -37,12 +39,8 @@ class _homePageState extends State<homePage> {
                 children: [
                   CircleAvatar(
                     backgroundColor: Colors.blueAccent,
-                    child: Icon(
-                      Icons.computer,
-                      size: 35,
-                      color: Colors.white,
-                    ),
-                    radius: 30,
+                    child: Image.asset('lib/assets/imgs/roboberto.png'),
+                    radius: 40,
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 10),

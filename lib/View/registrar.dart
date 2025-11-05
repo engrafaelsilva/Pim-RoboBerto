@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:roboberto_ia/ViewModel/RegistrarViewModel.dart';
+import 'package:roboberto_ia/ViewModel/AuthViewModel.dart';
 
 class RegistrarForm extends StatefulWidget {
   const RegistrarForm({Key? key}) : super(key: key);
@@ -10,9 +10,14 @@ class RegistrarForm extends StatefulWidget {
 }
 
 class _RegistrarFormState extends State<RegistrarForm> {
+  final _usuarioController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  final _senhaController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<RegistrarViewModel>();
+    final viewModel = context.watch<AuthViewModel>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -53,6 +58,7 @@ class _RegistrarFormState extends State<RegistrarForm> {
               ),
               SizedBox(height: 8),
               TextFormField(
+                controller: _usuarioController,
                 decoration: InputDecoration(
                   hintText: 'seu.usuario',
                   fillColor: Colors.grey[200],
@@ -75,6 +81,7 @@ class _RegistrarFormState extends State<RegistrarForm> {
               ),
               SizedBox(height: 8),
               TextFormField(
+                controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'seu@email.com',
                   fillColor: Colors.grey[200],
@@ -97,6 +104,7 @@ class _RegistrarFormState extends State<RegistrarForm> {
               ),
               SizedBox(height: 8),
               TextFormField(
+                controller: _telefoneController,
                 decoration: InputDecoration(
                   hintText: '(11) 99999-9999',
                   fillColor: Colors.grey[200],
@@ -119,6 +127,7 @@ class _RegistrarFormState extends State<RegistrarForm> {
               ),
               SizedBox(height: 8),
               TextFormField(
+                controller: _senhaController,
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: '********',
@@ -134,12 +143,47 @@ class _RegistrarFormState extends State<RegistrarForm> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Adicionar sua lógica de registro
-                  },
+                      onPressed: viewModel.estaCarregando
+                      ? null
+                          : () async {
+                      bool sucesso = await viewModel.fazerRegistro(
+                          _usuarioController.text,
+                          _emailController.text,
+                          _telefoneController.text,
+                          _senhaController.text
+                      );
+
+
+                      if(!sucesso) {
+                        if (viewModel.mensagemErro != null) {
+                          final snackBar = SnackBar(
+                            content: Text(viewModel.mensagemErro),
+                            duration: Duration(seconds: 3),
+
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                      } else {
+                          _usuarioController.text = '';
+                          _emailController.text = '';
+                          _telefoneController.text = '';
+                          _senhaController.text = '';
+
+                          final snackBar = SnackBar(
+                            content: Text("Conta criada com sucesso!"),
+                            duration: Duration(seconds: 3),
+
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                    },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Text(
+                    child: viewModel.estaCarregando ? CircularProgressIndicator(
+                      color: Colors.white,
+                    ): Text(
                       'Registrar',
                       style: TextStyle(
                         fontSize: 16,
