@@ -17,12 +17,14 @@ namespace IA_RoboBerto.Servico
         private readonly IDepartamentoRepositorio _DepartamentoRepo;
         private readonly IRoleRepositorio _RoleRepo;
         private readonly IPasswordHasher<Usuario> _passwordHasher;
-        public UsuarioServico(IUsuarioRepositorio usuRepo, IDepartamentoRepositorio departamentoRepo, IRoleRepositorio roleRepo, IPasswordHasher<Usuario> passwordHasher)
+        private readonly IAuthServico _authServico;
+        public UsuarioServico(IUsuarioRepositorio usuRepo, IDepartamentoRepositorio departamentoRepo, IRoleRepositorio roleRepo, IPasswordHasher<Usuario> passwordHasher, IAuthServico authServico)
         {
             _UsuarioRepo = usuRepo;
             _DepartamentoRepo = departamentoRepo;
             _RoleRepo = roleRepo;
             _passwordHasher = passwordHasher;
+            _authServico = authServico;
         }
 
         public async Task<PagedList<UsuarioMaxDTO>> ListarTodosAsync(int paginaAtual, int tamanho)
@@ -48,6 +50,11 @@ namespace IA_RoboBerto.Servico
         {
             var usuario = await _UsuarioRepo.ObterPorNomeAsync(nome);
             if (usuario == null) throw new ResourceNotFoundException("Recurso não encontrado");
+            return new UsuarioMaxDTO(usuario);
+        }
+        public async Task<UsuarioMaxDTO?> ObterEuAsync()
+        {
+            var usuario = await _authServico.ObterUsuarioLogadoAsync();
             return new UsuarioMaxDTO(usuario);
         }
         public async Task<UsuarioMaxDTO?> ObterPorEmailAsync(string email)

@@ -14,6 +14,7 @@ namespace IA_RoboBerto.Contratos.ContratosServicos
         Task<UsuarioMaxDTO?> ObterPorNomeAsync(string nome);
         Task<UsuarioMaxDTO?> ObterPorEmailAsync(string email);
         Task<Usuario?> ValidarUsuarioAsync(string email, string senha);
+        Task<UsuarioMaxDTO?> ObterEuAsync();
         Task<bool> RemoverAsync(Guid id);
     }
 }

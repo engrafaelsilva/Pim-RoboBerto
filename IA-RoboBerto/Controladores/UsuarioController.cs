@@ -37,6 +37,17 @@ namespace IA_RoboBerto.Controladores
             return Ok(usuario);
         }
 
+
+        [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
+        [HttpGet("eu")]
+        public async Task<ActionResult<UsuarioMaxDTO>> GetEu()
+        {
+            var usuario = await _servico.ObterEuAsync();
+            return Ok(usuario);
+        }
+
+
+
         [HttpPost]
         public async Task<ActionResult<UsuarioInsertDTO>> Post([FromBody] UsuarioInsertDTO dto)
         {
