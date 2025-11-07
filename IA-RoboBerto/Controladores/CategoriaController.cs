@@ -19,7 +19,7 @@ namespace IA_RoboBerto.Controladores
         {
             _servico = servico;
         }
-       // [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedListDTO<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
