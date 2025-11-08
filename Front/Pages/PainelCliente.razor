@@ -3,25 +3,211 @@
 <PageTitle>Painel do Cliente</PageTitle>
 
 <div class="painel">
-    <h2>Bem-vindo ao Painel do Cliente 👋</h2>
-    <p>Aqui você pode abrir chamados, acompanhar o status e falar com o suporte técnico.</p>
-    <a href="/abrirchamado">Abrir Chamado</a>
-    <a href="/chatboot">Chat Boot</a>
+    @if (!abrindoChamado)
+    {
+        <div class="painel-inicial">
+            <h2>Bem-vindo ao Painel do Cliente 👋</h2>
+            <p>Aqui você pode abrir chamados, acompanhar o status e falar com o suporte técnico.</p>
+            <button class="btn-hero btn-primary-hero" @onclick="AbrirFormularioChamado">
+                🚀 Abrir Chamado
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="chamado-container">
+            <div class="chamado-card">
+                <h2>Abrir Chamado</h2>
+                <p class="subtitle">Preencha as informações abaixo</p>
+
+                <EditForm Model="@this" OnValidSubmit="EnviarChamado">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group">
+                        <label for="titulo">Título do Chamado</label>
+                        <InputText id="titulo" class="form-control"
+                                   @bind-Value="titulo"
+                                   placeholder="Ex: Erro ao fazer login no sistema" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="descricao">Descrição</label>
+                        <InputTextArea id="descricao" class="form-control descricao"
+                                       @bind-Value="descricao"
+                                       placeholder="Descreva detalhadamente o problema..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prioridade">Prioridade</label>
+                        <InputSelect id="prioridade" class="form-control" @bind-Value="prioridade">
+                            <option value="">Selecione</option>
+                            <option>Baixa</option>
+                            <option>Média</option>
+                            <option>Alta</option>
+                        </InputSelect>
+                    </div>
+
+                    <button type="submit" class="btn-enviar">Enviar Chamado</button>
+                </EditForm>
+
+                @if (!string.IsNullOrEmpty(mensagemSucesso))
+                {
+                    <p class="success-msg">@mensagemSucesso</p>
+                }
+
+                <button class="btn-voltar" @onclick="VoltarAoPainel">⬅ Voltar ao Painel</button>
+            </div>
+        </div>
+    }
 </div>
 
 <style>
     .painel {
         text-align: center;
         margin-top: 100px;
+        padding: 20px;
     }
 
-        .painel h2 {
-            color: #133B92;
-            margin-bottom: 10px;
-        }
+    .painel h2 {
+        color: #133B92;
+        margin-bottom: 10px;
+    }
 
-        .painel p {
-            color: #444;
-            margin-bottom: 30px;
-        }
+    .painel p {
+        color: #444;
+        margin-bottom: 30px;
+    }
+
+    .btn-hero {
+        background: linear-gradient(90deg, #2064F8, #133B92);
+        color: white;
+        border: none;
+        padding: 14px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-hero:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(90deg, #133B92, #2064F8);
+    }
+
+    .chamado-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+        padding: 20px;
+    }
+
+    .chamado-card {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        padding: 40px 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        text-align: left;
+    }
+
+    .chamado-card h2 {
+        text-align: center;
+        color: #133B92;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #555;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #333;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+    }
+
+    .form-control:focus {
+        border-color: #2064F8;
+        outline: none;
+        box-shadow: 0 0 5px rgba(32, 100, 248, 0.3);
+    }
+
+    .descricao {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .btn-enviar, .btn-voltar {
+        width: 100%;
+        background: linear-gradient(90deg, #2064F8, #133B92);
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        margin-top: 10px;
+    }
+
+    .btn-enviar:hover, .btn-voltar:hover {
+        background: linear-gradient(90deg, #133B92, #2064F8);
+    }
+
+    .success-msg {
+        margin-top: 15px;
+        text-align: center;
+        color: #2064F8;
+        font-weight: bold;
+    }
 </style>
+
+@code {
+    private bool abrindoChamado = false;
+    private string titulo = string.Empty;
+    private string descricao = string.Empty;
+    private string prioridade = string.Empty;
+    private string? mensagemSucesso;
+
+    private void AbrirFormularioChamado()
+    {
+        abrindoChamado = true;
+        mensagemSucesso = null;
+        StateHasChanged();
+    }
+
+    private void VoltarAoPainel()
+    {
+        abrindoChamado = false;
+        StateHasChanged();
+    }
+
+    private void EnviarChamado()
+    {
+        mensagemSucesso = "Chamado aberto com sucesso! 🎉";
+        titulo = string.Empty;
+        descricao = string.Empty;
+        prioridade = string.Empty;
+        StateHasChanged();
+    }
+}

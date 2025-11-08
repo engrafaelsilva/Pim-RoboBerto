@@ -1,15 +1,24 @@
-﻿@inherits LayoutComponentBase
+﻿@* @inherits LayoutComponentBase *@
 
-<PageTitle>Front</PageTitle>
+@* <div class="app-layout d-flex"> *@
+@*     <NavMenu /> *@
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@*     <main class="content-area flex-grow-1"> *@
+@*         <div class="main-content p-4"> *@
+@*             @Body *@
+@*         </div> *@
+@*     </main> *@
+@* </div> *@
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+@inherits LayoutComponentBase
+
+<main class="main-content p-0 m-0">
+    @Body
+</main>
+
+<style>
+    .main-content {
+        min-height: 100vh;
+        background-color: #fff;
+    }
+</style>

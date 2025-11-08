@@ -7,7 +7,7 @@
 
 <PageTitle>Login</PageTitle>
 
-<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+<div class="d-flex justify-content-center align-items-center vh-100">
     <div class="card shadow-lg p-4 rounded-4" style="width: 380px;">
         <div class="text-center mb-4">
             <h4 class="fw-bold text-primary">Acesse sua conta</h4>
@@ -17,7 +17,7 @@
         <EditForm Model="@login" OnValidSubmit="ValidarLogin">
             <DataAnnotationsValidator />
             <ValidationSummary />
-
+            
             <div class="mb-3">
                 <label for="email" class="form-label fw-semibold">E-mail</label>
                 <InputText type="email" id="email" class="form-control rounded-pill" placeholder="Digite seu e-mail" @bind-Value="login.Email" />
@@ -74,7 +74,6 @@
 
     .alert-danger {
     color: #721c24;
-    background-color: #f8d7da;
     border-color: #f5c6cb;
     border-radius: .5rem;
     }

@@ -1,12 +1,14 @@
 ﻿@page "/chamados"
 
+@using System.ComponentModel.DataAnnotations
+
 <PageTitle>Gestão de Chamados</PageTitle>
 
 <h1>Lista de Chamados</h1>
 
 <p>Visualize e gerencie os chamados de suporte técnico.</p>
 
-<table class="table table-hover table-bordered">
+<table class="table table-hover table-bordered align-middle">
     <thead class="table-dark">
         <tr>
             <th>Data de Abertura</th>
@@ -19,44 +21,219 @@
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td>25/10/2025 10:34</td>
-            <td>João Silva</td>
-            <td>Erro ao acessar o sistema</td>
-            <td><span class="badge bg-danger">Aberto</span></td>
-            <td>Alta</td>
-            <td>Ana Paula</td>
-            <td>
-                <button class="btn btn-sm btn-primary me-1">Ver</button>
-                <button class="btn btn-sm btn-warning me-1">Editar</button>
-                <button class="btn btn-sm btn-danger">Excluir</button>
-            </td>
-        </tr>
-        <tr>
-            <td>26/10/2025 09:15</td>
-            <td>Maria Costa</td>
-            <td>Computador lento</td>
-            <td><span class="badge bg-warning text-dark">Em andamento</span></td>
-            <td>Média</td>
-            <td>Lucas Rocha</td>
-            <td>
-                <button class="btn btn-sm btn-primary me-1">Ver</button>
-                <button class="btn btn-sm btn-warning me-1">Editar</button>
-                <button class="btn btn-sm btn-danger">Excluir</button>
-            </td>
-        </tr>
-        <tr>
-            <td>27/10/2025 14:50</td>
-            <td>Carlos Mendes</td>
-            <td>Solicitação de novo usuário</td>
-            <td><span class="badge bg-success">Resolvido</span></td>
-            <td>Baixa</td>
-            <td>Fernanda Lima</td>
-            <td>
-                <button class="btn btn-sm btn-primary me-1">Ver</button>
-                <button class="btn btn-sm btn-warning me-1">Editar</button>
-                <button class="btn btn-sm btn-danger">Excluir</button>
-            </td>
-        </tr>
+        @foreach (var chamado in chamados)
+        {
+            <tr>
+                <td>@chamado.DataAbertura.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@chamado.Usuario</td>
+                <td>@chamado.Titulo</td>
+                <td>
+                    @if (chamado.Status == "Aberto")
+                    {
+                        <span class="badge bg-danger">Aberto</span>
+                    }
+                    else if (chamado.Status == "Em andamento")
+                    {
+                        <span class="badge bg-warning text-dark">Em andamento</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Resolvido</span>
+                    }
+                </td>
+                <td>@chamado.Prioridade</td>
+                <td>@chamado.Responsavel</td>
+                <td>
+                    <button class="btn btn-sm btn-primary me-1" @onclick="() => AbrirModalVer(chamado)">Ver</button>
+                    <button class="btn btn-sm btn-warning me-1" @onclick="() => AbrirModalEditar(chamado)">Editar</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => AbrirModalExcluir(chamado)">Excluir</button>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+
+<!-- Modal de Visualização -->
+@if (mostrarModalVer)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-4">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Detalhes do Chamado</h5>
+                    <button type="button" class="btn-close" @onclick="FecharModalVer"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Usuário:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.Usuario</dd>
+
+                        <dt class="col-sm-4">Título:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.Titulo</dd>
+
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.Status</dd>
+
+                        <dt class="col-sm-4">Prioridade:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.Prioridade</dd>
+
+                        <dt class="col-sm-4">Responsável:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.Responsavel</dd>
+
+                        <dt class="col-sm-4">Data de Abertura:</dt>
+                        <dd class="col-sm-8">@chamadoSelecionado?.DataAbertura.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="FecharModalVer">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal de Edição -->
+@if (mostrarModalEditar)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-4">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold">Editar Chamado</h5>
+                    <button type="button" class="btn-close" @onclick="FecharModalEditar"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@chamadoEdicao" OnValidSubmit="SalvarEdicao">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Título</label>
+                            <InputText class="form-control" @bind-Value="chamadoEdicao.Titulo" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Status</label>
+                            <InputSelect class="form-select" @bind-Value="chamadoEdicao.Status">
+                                <option>Aberto</option>
+                                <option>Em andamento</option>
+                                <option>Resolvido</option>
+                            </InputSelect>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Prioridade</label>
+                            <InputSelect class="form-select" @bind-Value="chamadoEdicao.Prioridade">
+                                <option>Baixa</option>
+                                <option>Média</option>
+                                <option>Alta</option>
+                            </InputSelect>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-semibold">Salvar Alterações</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal de Confirmação de Exclusão -->
+@if (mostrarModalExcluir)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-4">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" @onclick="FecharModalExcluir"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Tem certeza que deseja excluir o chamado <strong>@chamadoExcluir?.Titulo</strong>?</p>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn btn-secondary" @onclick="FecharModalExcluir">Cancelar</button>
+                        <button class="btn btn-danger" @onclick="ConfirmarExclusao">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Chamado> chamados = new()
+    {
+        new Chamado { DataAbertura = DateTime.Parse("25/10/2025 10:34"), Usuario = "João Silva", Titulo = "Erro ao acessar o sistema", Status = "Aberto", Prioridade = "Alta", Responsavel = "Ana Paula" },
+        new Chamado { DataAbertura = DateTime.Parse("26/10/2025 09:15"), Usuario = "Maria Costa", Titulo = "Computador lento", Status = "Em andamento", Prioridade = "Média", Responsavel = "Lucas Rocha" },
+        new Chamado { DataAbertura = DateTime.Parse("27/10/2025 14:50"), Usuario = "Carlos Mendes", Titulo = "Solicitação de novo usuário", Status = "Resolvido", Prioridade = "Baixa", Responsavel = "Fernanda Lima" }
+    };
+
+    private bool mostrarModalVer = false;
+    private bool mostrarModalEditar = false;
+    private bool mostrarModalExcluir = false;
+
+    private Chamado? chamadoSelecionado;
+    private Chamado? chamadoEdicao;
+    private Chamado? chamadoExcluir;
+
+    // ----- Modal Ver -----
+    private void AbrirModalVer(Chamado chamado)
+    {
+        chamadoSelecionado = chamado;
+        mostrarModalVer = true;
+    }
+    private void FecharModalVer() => mostrarModalVer = false;
+
+    // ----- Modal Editar -----
+    private void AbrirModalEditar(Chamado chamado)
+    {
+        chamadoEdicao = new Chamado
+        {
+            DataAbertura = chamado.DataAbertura,
+            Usuario = chamado.Usuario,
+            Titulo = chamado.Titulo,
+            Status = chamado.Status,
+            Prioridade = chamado.Prioridade,
+            Responsavel = chamado.Responsavel
+        };
+        mostrarModalEditar = true;
+    }
+
+    private void FecharModalEditar() => mostrarModalEditar = false;
+
+    private void SalvarEdicao()
+    {
+        if (chamadoEdicao is not null)
+        {
+            var original = chamados.FirstOrDefault(c => c.Usuario == chamadoEdicao.Usuario && c.Titulo == chamadoEdicao.Titulo);
+            if (original != null)
+            {
+                original.Status = chamadoEdicao.Status;
+                original.Prioridade = chamadoEdicao.Prioridade;
+            }
+        }
+        mostrarModalEditar = false;
+    }
+
+    // ----- Modal Excluir -----
+    private void AbrirModalExcluir(Chamado chamado)
+    {
+        chamadoExcluir = chamado;
+        mostrarModalExcluir = true;
+    }
+
+    private void FecharModalExcluir() => mostrarModalExcluir = false;
+
+    private void ConfirmarExclusao()
+    {
+        if (chamadoExcluir is not null)
+            chamados.Remove(chamadoExcluir);
+
+        mostrarModalExcluir = false;
+    }
+
+    public class Chamado
+    {
+        public DateTime DataAbertura { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public string Titulo { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Prioridade { get; set; } = string.Empty;
+        public string Responsavel { get; set; } = string.Empty;
+    }
+}

@@ -1,46 +1,258 @@
 ﻿@page "/"
+@layout HomeLayout
 
-<PageTitle>RoboBerto</PageTitle>
+@inject NavigationManager Navigation
 
-<div class="home-container text-center">
-    <img src="/image/LogoRoboBertoIA.png" alt="Logo RoboBerto" class="logo-img" />
+<PageTitle>RoboBerto - Suporte Técnico Inteligente</PageTitle>
 
-    <h1>
-        <strong>Bem-vindo(a) ao <span class="highlight">RoboBerto!</span> 🤖</strong>
-    </h1>
+<!-- HERO SECTION -->
+<div class="hero-section d-flex flex-column justify-content-center align-items-center text-center">
+    <div class="hero-overlay"></div>
 
-    <p class="subtitle">
-        Suporte Técnico Inteligente <br />
-        Para a sua Empresa
-    </p>
+    <div class="hero-content position-relative text-white px-4">
+        <img src="/image/LogoRoboBertoIA.png" alt="Logo RoboBerto" class="hero-logo mb-4" />
+
+        <h1 class="display-4 fw-bold mb-3 animate-fade-up">
+            Bem-vindo ao <span class="highlight">RoboBerto 🤖</span>
+        </h1>
+
+        <p class="lead text-light mb-4 animate-fade-up delay-1">
+            Seu assistente inteligente para suporte técnico corporativo.<br />
+            Eficiência, rapidez e tecnologia ao seu alcance.
+        </p>
+
+        <div class="d-flex justify-content-center flex-wrap gap-3 animate-fade-up delay-2">
+            <button class="btn-hero btn-primary-hero" @onclick='() => Navigation.NavigateTo("/login")'>
+                🚀 Acessar Sistema
+            </button>
+
+            <button class="btn-hero btn-outline-hero" @onclick='() => Navigation.NavigateTo("/cadastre-se")'>
+                ✨ Criar Conta
+            </button>
+        </div>
+    </div>
+
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 320">
+            <path fill="#ffffff" fill-opacity="1"
+                  d="M0,224L48,208C96,192,192,160,288,144C384,128,480,128,576,154.7C672,181,768,235,864,245.3C960,256,1056,224,1152,186.7C1248,149,1344,107,1392,85.3L1440,64L1440,320L0,320Z">
+            </path>
+        </svg>
+    </div>
 </div>
 
+<!-- FEATURES -->
+<section class="features-section py-5 text-center">
+    <div class="container">
+        <h2 class="fw-bold text-primary mb-4">Por que escolher o RoboBerto?</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4 shadow-sm h-100">
+                    <i class="oi oi-flash feature-icon text-primary mb-3"></i>
+                    <h5 class="fw-semibold">Atendimento Rápido</h5>
+                    <p class="text-muted">Respostas instantâneas e automação inteligente para suporte técnico eficiente.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4 shadow-sm h-100">
+                    <i class="oi oi-cog feature-icon text-primary mb-3"></i>
+                    <h5 class="fw-semibold">Automação Completa</h5>
+                    <p class="text-muted">Gerencie chamados, atribuições e acompanhamento com poucos cliques.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card p-4 shadow-sm h-100">
+                    <i class="oi oi-lock-locked feature-icon text-primary mb-3"></i>
+                    <h5 class="fw-semibold">Segurança e Confiabilidade</h5>
+                    <p class="text-muted">Seus dados estão protegidos com tecnologia de segurança corporativa.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer text-center py-3 text-muted small">
+    © @DateTime.Now.Year RoboBerto — Suporte Técnico Inteligente
+</footer>
+
 <style>
-    .home-container {
+    /* === HERO SECTION === */
+    .hero-section {
+        position: relative;
+        min-height: 92vh; /* Ajuste ideal para monitores e notebooks */
+        overflow: hidden;
+        background: linear-gradient(135deg, #2064F8 0%, #12437C 100%);
         display: flex;
         flex-direction: column;
-        align-items: center;
         justify-content: center;
-        height: 90vh;
-        text-align: center;
-        color: #222;
+        align-items: center;
     }
 
-    .logo-img {
-        width: 200px;
-        height: auto;
-        margin-bottom: 20px;
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1;
+    }
+
+    .hero-content {
+        z-index: 5;
+        max-width: 800px;
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .hero-logo {
+        width: 180px;
         animation: float 3s ease-in-out infinite;
     }
 
     .highlight {
-        color: #2064F8;
+        color: #FFD700;
     }
 
-    .subtitle {
-        color: #555;
+    .hero-wave {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    /* === BOTÕES PERSONALIZADOS === */
+    .btn-hero {
         font-size: 1.1rem;
-        margin-top: 10px;
-        line-height: 1.6;
+        font-weight: 600;
+        padding: 0.8rem 2.6rem;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        letter-spacing: 0.3px;
+    }
+
+    .btn-primary-hero {
+        background-color: #ffffff;
+        color: #12437C;
+    }
+
+        .btn-primary-hero:hover {
+            background-color: #FFD700;
+            color: #12437C;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            transform: translateY(-2px);
+        }
+
+    .btn-outline-hero {
+        background-color: transparent;
+        border: 2px solid #fff;
+        color: #fff;
+    }
+
+        .btn-outline-hero:hover {
+            background-color: #fff;
+            color: #12437C;
+            border-color: #FFD700;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+        }
+
+    .btn-hero:active {
+        transform: scale(0.97);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    /* === FEATURES SECTION === */
+    .features-section {
+        background-color: #ffffff;
+    }
+
+    .feature-card {
+        border-radius: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+    .feature-icon {
+        font-size: 2rem;
+    }
+
+    /* === FOOTER === */
+    .footer {
+        background-color: #f7f9fc;
+        border-top: 1px solid #e6e9ef;
+    }
+
+    /* === ANIMAÇÕES === */
+    @@keyframes float {
+        0%
+
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+
+    }
+
+    .animate-fade-up {
+        opacity: 0;
+        transform: translateY(30px);
+        animation: fadeUp 1s forwards;
+    }
+
+    .delay-1 {
+        animation-delay: 0.3s;
+    }
+
+    .delay-2 {
+        animation-delay: 0.6s;
+    }
+
+    @@keyframes fadeUp {
+        to
+
+    {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    /* === RESPONSIVIDADE === */
+    @@media (max-width: 992px) {
+        .hero-section
+
+    {
+        min-height: 100vh;
+    }
+
+    .hero-logo {
+        width: 150px;
+    }
+
+    .display-4 {
+        font-size: 2rem;
+    }
+
+    .btn-hero {
+        font-size: 1rem;
+        padding: 0.7rem 2rem;
+    }
+
     }
 </style>
