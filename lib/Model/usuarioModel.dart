@@ -1,25 +1,19 @@
 import 'dart:convert';
 
 class UsuarioModel {
-  /// Mapeia para: usu_codigo (INT, Chave Primária)
   final int? codigo;
 
-  /// Mapeia para: usu_nome (VARCHAR)
   final String nome;
 
-  /// Mapeia para: usu_email (VARCHAR, Único)
   final String email;
 
-  /// Mapeia para: usu_senha_hash (VARCHAR)
   final String? senhaHash;
 
-  /// Mapeia para: usu_telefone (VARCHAR, Nulável)
   final String? telefone;
 
-  /// Mapeia para: usu_datacriacao (DATETIME/TIMESTAMP)
+
   final DateTime? dataCriacao;
 
-  /// Mapeia para: dep_codigo (INT, Chave Estrangeira)
   final int? depCodigo;
 
   UsuarioModel({
@@ -39,7 +33,6 @@ class UsuarioModel {
       email: json['usu_email'] as String,
       senhaHash: json['usu_senha_hash'] as String?,
       telefone: json['usu_telefone'] as String?,
-      // Trata a data, que pode vir como String (ISO 8601) ou Timestamp
       dataCriacao: json['usu_datacriacao'] == null
           ? null
           : DateTime.parse(json['usu_datacriacao'] as String),

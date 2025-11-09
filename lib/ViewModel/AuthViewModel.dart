@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert'; // Para JSON
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart'; // Para requisições HTTP
+import 'package:uuid/uuid.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final _storage = const FlutterSecureStorage();
@@ -17,48 +17,51 @@ class AuthViewModel extends ChangeNotifier {
 
   String get mensagemErro => _mensagemErro;
 
-  Future<bool> fazerLogin(String email, String senha) async {
+  var ipApi = '192.168.0.28';
+
+  Future<Map<String, String>?> fazerLogin(String email, String senha) async {
     _estaCarregando = true;
     _mensagemErro = "";
     notifyListeners();
 
-    if(email.isEmpty || email.length == 0 || senha.isEmpty || senha.length == 0){
+    if (email.isEmpty || senha.isEmpty) {
       _mensagemErro = 'Insira o email e a senha';
       _estaCarregando = false;
       notifyListeners();
-      return false;
+      return null;
     }
 
-
     try {
-      final url = Uri.parse('http://10.117.174.6:5129/Autenticacao/login');
-      final body = jsonEncode({
-        'email': email,
-        'senha': senha
-      });
+      final url = Uri.parse('http://' + ipApi + ':5129/Autenticacao/login');
+      final body = jsonEncode({'email': email, 'senha': senha});
 
       final response = await http.post(
-        url, headers: {'Content-Type': 'application/json'}, body: body,
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        //salva token
         final data = jsonDecode(response.body);
-        final String token = data['token'];
+        final String? token = data['token'];
 
-        if(token != null && token.isNotEmpty){
+        if (token != null && token.isNotEmpty) {
           await _storage.write(key: 'jwt_token', value: token);
 
-          _estaCarregando = false;
-          notifyListeners();
-          return true; // Sucesso
+          final Map<String, String>? dadosUsuario =
+          await _buscarDadosUsuario(token);
+
+          if (dadosUsuario != null) {
+            _estaCarregando = false;
+            notifyListeners();
+            return dadosUsuario;
+          } else {
+            _mensagemErro =
+            'Login com sucesso, mas falha ao buscar dados do utilizador.';
+          }
         } else {
           _mensagemErro = 'Resposta de login inválida. Token não encontrado.';
-          _estaCarregando = false;
-          notifyListeners();
-          return false;
         }
-
       } else {
         try {
           final errorData = jsonDecode(response.body);
@@ -66,15 +69,44 @@ class AuthViewModel extends ChangeNotifier {
         } catch (e) {
           _mensagemErro = 'Email ou senha invalidos';
         }
-        _estaCarregando = false;
-        notifyListeners();
-        return false;
       }
-    } catch (e){
-      _mensagemErro = 'Erro de conexão. Tente novamente';
-      _estaCarregando = false;
-      notifyListeners();
-      return false;
+    } on TimeoutException catch (_) {
+      _mensagemErro = 'O servidor demorou muito para responder.';
+    } on SocketException catch (_) {
+      _mensagemErro = 'Sem conexão com a internet.';
+    } catch (e) {
+      _mensagemErro = 'Ocorreu um erro inesperado: $e';
+    }
+
+    _estaCarregando = false;
+    notifyListeners();
+    return null;
+  }
+
+  Future<Map<String, String>?> _buscarDadosUsuario(String token) async {
+    try {
+      final url = Uri.parse('http://$ipApi:5129/Usuario/eu');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await http
+          .get(url, headers: headers)
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final String? nome = data['nome'];
+        final String? email = data['email'];
+
+        if (nome != null && email != null) {
+          return {'nome': nome, 'email': email};
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -97,7 +129,7 @@ class AuthViewModel extends ChangeNotifier {
 
       DateTime agora = DateTime.now();
       String dataFormatada = agora.toIso8601String();
-      final url = Uri.parse('http://10.117.174.6:5129/Usuario');
+      final url = Uri.parse('http://' + ipApi + ':5129/Usuario');
       final body = jsonEncode({
         'id': novaUuid,
         'nome': usuario,
@@ -127,8 +159,7 @@ class AuthViewModel extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-    }
-    on TimeoutException catch (_) {
+    } on TimeoutException catch (_) {
       _mensagemErro =
       'O servidor demorou muito para responder. Tente novamente.';
       _estaCarregando = false;
@@ -147,9 +178,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  void FazerLogout(BuildContext context) async {
-    _storage.deleteAll();
-
-    Navigator.pop(context);
+  Future<void> FazerLogout() async {
+    await _storage.deleteAll();
   }
 }

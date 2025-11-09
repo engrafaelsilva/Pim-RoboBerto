@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:roboberto_ia/View/NovoChamadoPage.dart';
+import 'package:roboberto_ia/View/chamado_detalhe_page.dart';
+import 'package:roboberto_ia/View/home.dart';
 import 'package:roboberto_ia/ViewModel/UserHomePageViewModel.dart';
 import 'package:roboberto_ia/ViewModel/AuthViewModel.dart';
-import 'package:roboberto_ia/View/chamado_card.dart';
 
 class UserHomePage extends StatefulWidget {
   final String userName;
@@ -20,48 +23,59 @@ class UserHomePage extends StatefulWidget {
 
 class _UserHomePageState extends State<UserHomePage> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserHomePageViewModel>().buscarMeusChamados();
+    });
+  }
+
+  Future<void> _handleRefresh() async {
+    context.read<UserHomePageViewModel>().limparMensagens();
+    await context.read<UserHomePageViewModel>().buscarMeusChamados();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final viewModelAuth = context.watch<AuthViewModel>();
-    final viewModelUserHomePage = context.watch<UserHomePageViewModel>();
+    final viewModelAuth = context.read<AuthViewModel>();
+    final viewModelUserHomePage =
+    context.watch<UserHomePageViewModel>();
+
     return Scaffold(
-      // Fundo azul claro para a tela inteira
       backgroundColor: Color(0xFFF0F4FF),
-      // Nosso AppBar customizado
-      appBar: _buildCustomAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cartão de Boas-vindas
-              _buildWelcomeCard(context),
-
-              SizedBox(height: 24),
-
-              // Título "Meus Chamados"
-              Text(
-                'Meus Chamados',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+      appBar: _buildCustomAppBar(context, viewModelAuth),
+      body:
+      RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWelcomeCard(context),
+                SizedBox(height: 24),
+                Text(
+                  'Meus Chamados',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-
-              SizedBox(height: 16),
-
-              // Cartão de "Nenhum Chamado"
-              _buildNoTicketsCard(context),
-            ],
+                SizedBox(height: 16),
+                _buildChamadosContent(viewModelUserHomePage),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-
-  PreferredSizeWidget _buildCustomAppBar(BuildContext context) {
+  PreferredSizeWidget _buildCustomAppBar(
+      BuildContext context, AuthViewModel viewModelAuth) {
     return PreferredSize(
       preferredSize: Size.fromHeight(100.0),
       child: AppBar(
@@ -70,15 +84,17 @@ class _UserHomePageState extends State<UserHomePage> {
         automaticallyImplyLeading: false,
         flexibleSpace: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               children: [
-                // Avatar
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: Colors.blueAccent.withOpacity(0.1),
                   child: Text(
-                    widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                    widget.userName.isNotEmpty
+                        ? widget.userName[0].toUpperCase()
+                        : 'U',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -87,7 +103,6 @@ class _UserHomePageState extends State<UserHomePage> {
                   ),
                 ),
                 SizedBox(width: 12),
-                // Nome e Email
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -111,11 +126,19 @@ class _UserHomePageState extends State<UserHomePage> {
                   ],
                 ),
                 Spacer(),
-                // Ícone de Logout
                 IconButton(
                   icon: Icon(Icons.logout, color: Colors.grey[600], size: 28),
-                  onPressed: () {
-                    AuthViewModel().FazerLogout(context);
+                  onPressed: () async {
+                    await viewModelAuth.FazerLogout();
+
+                    if (mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const homePage(),
+                        ),
+                            (Route<dynamic> route) => false,
+                      );
+                    }
                   },
                 ),
               ],
@@ -126,7 +149,89 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  /// Constrói o cartão de "Bem-vindo"
+  Widget _buildChamadosContent(UserHomePageViewModel viewModel) {
+    if (viewModel.estaCarregando) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (viewModel.mensagemErro.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.mensagemErro),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
+      return _buildNoTicketsCard(context);
+    }
+
+    if (viewModel.chamados.isEmpty) {
+      return _buildNoTicketsCard(context);
+    }
+
+    return ListView.builder(
+      itemCount: viewModel.chamados.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        final chamado = viewModel.chamados[index];
+
+        String statusFormatado;
+        switch (chamado.status) {
+          case 1:
+            statusFormatado = 'Aberto';
+            break;
+          case 2:
+            statusFormatado = 'Sugestão gerada';
+            break;
+          case 3:
+            statusFormatado = 'Pendente Tecnico';
+            break;
+          case 4:
+            statusFormatado = 'Em andamento';
+            break;
+          case 5:
+            statusFormatado = 'Fechado';
+            break;
+          case 6:
+            statusFormatado = 'Cancelado';
+            break;
+          default:
+            statusFormatado = 'Desconhecido';
+        }
+
+        final String dataFormatada =
+        DateFormat('dd/MM/yyyy HH:mm').format(chamado.dataAbertura);
+
+        return ChamadoCard(
+          titulo: chamado.titulo,
+          data: dataFormatada,
+          status: statusFormatado,
+          onTap: () async {
+            final bool? precisaAtualizar = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChamadoDetalhePage(
+                    chamado: chamado, nomeUsuarioAtual: widget.userName),
+              ),
+            );
+
+            if (precisaAtualizar == true && mounted) {
+              _handleRefresh();
+            }
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildWelcomeCard(BuildContext context) {
     return Card(
       elevation: 3.0,
@@ -159,10 +264,18 @@ class _UserHomePageState extends State<UserHomePage> {
               ),
             ),
             SizedBox(height: 20),
-            // Botão "Novo Chamado"
             ElevatedButton(
-              onPressed: () {
-                // TODO: Adicionar lógica para abrir novo chamado
+              onPressed: () async {
+                final bool? chamadoFoiCriado = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NovoChamadoPage(),
+                  ),
+                );
+
+                if (chamadoFoiCriado == true && mounted) {
+                  _handleRefresh();
+                }
               },
               child: Text(
                 'Novo Chamado',
@@ -173,7 +286,7 @@ class _UserHomePageState extends State<UserHomePage> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.white, // Cor de fundo
+                primary: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -186,7 +299,6 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  /// Constrói o cartão de "Nenhum Chamado Aberto"
   Widget _buildNoTicketsCard(BuildContext context) {
     return Card(
       elevation: 2.0,
@@ -200,7 +312,7 @@ class _UserHomePageState extends State<UserHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.inbox_outlined, // Ícone de caixa de entrada
+                Icons.inbox_outlined,
                 size: 60,
                 color: Colors.grey[400],
               ),
@@ -230,3 +342,124 @@ class _UserHomePageState extends State<UserHomePage> {
   }
 }
 
+class ChamadoCard extends StatelessWidget {
+  final String titulo;
+  final String data;
+  final String status;
+  final VoidCallback onTap;
+
+  const ChamadoCard({
+    Key? key,
+    required this.titulo,
+    required this.data,
+    required this.status,
+    required this.onTap,
+  }) : super(key: key);
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'aberto':
+        return Colors.green;
+      case 'sugestão gerada':
+        return Colors.cyan;
+      case 'pendente tecnico':
+      case 'em andamento':
+        return Colors.orange;
+      case 'fechado':
+      case 'cancelado':
+        return Colors.grey;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  Color _getBackgroundColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'aberto':
+        return Colors.green.withOpacity(0.1);
+      case 'sugestão gerada':
+        return Colors.cyan.withOpacity(0.1);
+      case 'pendente tecnico':
+      case 'em andamento':
+        return Colors.orange.withOpacity(0.1);
+      case 'fechado':
+      case 'cancelado':
+        return Colors.grey.withOpacity(0.1);
+      default:
+        return Colors.blue.withOpacity(0.1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color statusColor = _getStatusColor(status);
+    final Color statusBackgroundColor = _getBackgroundColor(status);
+
+    return Card(
+      elevation: 2.0,
+      shadowColor: Colors.black.withOpacity(0.05),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 12.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Criado em: $data',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12),
+              Chip(
+                label: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+                backgroundColor: statusBackgroundColor,
+                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.transparent),
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: Colors.grey[400],
+                size: 28,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

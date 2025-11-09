@@ -47,8 +47,6 @@ class _loginState extends State<login> {
                 ),
               ),
               SizedBox(height: 24),
-
-              // CAMPO DE EMAIL
               Text(
                 'Email',
                 style: TextStyle(
@@ -72,8 +70,6 @@ class _loginState extends State<login> {
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
-
-              // CAMPO DE SENHA
               Text(
                 'Senha',
                 style: TextStyle(
@@ -97,51 +93,59 @@ class _loginState extends State<login> {
                 ),
               ),
               SizedBox(height: 24),
-
-              // BOTÃO ENTRAR
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: viewModel.estaCarregando
                       ? null
                       : () async {
-                          bool sucesso = await viewModel.fazerLogin(
-                              _emailController.text,
-                              _senhaController.text
-                          );
+                    final authViewModel = context.read<AuthViewModel>();
 
+                    final Map<String, String>? dadosUsuario =
+                    await authViewModel.fazerLogin(
+                      _emailController.text,
+                      _senhaController.text,
+                    );
 
-                          if(!sucesso){
-                            if(viewModel.mensagemErro != null){
-                              final snackBar = SnackBar(
-                                content: Text(viewModel.mensagemErro),
-                                duration: Duration(seconds: 3),
+                    if (!mounted) return;
 
-                              );
+                    if (dadosUsuario != null) {
+                      _emailController.clear();
+                      _senhaController.clear();
 
-                              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                            }
-                          } else {
-                            var email = _emailController.text;
-                            _emailController.text = '';
-                            _senhaController.text = '';
-                            Navigator.push(context,MaterialPageRoute(builder: (context) => UserHomePage(userName: 'Teste', userEmail: email)),);
-                          }
-                        },
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserHomePage(
+                            userName: dadosUsuario['nome']!,
+                            userEmail: dadosUsuario['email']!,
+                          ),
+                        ),
+                      );
+                    } else {
+                      final snackBar = SnackBar(
+                        content: Text(authViewModel.mensagemErro),
+                        duration: Duration(seconds: 3),
+                        backgroundColor: Colors.red,
+                      );
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(snackBar);
+                    }
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: viewModel.estaCarregando
                         ? CircularProgressIndicator(
-                            color: Colors.white,
-                          )
+                      color: Colors.white,
+                    )
                         : Text(
-                            'Entrar',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                      'Entrar',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     primary: Colors.black,
