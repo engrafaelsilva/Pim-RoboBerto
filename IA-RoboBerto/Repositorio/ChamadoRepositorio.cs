@@ -45,6 +45,7 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
+                 .ThenInclude(m => m.Autor)
                 .Where(c => c.Autor.Id == id);
 
             var totalRegistros = await resultado.CountAsync();
@@ -65,6 +66,7 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Include(c => c.Categoria)
                 .Include(c => c.Mensagens)
+                .ThenInclude(m => m.Autor)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
