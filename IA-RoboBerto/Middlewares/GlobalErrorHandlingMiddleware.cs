@@ -1,5 +1,6 @@
 ﻿using IA_RoboBerto.Exceções;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Net;
 using System.Text.Json;
@@ -63,6 +64,10 @@ namespace IA_RoboBerto.Middlewares
                 status = HttpStatusCode.BadRequest;
             }
             else if (exceptionTipo == typeof(BadHttpRequestException))
+            {
+                status = HttpStatusCode.BadRequest;
+            }
+            else if (exceptionTipo == typeof(ValidationException))
             {
                 status = HttpStatusCode.BadRequest;
             }

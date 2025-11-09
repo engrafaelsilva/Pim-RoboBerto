@@ -18,7 +18,7 @@ namespace IA_RoboBerto.DTOs
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Erro: O telefone é obrigatório.")]
-        [StringLength(255)]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "Erro: O telefone deve conter exatamente 11 números, sem espaços ou símbolos.")]
         public string Telefone { get; set; }
 
         [Required(ErrorMessage = "Erro: A senha é obrigatório.")]

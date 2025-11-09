@@ -32,7 +32,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,TECNICO")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ChamadoDTO>> GetById(Guid id)
         {
@@ -55,7 +55,7 @@ namespace IA_RoboBerto.Controladores
         [HttpGet("expirados")]
         public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosSLAExpirado()
         {
-            var resultado = await _servico.ListarChamadosPendentesTecnicosExpiradosAsync();
+            var resultado = await _servico.ListarChamadosAbertoExpiradosAsync();
             return Ok(resultado);
         }
 
@@ -64,7 +64,7 @@ namespace IA_RoboBerto.Controladores
         [HttpGet("pendentes-tecnico")]
         public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosSLANaoExpirado()
         {
-            var resultado = await _servico.ListarChamadosPendentesTecnicosNaoExpiradosAsync();
+            var resultado = await _servico.ListarChamadosAbertoNaoExpiradosAsync();
             return Ok(resultado);
         }
 
@@ -76,7 +76,7 @@ namespace IA_RoboBerto.Controladores
             var criado = await _servico.AbrirChamadoAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }
-        [Authorize(Roles = "ADM,COLABORADOR")]
+        [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
 
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ChamadoDTO>> Put(Guid id, [FromBody] ChamadoDTO dto)
@@ -92,7 +92,7 @@ namespace IA_RoboBerto.Controladores
             return NoContent();
         }
 
-        [Authorize(Roles = "ADM,COLABORADOR")]
+        [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
         [HttpPatch("{id:guid}/cancelar")] 
         public async Task<ActionResult<ChamadoDTO>> CancelarChamado(Guid id)
         {

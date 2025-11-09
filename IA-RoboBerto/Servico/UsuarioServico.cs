@@ -8,6 +8,7 @@ using IA_RoboBerto.Repositorio;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.ComponentModel.DataAnnotations;
 
 namespace IA_RoboBerto.Servico
 {
@@ -156,5 +157,6 @@ namespace IA_RoboBerto.Servico
                 return usuario;
             }
         }
+    
     }
 }

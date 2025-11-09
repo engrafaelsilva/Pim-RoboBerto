@@ -47,17 +47,17 @@ namespace IA_RoboBerto.Servico
             );
         }
 
-        public async Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosExpiradosAsync()
+        public async Task<List<ChamadoDTO>> ListarChamadosAbertoExpiradosAsync()
         {
-            var resultado = await _ChamadoRepo.ListarChamadosPendentesTecnicosExpiradosAsync();
+            var resultado = await _ChamadoRepo.ListarChamadosAbertoExpiradosAsync();
 
             var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
 
             return resultadoDTO;
         }
-        public async Task<List<ChamadoDTO>> ListarChamadosPendentesTecnicosNaoExpiradosAsync()
+        public async Task<List<ChamadoDTO>> ListarChamadosAbertoNaoExpiradosAsync()
         {
-            var resultado = await _ChamadoRepo.ListarChamadosPendentesTecnicosNaoExpiradosAsync();
+            var resultado = await _ChamadoRepo.ListarChamadosAbertoNaoExpiradosAsync();
 
             var resultadoDTO = resultado.Select(x => new ChamadoDTO(x)).ToList();
 
@@ -98,8 +98,8 @@ namespace IA_RoboBerto.Servico
         public async Task<ChamadoDTO> AtribuirTecnicoAsync(Guid chamadoId)
         {
             var chamado = await _ChamadoRepo.ObterPorIdAsync(chamadoId);
-            var usuarioAutenticado = await _authService.ObterUsuarioLogadoAsync();
-            chamado.Tecnico = usuarioAutenticado;
+            var tecnico = await _authService.ObterUsuarioLogadoAsync();
+            chamado = await _ChamadoRepo.AtribuirTecnicoAsync(chamado, tecnico);
             return new ChamadoDTO(chamado);
         }
 

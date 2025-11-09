@@ -20,7 +20,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
-     //   [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM")]
         [HttpGet]
         public async Task<ActionResult<PagedList<UsuarioMaxDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -38,7 +38,7 @@ namespace IA_RoboBerto.Controladores
         }
 
 
-        [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
+       [Authorize(Roles = "ADM,TECNICO,COLABORADOR")]
         [HttpGet("eu")]
         public async Task<ActionResult<UsuarioMaxDTO>> GetEu()
         {
@@ -51,12 +51,6 @@ namespace IA_RoboBerto.Controladores
         [HttpPost]
         public async Task<ActionResult<UsuarioInsertDTO>> Post([FromBody] UsuarioInsertDTO dto)
         {
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var criado = await _servico.AdicionarAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
         }

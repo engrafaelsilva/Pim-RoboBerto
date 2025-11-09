@@ -19,12 +19,27 @@ namespace IA_RoboBerto.Servico
 
         public async Task<Usuario?> ObterUsuarioLogadoAsync()
         {
-            var idUsuarioFromClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var id = Guid.Parse(idUsuarioFromClaim);
-            if(id == null) throw new ForbiddenException("Acesso negado");
+            var user = _httpContextAccessor.HttpContext?.User;
 
-            var usuario = await _usuarioRepo.ObterPorIdAsync(id);
-            if (usuario == null) throw new UserNotFoundException("Usuário não encontrado");
+            // Verifica se há usuário autenticado
+            if (user == null || !user.Identity.IsAuthenticated)
+                throw new ForbiddenException("Acesso negado");
+
+            // Busca o ID da claim — use o nome exato do token ("nameid")
+            var claimId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? user.FindFirst("nameid")?.Value;
+
+            if (string.IsNullOrEmpty(claimId))
+                throw new ForbiddenException("Acesso negado");
+
+            if (!Guid.TryParse(claimId, out var idUsuario))
+                throw new ForbiddenException("Acesso negado");
+
+            // Busca o usuário no repositório
+            var usuario = await _usuarioRepo.ObterPorIdAsync(idUsuario);
+
+            if (usuario == null)
+               throw new UserNotFoundException("Usuário não encontrado");
 
             return usuario;
         }

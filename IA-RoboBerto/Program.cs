@@ -49,6 +49,7 @@ builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
+
 builder.Services.AddHttpClient<IGeminiServico, GeminiServico>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
@@ -105,8 +106,6 @@ Essa API permite gerenciar usuários, departamentos, categorias e chamados, com 
 📝 **Dica para testes:**
 - Os emails estão cadastrados no banco com a senha `senha123`.  
 - Após login, sempre inclua o token JWT nos requests de endpoints que requerem autenticação ou roles específicas.
-![SEXO](https://i.kym-cdn.com/entries/icons/original/000/041/587/cover2.jpg)
-![](https://i.redd.it/o55127frwzv61.jpg)
 "
 
     });

@@ -122,10 +122,9 @@ namespace IA_RoboBerto.Repositorio
             return existente;
         }
 
-        public async Task<Chamado?> AtribuirTecnicoEAlterarStatusAsync(Chamado chamado, Usuario tecnico)
+        public async Task<Chamado?> AtribuirTecnicoAsync(Chamado chamado, Usuario tecnico)
         {
             chamado.Tecnico = tecnico;
-            chamado.Status = EStatusChamado.PENDENTE_TECNICO;
             await _context.SaveChangesAsync();
             return chamado;
         }
@@ -135,7 +134,7 @@ namespace IA_RoboBerto.Repositorio
             chamado.SugestaoResolveu = resolveuSugestao;
             if (!resolveuSugestao)
             {
-                chamado.Status = EStatusChamado.PENDENTE_TECNICO;
+                chamado.Status = EStatusChamado.ABERTO;
             }
             else
             {
@@ -174,7 +173,7 @@ namespace IA_RoboBerto.Repositorio
             return existente;
         }
 
-        public async Task<List<Chamado>> ListarChamadosPendentesTecnicosExpiradosAsync()
+        public async Task<List<Chamado>> ListarChamadosAbertoExpiradosAsync()
         {
             return await _context.Chamado
                 .Include(c => c.Autor)
@@ -182,18 +181,18 @@ namespace IA_RoboBerto.Repositorio
                 .Include(c => c.Tecnico)
                 .Where(c => c.Tecnico == null
                             && c.SlaVenceEm <= DateTime.UtcNow
-                            && c.Status == EStatusChamado.PENDENTE_TECNICO
+                            && c.Status == EStatusChamado.ABERTO
                             && c.SugestaoResolveu == false)
                 .ToListAsync();
         }
-        public async Task<List<Chamado>> ListarChamadosPendentesTecnicosNaoExpiradosAsync()
+        public async Task<List<Chamado>> ListarChamadosAbertoNaoExpiradosAsync()
         {
             return await _context.Chamado
                 .Include(c => c.Autor)
                 .Include(c => c.Categoria)
                 .Include(c => c.Tecnico)
                 .Where(c => c.Tecnico == null
-                            && c.Status == EStatusChamado.PENDENTE_TECNICO
+                            && c.Status == EStatusChamado.ABERTO
                             && c.SugestaoResolveu == false)
                 .ToListAsync();
         }
