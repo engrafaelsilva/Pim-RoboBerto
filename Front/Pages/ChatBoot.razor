@@ -1,4 +1,7 @@
 ﻿@page "/chatboot"
+@using System.Text.Json
+
+@inject IJSRuntime JS
 
 <PageTitle>ChatBoot</PageTitle>
 
@@ -6,31 +9,29 @@
 
 <div class="chat-container shadow rounded-4 p-3">
     <div class="chat-window" id="chatWindow">
+        <!-- Mensagem fixa do bot -->
         <div class="message bot">
             <div class="avatar">🤖</div>
             <div class="bubble">
-                Olá! Sou seu assistente virtual. Como posso ajudar hoje?
+                Olá! Sou seu assistente virtual. Aqui está a análise do seu chamado!
             </div>
         </div>
 
-        <div class="message user">
-            <div class="avatar">🧑</div>
-            <div class="bubble">
-                
+        @if (!string.IsNullOrEmpty(UserMessage))
+        {
+            <div class="message user">
+                <div class="avatar">🧑</div>
+                <div class="bubble">@UserMessage</div>
             </div>
-        </div>
+        }
 
-        <div class="message bot">
-            <div class="avatar">🤖</div>
-            <div class="bubble">
-                
+        @if (!string.IsNullOrEmpty(BotMessage))
+        {
+            <div class="message bot">
+                <div class="avatar">🤖</div>
+                <div class="bubble">@BotMessage</div>
             </div>
-        </div>
-    </div>
-
-    <div class="chat-input mt-3 d-flex align-items-center">
-        <input type="text" class="form-control me-2 rounded-pill" placeholder="Digite sua mensagem..." />
-        <button class="btn btn-primary rounded-pill px-4">Enviar</button>
+        }
     </div>
 </div>
 
@@ -92,24 +93,18 @@
         background-color: #007bff;
         color: white;
     }
-
-    .chat-input {
-        border-top: 1px solid #ddd;
-        padding-top: 10px;
-        background: #f8f9fa;
-    }
-
-    /* Scrollbar custom */
-    .chat-window::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .chat-window::-webkit-scrollbar-thumb {
-        background-color: #ccc;
-        border-radius: 10px;
-    }
 </style>
 
 @code {
-    // Nenhuma lógica — somente o front-end da interface de chat
+    string UserMessage = "";
+    string BotMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 🔥 Agora pegamos a pergunta E a resposta da API
+        UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta");
+        BotMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatResposta");
+
+        StateHasChanged();
+    }
 }
