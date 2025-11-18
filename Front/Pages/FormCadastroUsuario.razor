@@ -1,0 +1,311 @@
+﻿@page "/cadastre-se"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Json
+@using System.Net
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Cadastro de Usuário</PageTitle>
+
+<div class="register-container">
+    <div class="register-card">
+        <h2>Crie sua conta</h2>
+
+        <EditForm Model="@usuario" OnValidSubmit="CadastrarUsuario">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="server-error">@mensagemErro</div>
+            }
+
+            @if (!string.IsNullOrEmpty(mensagemSucesso))
+            {
+                <div class="server-success">@mensagemSucesso</div>
+            }
+
+            <div class="form-group">
+                <label for="nome">Nome Completo</label>
+                <InputText id="nome" class="form-control" @bind-Value="usuario.Nome" placeholder="Ex: João da Silva" />
+                <ValidationMessage For="@(() => usuario.Nome)" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <InputText id="email" class="form-control" @bind-Value="usuario.Email" placeholder="exemplo@empresa.com" />
+                <ValidationMessage For="@(() => usuario.Email)" />
+            </div>
+
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <InputText id="telefone"
+                           class="form-control"
+                           @bind-Value="usuario.Telefone"
+                           @oninput="FormatarTelefone"
+                           maxlength="15"
+                           placeholder="(99) 99999-9999" />
+                <ValidationMessage For="@(() => usuario.Telefone)" />
+            </div>
+
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <InputText id="senha" class="form-control" type="password" @bind-Value="usuario.Senha" placeholder="Crie uma senha segura" />
+                <ValidationMessage For="@(() => usuario.Senha)" />
+            </div>
+
+            <div class="form-group">
+                <label for="confirmar">Confirmar Senha</label>
+                <InputText id="confirmar" class="form-control" type="password" @bind-Value="usuario.ConfirmarSenha" placeholder="Repita a senha" />
+                <ValidationMessage For="@(() => usuario.ConfirmarSenha)" />
+            </div>
+
+            <button type="submit" class="btn-register" disabled="@carregando">
+                @(carregando ? "Cadastrando..." : "Cadastrar")
+            </button>
+
+            <p class="login-link">Já tem uma conta? <a href="/login">Entrar</a></p>
+        </EditForm>
+    </div>
+</div>
+
+<style>
+    /* ... Seu CSS original ... */
+    .register-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        background-color: #f7f9fc;
+    }
+
+    .register-card {
+        background: white;
+        width: 100%;
+        max-width: 420px;
+        padding: 40px 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+        .register-card h2 {
+            margin-bottom: 20px;
+            color: #133B92;
+            font-weight: 600;
+        }
+
+    .form-group {
+        text-align: left;
+        margin-bottom: 15px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2064F8;
+            box-shadow: 0 0 4px rgba(32, 100, 248, 0.4);
+        }
+
+    .btn-register {
+        width: 100%;
+        background: linear-gradient(90deg, #2064F8, #133B92);
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+        .btn-register:hover {
+            background: linear-gradient(90deg, #133B92, #2064F8);
+            transform: translateY(-2px);
+        }
+
+    .login-link {
+        margin-top: 15px;
+        font-size: 14px;
+    }
+
+        .login-link a {
+            color: #2064F8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .login-link a:hover {
+                text-decoration: underline;
+            }
+
+    .server-error {
+        background-color: #ffeaea;
+        color: #d9534f;
+        border: 1px solid #d9534f;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        text-align: left;
+        font-size: 14px;
+        word-break: break-all;
+    }
+
+    .server-success {
+        background-color: #eaf8e9;
+        color: #5cb85c;
+        border: 1px solid #5cb85c;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    private UsuarioCadastro usuario = new();
+    private bool carregando = false;
+    private string mensagemErro;
+    private string mensagemSucesso;
+
+    private class UsuarioInsertDto
+    {
+        public Guid Id { get; set; } = Guid.Empty;
+        public string Nome { get; set; }
+        public string Email { get; set; }
+        public string Telefone { get; set; }   // Somente dígitos
+        public string SenhaHash { get; set; }
+    }
+
+    public class UsuarioCadastro
+    {
+        [Required(ErrorMessage = "O nome é obrigatório")]
+        public string Nome { get; set; }
+
+        [Required(ErrorMessage = "O e-mail é obrigatório")]
+        [EmailAddress(ErrorMessage = "E-mail inválido")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "O telefone é obrigatório")]
+        [RegularExpression(@"^\(?\d{2}\)?\s?\d{4,5}\-?\d{4}$", ErrorMessage = "Telefone inválido")]
+        public string Telefone { get; set; }
+
+        [Required(ErrorMessage = "A senha é obrigatória")]
+        [MinLength(6, ErrorMessage = "A senha deve ter pelo menos 6 caracteres")]
+        public string Senha { get; set; }
+
+        [Required(ErrorMessage = "A confirmação de senha é obrigatória")]
+        [Compare("Senha", ErrorMessage = "As senhas não coincidem")]
+        public string ConfirmarSenha { get; set; }
+    }
+
+    private void FormatarTelefone(ChangeEventArgs e)
+    {
+        string input = new string(e.Value?.ToString()?.Where(char.IsDigit).ToArray() ?? Array.Empty<char>());
+
+        if (input.Length > 11)
+            input = input[..11];
+
+        if (input.Length <= 2)
+        {
+            usuario.Telefone = $"({input}";
+        }
+        else if (input.Length <= 6)
+        {
+            usuario.Telefone = $"({input[..2]}) {input[2..]}";
+        }
+        else if (input.Length <= 10)
+        {
+            usuario.Telefone = $"({input[..2]}) {input[2..6]}-{input[6..]}";
+        }
+        else
+        {
+            usuario.Telefone = $"({input[..2]}) {input[2..7]}-{input[7..]}";
+        }
+    }
+
+    private async Task CadastrarUsuario()
+    {
+        carregando = true;
+        mensagemErro = null;
+        mensagemSucesso = null;
+
+        try
+        {
+            // 🔥 Remove formatação antes de enviar para API
+            string telefoneSomenteNumeros = new string(usuario.Telefone.Where(char.IsDigit).ToArray());
+
+            var dto = new UsuarioInsertDto
+            {
+                Id = Guid.Empty,
+                Nome = usuario.Nome,
+                Email = usuario.Email,
+                Telefone = telefoneSomenteNumeros, // ← ENVIA SÓ OS NÚMEROS
+                SenhaHash = usuario.Senha
+            };
+
+            var resposta = await Http.PostAsJsonAsync("Usuario", dto);
+
+            if (resposta.IsSuccessStatusCode)
+            {
+                mensagemSucesso = "Cadastro realizado com sucesso! Redirecionando...";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/painel-cliente");
+            }
+            else
+            {
+                string conteudo = await resposta.Content.ReadAsStringAsync();
+
+                if (resposta.StatusCode == HttpStatusCode.BadRequest)
+                    mensagemErro = "Erro de validação ao cadastrar usuário. Tente novamente.";
+                else
+                    mensagemErro = $"Erro ao cadastrar: {conteudo}";
+
+                // 🔥 Mostra erro detalhado no console
+                await JS.InvokeVoidAsync("console.error", "Erro ao cadastrar usuário:", conteudo);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            mensagemErro = "Falha de conexão com o servidor. Verifique se a API está rodando e se o BaseAddress está correto.";
+            await JS.InvokeVoidAsync("console.error", $"Erro de conexão: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("console.error", $"Erro inesperado: {ex.Message}");
+        }
+        finally
+        {
+            carregando = false;
+            StateHasChanged();
+        }
+    }
+}

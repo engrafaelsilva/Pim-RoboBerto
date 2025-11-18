@@ -1,0 +1,359 @@
+﻿@page "/painel-cliente"
+@using System.Text.Json
+
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Painel do Cliente</PageTitle>
+
+<div class="painel-wrapper">
+
+    <div class="header-section text-white">
+        <h2 class="fw-bold">📌 Painel do Cliente</h2>
+        <p class="opacity-75">Abra novos chamados e acompanhe seus atendimentos</p>
+
+        <button class="btn btn-warning btn-lg rounded-pill fw-semibold shadow mt-3"
+                @onclick="ToggleFormulario">
+            📩 Abrir Chamado
+        </button>
+    </div>
+
+    <!-- MENSAGEM DE STATUS -->
+    @if (!string.IsNullOrEmpty(MensagemStatus))
+    {
+        <div class="alert @StatusClass mt-3">@MensagemStatus</div>
+    }
+
+    <!-- FORMULÁRIO -->
+    @if (MostrarFormulario)
+    {
+        <div class="card p-4 shadow-lg mt-4 fade-in form-card">
+            <h4 class="fw-bold text-primary mb-3">Novo Chamado</h4>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select" @bind="Categoria">
+                        <option value="">Selecione...</option>
+                        @foreach (var cat in Categorias)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Prioridade</label>
+                    <select class="form-select" @bind="Prioridade">
+                        <option value="">Selecione...</option>
+                        @foreach (var p in Prioridades)
+                        {
+                            <option value="@p.Value">@p.Key</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Título</label>
+                <input type="text" class="form-control" @bind="Titulo" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" rows="4" @bind="Descricao"></textarea>
+            </div>
+
+            <button class="btn btn-primary" @onclick="EnviarChamado">
+                🚀 Enviar Chamado
+            </button>
+        </div>
+    }
+
+    <!-- TABELA DE CHAMADOS -->
+    <div class="card mt-5 p-4 shadow-lg fade-in">
+        <h4 class="fw-bold text-primary mb-3 text-center">📋 Meus Chamados</h4>
+
+        @if (isLoading)
+        {
+            <p class="text-center text-muted">Carregando chamados...</p>
+        }
+        else if (chamados == null || chamados.Count == 0)
+        {
+            <div class="alert alert-info text-center">
+                Nenhum chamado encontrado.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-striped rounded-3 text-center align-middle shadow-sm">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Título</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Status</th>
+                            <th>Prioridade</th>
+                            <th>Data de Abertura</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in chamados)
+                        {
+                            <tr>
+                                <td>@c.Titulo</td>
+                                <td class="text-start">@c.Descricao</td>
+                                <td>@c.Categoria</td>
+                                <td>
+                                    <span class="badge bg-@ObterCorStatus(c.Status)">
+                                        @c.Status
+                                    </span>
+                                </td>
+                                <td>@c.Prioridade</td>
+                                <td>@c.DataAbertura.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .painel-wrapper {
+        min-height: 100vh;
+        padding: 40px 20px;
+        background: linear-gradient(135deg, #2064F8 0%, #12437C 100%);
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .form-card {
+        background: #ffffffd9;
+        border-radius: 20px;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.35s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    public bool MostrarFormulario = false;
+
+    public string Categoria { get; set; }
+    public int? Prioridade { get; set; }
+    public string Titulo { get; set; }
+    public string Descricao { get; set; }
+
+    public string MensagemStatus { get; set; }
+    public string StatusClass { get; set; }
+
+    private List<ChamadoDTO> chamados = new();
+    private bool isLoading = true;
+
+    public List<string> Categorias = new()
+    {
+        "Infraestrutura", "Suporte", "Financeiro"
+    };
+
+    public Dictionary<string, int> Prioridades = new()
+    {
+        { "Baixa", 0 },
+        { "Média", 1 },
+        { "Alta", 2 }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CarregarChamados();
+        }
+    }
+
+    private void ToggleFormulario()
+    {
+        MostrarFormulario = !MostrarFormulario;
+        StateHasChanged();
+    }
+
+    private async Task CarregarChamados()
+    {
+        isLoading = true;
+        MensagemStatus = "";
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var response = await Http.GetAsync("Chamados/meus?paginaAtual=0&tamanho=10");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                chamados = JsonSerializer.Deserialize<PagedListChamadoDTO>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })?.Items ?? new();
+            }
+            else
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                MensagemStatus = $"Erro ao carregar chamados: {erro}";
+                StatusClass = "alert-danger";
+                chamados = new List<ChamadoDTO>();
+            }
+        }
+        catch (Exception ex)
+        {
+            MensagemStatus = $"Erro inesperado ao carregar chamados: {ex.Message}";
+            StatusClass = "alert-danger";
+            chamados = new List<ChamadoDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EnviarChamado()
+    {
+        MensagemStatus = "";
+
+        if (string.IsNullOrEmpty(Categoria) || Prioridade == null ||
+            string.IsNullOrEmpty(Titulo) || string.IsNullOrEmpty(Descricao))
+        {
+            MensagemStatus = "Preencha todos os campos!";
+            StatusClass = "alert-danger";
+            return;
+        }
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        if (string.IsNullOrEmpty(token))
+        {
+            MensagemStatus = "Erro: Usuário não autenticado!";
+            StatusClass = "alert-danger";
+            return;
+        }
+
+        // Cria payload com DTOs corretos e camelCase
+        var payload = new ChamadoCreateDTO
+        {
+            Categoria = new CategoriaDTO { Nome = Categoria },
+            Prioridade = Prioridade.Value,
+            Titulo = Titulo,
+            Descricao = Descricao
+        };
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "Chamados")
+            {
+                Content = JsonContent.Create(payload, options: new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                })
+            };
+
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ChamadoDTO>();
+
+                MensagemStatus = $"Chamado aberto com sucesso! Sugestão: {result?.SugestaoGemini ?? "(nenhuma sugestão)"}";
+                StatusClass = "alert-success";
+
+                // Limpar formulário
+                Categoria = "";
+                Prioridade = null;
+                Titulo = "";
+                Descricao = "";
+                MostrarFormulario = false;
+
+                await CarregarChamados();
+            }
+            else
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                MensagemStatus = $"Erro ao abrir chamado: {erro}";
+                StatusClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            MensagemStatus = $"Erro inesperado: {ex.Message}";
+            StatusClass = "alert-danger";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private string ObterCorStatus(string status) => status?.ToLower() switch
+    {
+        "aberto" => "info",
+        "em andamento" => "warning",
+        "fechado" => "success",
+        "cancelado" => "danger",
+        _ => "secondary"
+    };
+
+    // DTOs e Classes auxiliares
+    public class ChamadoDTO
+    {
+        public Guid Id { get; set; }
+        public string Titulo { get; set; }
+        public string Descricao { get; set; }
+        public string Categoria { get; set; }
+        public string Status { get; set; }
+        public string Prioridade { get; set; }
+        public DateTime DataAbertura { get; set; }
+        public string SugestaoGemini { get; set; }
+    }
+
+    public class ChamadoCreateDTO
+    {
+        public CategoriaDTO Categoria { get; set; }
+        public int Prioridade { get; set; }
+        public string Titulo { get; set; }
+        public string Descricao { get; set; }
+    }
+
+    public class CategoriaDTO
+    {
+        public string Nome { get; set; }
+    }
+
+    public class PagedListChamadoDTO
+    {
+        public List<ChamadoDTO> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+    }
+}
