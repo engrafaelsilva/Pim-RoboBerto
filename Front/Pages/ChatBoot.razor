@@ -2,12 +2,24 @@
 @using System.Text.Json
 
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <PageTitle>ChatBoot</PageTitle>
 
 <h3 class="mb-3">ChatBoot IA</h3>
 
 <div class="chat-container shadow rounded-4 p-3">
+
+    <!-- Pergunta sobre resolução -->
+    @if (!string.IsNullOrEmpty(UserMessage))
+    {
+        <div class="resolve-question mb-3">
+            <p>Essa sugestão resolveu o chamado?</p>
+            <button class="btn-resolve" @onclick="ResolveuChamado">Sim ✅</button>
+            <button class="btn-not-resolve" @onclick="NaoResolveuChamado">Não ❌</button>
+        </div>
+    }
+
     <div class="chat-window" id="chatWindow">
         <!-- Mensagem fixa do bot -->
         <div class="message bot">
@@ -93,6 +105,31 @@
         background-color: #007bff;
         color: white;
     }
+
+    .resolve-question {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+
+    .btn-resolve, .btn-not-resolve {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-resolve {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-not-resolve {
+        background-color: #dc3545;
+        color: white;
+    }
 </style>
 
 @code {
@@ -101,10 +138,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // 🔥 Agora pegamos a pergunta E a resposta da API
         UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta");
         BotMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatResposta");
 
         StateHasChanged();
+    }
+
+    async Task ResolveuChamado()
+    {
+        // Limpa o chat
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+
+        UserMessage = "";
+        BotMessage = "";
+
+        StateHasChanged();
+    }
+
+    async Task NaoResolveuChamado()
+    {
+        // Simular envio para técnico
+        var chamado = new { Pergunta = UserMessage, Resposta = BotMessage, Data = DateTime.Now };
+        string json = JsonSerializer.Serialize(chamado);
+
+        await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", json);
+
+        // Limpa chat
+        await ResolveuChamado();
+
+        // Opcional: redireciona para painel do técnico
+        Navigation.NavigateTo("/painel-tecnico");
     }
 }

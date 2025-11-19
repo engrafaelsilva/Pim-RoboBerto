@@ -1,17 +1,38 @@
 ﻿@page "/painel-tecnico"
 
+@using System.Text.Json
+@inject IJSRuntime JS
+
 <PageTitle>Painel do Técnico</PageTitle>
 
 <div class="painel">
     <h2>Bem-vindo ao Painel do Técnico 🧠</h2>
     <p>Aqui você pode gerenciar chamados, responder clientes e acompanhar tarefas.</p>
-    <a href="/chamados" class="btn">Ver Chamados</a>
+
+    @if (Chamados.Count == 0)
+    {
+        <p>Nenhum chamado pendente no momento.</p>
+    }
+    else
+    {
+        <div class="chamados-list">
+            @foreach (var chamado in Chamados)
+            {
+                <div class="chamado-card shadow rounded-3 p-3 mb-3">
+                    <p><strong>Pergunta do cliente:</strong> @chamado.Pergunta</p>
+                    <p><strong>Resposta sugerida pelo bot:</strong> @chamado.Resposta</p>
+                    <p><strong>Data do envio:</strong> @chamado.Data.ToString("g")</p>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 <style>
     .painel {
+        max-width: 800px;
+        margin: 50px auto;
         text-align: center;
-        margin-top: 100px;
     }
 
         .painel h2 {
@@ -24,14 +45,45 @@
             margin-bottom: 30px;
         }
 
-    .btn {
-        background: linear-gradient(90deg, #2064F8, #133B92);
-        color: white;
-        border: none;
-        padding: 12px 25px;
-        border-radius: 8px;
-        font-weight: bold;
-        margin: 5px;
-        cursor: pointer;
+    .chamados-list {
+        text-align: left;
+    }
+
+    .chamado-card {
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
     }
 </style>
+
+@code {
+    public class Chamado
+    {
+        public string Pergunta { get; set; } = "";
+        public string Resposta { get; set; } = "";
+        public DateTime Data { get; set; }
+    }
+
+    List<Chamado> Chamados = new List<Chamado>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Tenta ler o chamado enviado pelo chat
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoTecnico");
+        if (!string.IsNullOrEmpty(json))
+        {
+            try
+            {
+                var chamado = JsonSerializer.Deserialize<Chamado>(json);
+                if (chamado != null)
+                    Chamados.Add(chamado);
+
+                // Remove após carregar para não duplicar na próxima visita
+                await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoTecnico");
+            }
+            catch
+            {
+                // Em caso de erro de deserialização, ignora
+            }
+        }
+    }
+}
