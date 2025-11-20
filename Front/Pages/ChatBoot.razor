@@ -9,19 +9,7 @@
 <h3 class="mb-3">ChatBoot IA</h3>
 
 <div class="chat-container shadow rounded-4 p-3">
-
-    <!-- Pergunta sobre resolução -->
-    @if (!string.IsNullOrEmpty(UserMessage))
-    {
-        <div class="resolve-question mb-3">
-            <p>Essa sugestão resolveu o chamado?</p>
-            <button class="btn-resolve" @onclick="ResolveuChamado">Sim ✅</button>
-            <button class="btn-not-resolve" @onclick="NaoResolveuChamado">Não ❌</button>
-        </div>
-    }
-
     <div class="chat-window" id="chatWindow">
-        <!-- Mensagem fixa do bot -->
         <div class="message bot">
             <div class="avatar">🤖</div>
             <div class="bubble">
@@ -44,91 +32,100 @@
                 <div class="bubble">@BotMessage</div>
             </div>
         }
+
+        @if (!string.IsNullOrEmpty(UserMessage))
+        {
+            <div class="resolve-question mb-3">
+                <p>Essa sugestão resolveu o chamado?</p> <br/>
+                <button class="btn-resolve" @onclick="ResolveuChamado">Sim ✅</button>
+                <button class="btn-not-resolve" @onclick="NaoResolveuChamado">Não ❌</button>
+            </div>
+        }
     </div>
 </div>
 
 <style>
     .chat-container {
-        max-width: 700px;
-        margin: 0 auto;
-        background-color: #f8f9fa;
-        display: flex;
-        flex-direction: column;
-        height: 80vh;
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
     }
 
     .chat-window {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     }
 
     .message {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     }
 
-        .message.user {
-            flex-direction: row-reverse;
-        }
+    .message.user {
+    flex-direction: row-reverse;
+    }
 
     .avatar {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #e0e0e0;
-        border-radius: 50%;
-        font-size: 20px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    font-size: 20px;
     }
 
     .bubble {
-        max-width: 70%;
-        padding: 10px 15px;
-        border-radius: 20px;
-        line-height: 1.4;
-        word-wrap: break-word;
-        font-size: 15px;
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    font-size: 15px;
     }
 
     .message.bot .bubble {
-        background-color: #ffffff;
-        border: 1px solid #ddd;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
     }
 
     .message.user .bubble {
-        background-color: #007bff;
-        color: white;
+    background-color: #007bff;
+    color: white;
     }
 
     .resolve-question {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-start;
     }
 
     .btn-resolve, .btn-not-resolve {
-        padding: 6px 12px;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
     }
 
     .btn-resolve {
-        background-color: #28a745;
-        color: white;
+    background-color: #28a745;
+    color: white;
     }
 
     .btn-not-resolve {
-        background-color: #dc3545;
-        color: white;
+    background-color: #dc3545;
+    color: white;
     }
 </style>
 
@@ -146,7 +143,6 @@
 
     async Task ResolveuChamado()
     {
-        // Limpa o chat
         await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
         await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
 
@@ -158,16 +154,16 @@
 
     async Task NaoResolveuChamado()
     {
-        // Simular envio para técnico
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
+
         var chamado = new { Pergunta = UserMessage, Resposta = BotMessage, Data = DateTime.Now };
         string json = JsonSerializer.Serialize(chamado);
 
         await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", json);
 
-        // Limpa chat
-        await ResolveuChamado();
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
 
-        // Opcional: redireciona para painel do técnico
         Navigation.NavigateTo("/painel-tecnico");
     }
 }

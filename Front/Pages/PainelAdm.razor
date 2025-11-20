@@ -7,7 +7,6 @@
         🛠️ Painel do Administrador
     </h3>
 
-    <!-- Abas -->
     <ul class="nav nav-tabs justify-content-center mb-4">
         @foreach (var aba in Abas)
         {
@@ -20,7 +19,6 @@
         }
     </ul>
 
-    <!-- Conteúdo -->
     <div class="tab-content mt-3">
         @if (abaAtual == "chamados") { @RenderChamados() }
         else if (abaAtual == "usuarios") { @RenderUsuarios() }
@@ -115,7 +113,6 @@
         _ => "secondary"
     };
 
-    // ==================== USUÁRIOS ====================
     private List<UsuarioDTO> usuarios = new()
     {
         new() { Id = Guid.NewGuid(), Nome = "Maria Silva", Email = "maria@empresa.com", Tipo = "Técnico", Ativo = true },
@@ -169,7 +166,6 @@
         </div>;
     };
 
-    // ==================== CONFIGURAÇÕES ====================
     private RenderFragment RenderConfiguracoes() => __builder =>
     {
         <div class="card shadow p-4 rounded-4">

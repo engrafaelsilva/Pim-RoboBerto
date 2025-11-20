@@ -10,18 +10,18 @@
 
 <div class="painel-wrapper">
 
+    <button class="dropdown-item" @onclick="Logout">Sair</button>
+
     <div class="header-section text-white">
         <h2 class="fw-bold">📌 Abrir Chamado</h2>
         <p class="opacity-75">Preencha as informações abaixo para registrar um chamado</p>
     </div>
 
-    <!-- MENSAGEM DE STATUS -->
     @if (!string.IsNullOrEmpty(MensagemStatus))
     {
         <div class="alert @StatusClass mt-3">@MensagemStatus</div>
     }
 
-    <!-- FORMULÁRIO -->
     <div class="card p-4 shadow-lg mt-4 fade-in form-card">
         <h4 class="fw-bold text-primary mb-3">Novo Chamado</h4>
 
@@ -70,6 +70,7 @@
         min-height: 100vh;
         padding: 40px 20px;
         background: linear-gradient(135deg, #2064F8 0%, #12437C 100%);
+        position: relative;
     }
 
     .header-section {
@@ -87,20 +88,75 @@
     }
 
     @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .user-menu-container {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 99999999; 
+    }
+
+    .user-menu {
+        background: #ffffffd9;
+        padding: 10px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px #0002;
+        transition: 0.2s;
+    }
+
+    .user-menu:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px #0003;
+    }
+
+    .arrow {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .dropdown-menu {
+        margin-top: 5px;
+        position: absolute;
+        right: 0;
+        background: white;
+        width: 160px;
+        border-radius: 12px;
+        padding: 8px 0;
+        box-shadow: 0 4px 14px #0003;
+        animation: fadeDrop 0.2s ease-out;
+        z-index: 999999999;
+    }
+
+    .dropdown-item {
+        width: 100%;
+        background: none;
+        border: none;
+        text-align: left;
+        padding: 10px 15px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.15s;
+    }
+
+    .dropdown-item:hover {
+        background: #f1f3f7;
+    }
+
+    @@keyframes fadeDrop {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
 @code {
-    // Campos do formulário
     public string Categoria { get; set; }
     public int? Prioridade { get; set; }
     public string Titulo { get; set; }
@@ -109,24 +165,17 @@
     public string MensagemStatus { get; set; }
     public string StatusClass { get; set; }
 
-    // Dados fixos
-    public List<string> Categorias = new()
-    {
-        "Infraestrutura", "Suporte", "Financeiro"
-    };
+    public List<string> Categorias = new() { "Infraestrutura", "Suporte", "Financeiro" };
 
     public Dictionary<string, int> Prioridades = new()
     {
-        { "Baixa", 0 },
-        { "Média", 1 },
-        { "Alta", 2 }
+        { "Baixa", 0 }, { "Média", 1 }, { "Alta", 2 }
     };
 
     private async Task EnviarChamado()
     {
         MensagemStatus = "";
 
-        // Validação básica
         if (string.IsNullOrEmpty(Categoria) ||
             Prioridade == null ||
             string.IsNullOrEmpty(Titulo) ||
@@ -137,7 +186,6 @@
             return;
         }
 
-        // Obtém token salvo
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         if (string.IsNullOrEmpty(token))
         {
@@ -146,24 +194,23 @@
             return;
         }
 
-        // Formato EXATO do Swagger
         var payload = new ChamadoCreateDTO
-            {
-                Categoria = new CategoriaDTO { Nome = Categoria },
-                Prioridade = Prioridade.Value,
-                Titulo = Titulo,
-                Descricao = Descricao
-            };
+        {
+            Categoria = new CategoriaDTO { Nome = Categoria },
+            Prioridade = Prioridade.Value,
+            Titulo = Titulo,
+            Descricao = Descricao
+        };
 
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "Chamados")
+            {
+                Content = JsonContent.Create(payload, options: new JsonSerializerOptions
                 {
-                    Content = JsonContent.Create(payload, options: new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    })
-                };
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                })
+            };
 
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -175,24 +222,18 @@
                 MensagemStatus = "Chamado criado com sucesso!";
                 StatusClass = "alert-success";
 
-                // Lê o retorno completo do chamado criado
                 var jsonChamado = await response.Content.ReadAsStringAsync();
                 var chamadoCriado = JsonSerializer.Deserialize<JsonElement>(jsonChamado);
 
-                // Salva descrição e resposta do Gemini no localStorage
-                await JS.InvokeVoidAsync("localStorage.setItem",
-                    "chatPergunta",
+                await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta",
                     chamadoCriado.GetProperty("descricao").GetString());
 
-                await JS.InvokeVoidAsync("localStorage.setItem",
-                    "chatResposta",
+                await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta",
                     chamadoCriado.GetProperty("sugestaoGemini").GetString());
 
-                // Redireciona para o ChatBoot depois de 1 segundo
-                await Task.Delay(1000);
+                await Task.Delay(1500);
                 Nav.NavigateTo("/chatboot");
 
-                // Limpa o formulário
                 Categoria = "";
                 Prioridade = null;
                 Titulo = "";
@@ -200,8 +241,7 @@
             }
             else
             {
-                var erro = await response.Content.ReadAsStringAsync();
-                MensagemStatus = $"Erro ao abrir chamado: {erro}";
+                MensagemStatus = $"Erro ao abrir chamado: {await response.Content.ReadAsStringAsync()}";
                 StatusClass = "alert-danger";
             }
         }
@@ -212,7 +252,28 @@
         }
     }
 
-    // DTOs
+    bool MenuAberto = false;
+
+    void ToggleMenu()
+    {
+        MenuAberto = !MenuAberto;
+        StateHasChanged();
+    }
+
+    void IrParaPerfil()
+    {
+        Nav.NavigateTo("/perfil-cliente");
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "token");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
     public class ChamadoCreateDTO
     {
         public CategoriaDTO Categoria { get; set; }

@@ -52,7 +52,6 @@
     {
         await CarregarMensagens();
 
-        // Timer para atualizar mensagens a cada 1 segundo
         timer = new System.Timers.Timer(1000);
         timer.Elapsed += async (_, __) => await AtualizarMensagens();
         timer.AutoReset = true;

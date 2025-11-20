@@ -26,14 +26,63 @@
 </div>
 
 <style>
-    .chat-container { max-width: 700px; margin: 0 auto; background-color: #f8f9fa; display: flex; flex-direction: column; height: 80vh; }
-    .chat-window { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
-    .message { display: flex; align-items: flex-start; gap: 10px; }
-    .message.user { flex-direction: row-reverse; }
-    .avatar { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background-color: #e0e0e0; border-radius: 50%; font-size: 20px; }
-    .bubble { max-width: 70%; padding: 10px 15px; border-radius: 20px; line-height: 1.4; word-wrap: break-word; font-size: 15px; }
-    .message.bot .bubble { background-color: #ffffff; border: 1px solid #ddd; }
-    .message.user .bubble { background-color: #007bff; color: white; }
+    .chat-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    }
+
+    .chat-window {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    }
+
+    .message {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    }
+
+    .message.user {
+    flex-direction: row-reverse;
+    }
+
+    .avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    font-size: 20px;
+    }
+
+    .bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    font-size: 15px;
+    }
+
+    .message.bot .bubble {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    }
+
+    .message.user .bubble {
+    background-color: #007bff;
+    color: white;
+    }
 </style>
 
 @code {
@@ -45,52 +94,101 @@
 
     List<Mensagem> Mensagens = new();
     string NovaMensagem = "";
-    System.Timers.Timer timer;
+    PeriodicTimer timer;
 
     protected override async Task OnInitializedAsync()
     {
-        await CarregarMensagens();
+        await InicializarChat();
+        StartTimer();
+    }
 
-        timer = new System.Timers.Timer(1000);
-        timer.Elapsed += async (_, __) => await AtualizarMensagens();
-        timer.AutoReset = true;
-        timer.Enabled = true;
+    async Task InicializarChat()
+    {
+        var pergunta = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnicoMensagemInicial");
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
+
+        try
+        {
+            if (!string.IsNullOrEmpty(json))
+            {
+                Mensagens = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+            }
+        }
+        catch
+        {
+            Mensagens = new();
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatTecnico");
+        }
+
+        if (Mensagens.Count == 0 && !string.IsNullOrEmpty(pergunta))
+        {
+            Mensagens.Add(new Mensagem
+                {
+                    Remetente = "cliente",
+                    Texto = pergunta
+                });
+
+            await Salvar();
+        }
     }
 
     async Task EnviarMensagem()
     {
-        if (string.IsNullOrWhiteSpace(NovaMensagem)) return;
+        if (string.IsNullOrWhiteSpace(NovaMensagem))
+            return;
 
-        Mensagens.Add(new Mensagem { Remetente = "tecnico", Texto = NovaMensagem });
-        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnico", JsonSerializer.Serialize(Mensagens));
+        Mensagens.Add(new Mensagem
+            {
+                Remetente = "tecnico",
+                Texto = NovaMensagem
+            });
+
+        await Salvar();
         NovaMensagem = "";
     }
 
-    async Task CarregarMensagens()
+    async Task Salvar()
     {
-        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
-        if (!string.IsNullOrEmpty(json))
-            Mensagens = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new List<Mensagem>();
-        StateHasChanged();
+        var json = JsonSerializer.Serialize(Mensagens);
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnico", json);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void StartTimer()
+    {
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        _ = Task.Run(async () =>
+        {
+            while (await timer.WaitForNextTickAsync())
+            {
+                await AtualizarMensagens();
+            }
+        });
     }
 
     async Task AtualizarMensagens()
     {
         var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
-        if (!string.IsNullOrEmpty(json))
+
+        if (string.IsNullOrEmpty(json))
+            return;
+
+        try
         {
-            var msgs = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new List<Mensagem>();
+            var msgs = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+
             if (msgs.Count != Mensagens.Count)
             {
                 Mensagens = msgs;
                 await InvokeAsync(StateHasChanged);
             }
         }
+        catch {}
     }
 
     public void Dispose()
     {
-        timer?.Stop();
         timer?.Dispose();
     }
 }
