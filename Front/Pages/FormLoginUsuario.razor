@@ -64,6 +64,7 @@
 
         try
         {
+            // Envia login para o backend normalmente
             var response = await Http.PostAsJsonAsync("Autenticacao/login", login);
 
             if (!response.IsSuccessStatusCode)
@@ -86,9 +87,22 @@
 
             isSuccess = true;
             mensagem = "Login realizado com sucesso!";
-            await Task.Delay(800);
+            await Task.Delay(700);
 
-            Navigation.NavigateTo("/painel-cliente", forceLoad: true);
+            // 🔥 REGRAS DE REDIRECIONAMENTO
+            if (login.Email.ToLower() == "bob@empresa.com" && login.Senha == "senha123")
+            {
+                Navigation.NavigateTo("/painel-tecnico", forceLoad: true);
+            }
+            else if (login.Email.ToLower() == "alice@empresa.com" && login.Senha == "senha123")
+            {
+                Navigation.NavigateTo("/painel-cliente", forceLoad: true);
+            }
+            else
+            {
+                // Qualquer outro novo usuário vai para o painel do cliente
+                Navigation.NavigateTo("/painel-cliente", forceLoad: true);
+            }
         }
         catch
         {
@@ -105,6 +119,7 @@
         [Required]
         [EmailAddress]
         public string Email { get; set; } = "";
+        
         [Required]
         public string Senha { get; set; } = "";
     }

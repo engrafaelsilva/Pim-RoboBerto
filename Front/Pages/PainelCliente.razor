@@ -1,263 +1,524 @@
 ﻿@page "/painel-cliente"
-
 @using System.Text.Json
-
-@inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<PageTitle>Abrir Chamado</PageTitle>
+<PageTitle>Painel do Cliente</PageTitle>
 
-<div class="painel-wrapper">
+<div class="panel-wrap">
 
-    <button class="dropdown-item" @onclick="Logout">Sair</button>
+    <div class="topbar">
+        <div class="top-left">
+            <h2 class="app-title">📌 Painel do Cliente</h2>
+            <p class="subtitle">Abra e acompanhe seus chamados — rápido e simples.</p>
+        </div>
 
-    <div class="header-section text-white">
-        <h2 class="fw-bold">📌 Abrir Chamado</h2>
-        <p class="opacity-75">Preencha as informações abaixo para registrar um chamado</p>
+        <div class="top-right">
+            <button class="btn-outline" @onclick="ToggleList">🔍 Ver Chamados (@(Chamados?.Count ?? 0))</button>
+            <button class="btn-primary" @onclick="ToggleForm">➕ Abrir Chamado</button>
+
+            <div class="user-menu">
+                <div class="user-main" @onclick="ToggleMenu">
+                    <span class="user-ico">👤</span>
+                    <span class="user-name">@UsuarioNome</span>
+                    <span class="caret">▾</span>
+                </div>
+                @if (MenuAberto)
+                {
+                    <div class="user-dropdown" @onclick:stopPropagation>
+                        <button class="dropdown-item" @onclick="IrParaPerfil">Perfil</button>
+                        <button class="dropdown-item danger" @onclick="Logout">Sair</button>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(MensagemStatus))
     {
-        <div class="alert @StatusClass mt-3">@MensagemStatus</div>
+        <div class="toast @(IsSuccess ? "toast-success" : "toast-error")">
+            @MensagemStatus
+        </div>
     }
 
-    <div class="card p-4 shadow-lg mt-4 fade-in form-card">
-        <h4 class="fw-bold text-primary mb-3">Novo Chamado</h4>
+    <div class="content">
+        @if (ListaAberta)
+        {
+            <div class="card list-card">
+                <h4>Meus Chamados</h4>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Categoria</label>
-                <select class="form-select" @bind="Categoria">
+                @if (Chamados == null || Chamados.Count == 0)
+                {
+                    <p class="empty">Você ainda não tem chamados. Abra um pelo botão “Abrir Chamado”.</p>
+                }
+                else
+                {
+                    <div class="chamados-list">
+                        @foreach (var c in Chamados.OrderByDescending(x => x.DataAbertura))
+                        {
+                            <div class="chamado-item">
+                                <div class="chamado-info">
+                                    <div class="titulo">@c.Titulo</div>
+                                    <div class="descricao">@c.Descricao</div>
+                                </div>
+                                <div class="chamado-meta">
+                                    <div class="status @ObterClasseStatus(c.Status)">@c.Status</div>
+                                    <div class="meta">Aberto: @c.DataAbertura.ToString("g")</div>
+                                    <div class="meta">Venc.: @c.DataVencimento.ToString("d")</div>
+                                    <div class="meta">Autor: @c.Autor</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (FormAberto)
+    {
+        <div class="overlay" @onclick="CloseForm"></div>
+
+        <div class="form-drawer" @onclick:stopPropagation>
+            <div class="drawer-head">
+                <h4>Novo Chamado</h4>
+                <button class="close" @onclick="CloseForm">✕</button>
+            </div>
+
+            <div class="form-body">
+                <label>Categoria</label>
+                <select class="form-control" @bind="Categoria">
                     <option value="">Selecione...</option>
                     @foreach (var cat in Categorias)
                     {
                         <option value="@cat">@cat</option>
                     }
                 </select>
-            </div>
 
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Prioridade</label>
-                <select class="form-select" @bind="Prioridade">
+                <label class="mt-2">Prioridade</label>
+                <select class="form-control" @bind="Prioridade">
                     <option value="">Selecione...</option>
                     @foreach (var p in Prioridades)
                     {
                         <option value="@p.Value">@p.Key</option>
                     }
                 </select>
+
+                <label class="mt-2">Título</label>
+                <input class="form-control" @bind="Titulo" />
+
+                <label class="mt-2">Descrição</label>
+                <textarea class="form-control" rows="4" @bind="Descricao"></textarea>
+
+                <div class="form-actions">
+                    <button class="btn-cancel" @onclick="CloseForm">Cancelar</button>
+                    <button class="btn-send" @onclick="EnviarChamado">Enviar Chamado</button>
+                </div>
             </div>
         </div>
+    }
 
-        <div class="mb-3">
-            <label class="form-label">Título</label>
-            <input type="text" class="form-control" @bind="Titulo" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Descrição</label>
-            <textarea class="form-control" rows="4" @bind="Descricao"></textarea>
-        </div>
-
-        <button class="btn btn-primary btn-lg" @onclick="EnviarChamado">
-            🚀 Enviar Chamado
-        </button>
-    </div>
+    <button class="chatboot" @onclick="IrChatBoot">💬 ChatBoot</button>
 </div>
 
 <style>
-    .painel-wrapper {
+    :root {
+        --primary: #2064F8;
+        --primary-dark: #133B92;
+        --accent: #dc3545;
+        --muted: #6b7280;
+        --bg: #ffffff;
+    }
+
+    body {
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    .panel-wrap {
         min-height: 100vh;
-        padding: 40px 20px;
-        background: linear-gradient(135deg, #2064F8 0%, #12437C 100%);
-        position: relative;
+        background: var(--bg);
+        padding: 28px;
+        box-sizing: border-box;
     }
 
-    .header-section {
-        text-align: center;
-        margin-bottom: 30px;
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
     }
 
-    .form-card {
-        background: #ffffffd9;
-        border-radius: 20px;
+    .top-left .app-title {
+        margin: 0;
+        color: var(--primary-dark);
+        font-size: 22px;
     }
 
-    .fade-in {
-        animation: fadeIn 0.35s ease-out;
+    .top-left .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
     }
 
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    .top-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    .user-menu-container {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        z-index: 99999999; 
+    .btn-primary {
+        background: linear-gradient(90deg,var(--primary),var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(19,59,146,0.12);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+        }
+
+    .btn-outline {
+        background: white;
+        border: 1px solid #eef2ff;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--primary-dark);
     }
 
     .user-menu {
-        background: #ffffffd9;
-        padding: 10px 16px;
-        border-radius: 12px;
-        cursor: pointer;
+        position: relative;
+        display: inline-block;
+        margin-left: 8px;
+    }
+
+    .user-main {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
         font-weight: 600;
-        box-shadow: 0 4px 12px #0002;
-        transition: 0.2s;
     }
 
-    .user-menu:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 14px #0003;
-    }
-
-    .arrow {
-        font-size: 14px;
-        opacity: 0.8;
-    }
-
-    .dropdown-menu {
-        margin-top: 5px;
+    .user-dropdown {
         position: absolute;
         right: 0;
+        top: 48px;
         background: white;
-        width: 160px;
-        border-radius: 12px;
-        padding: 8px 0;
-        box-shadow: 0 4px 14px #0003;
-        animation: fadeDrop 0.2s ease-out;
-        z-index: 999999999;
+        padding: 8px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        z-index: 2000;
     }
 
     .dropdown-item {
+        display: block;
         width: 100%;
-        background: none;
-        border: none;
+        padding: 10px;
         text-align: left;
-        padding: 10px 15px;
-        font-size: 14px;
+        border: none;
+        background: none;
         cursor: pointer;
-        transition: 0.15s;
+        border-radius: 6px;
     }
 
-    .dropdown-item:hover {
-        background: #f1f3f7;
+        .dropdown-item.danger {
+            color: white;
+            background: var(--accent);
+        }
+
+            .dropdown-item.danger:hover {
+                filter: brightness(.95);
+            }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 16px;
+        border-radius: 10px;
+        z-index: 3000;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.08);
     }
 
-    @@keyframes fadeDrop {
-        from { opacity: 0; transform: translateY(-4px); }
-        to { opacity: 1; transform: translateY(0); }
+    .toast-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .toast-error {
+        background: #ef4444;
+        color: white;
+    }
+
+    .content {
+        margin-top: 18px;
+    }
+
+    .list-card {
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(19,59,146,0.04);
+        border: 1px solid #eef5ff;
+    }
+
+    .empty {
+        color: var(--muted);
+        padding: 12px 0;
+    }
+
+    .chamados-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 65vh;
+        overflow: auto;
+        padding-right: 6px;
+    }
+
+    .chamado-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #f3f7ff;
+        background: #fff;
+        align-items: flex-start;
+    }
+
+    .chamado-info .titulo {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .chamado-info .descricao {
+        color: var(--muted);
+        margin-top: 6px;
+        font-size: 14px;
+        max-width: 520px;
+    }
+
+    .chamado-meta {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+    }
+
+    .status {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 12px;
+        color: white;
+    }
+
+    .status-open {
+        background: #f59e0b;
+    }
+
+    .status-inprogress {
+        background: #06b6d4;
+    }
+
+    .status-closed {
+        background: #10b981;
+    }
+
+    .meta {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.25);
+        z-index: 1500;
+    }
+
+    .form-drawer {
+        position: fixed;
+        right: 40px;
+        top: 90px;
+        width: 420px;
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 25px 60px rgba(2,6,23,0.16);
+        z-index: 1501;
+    }
+
+    .drawer-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .drawer-head h4 {
+            margin: 0;
+        }
+
+    .close {
+        border: none;
+        background: none;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .form-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .form-control {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #e6e9f2;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .btn-cancel {
+        background: #f1f5f9;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .btn-send {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .chatboot {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        background: linear-gradient(90deg,var(--primary),var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 12px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 16px 40px rgba(19,59,146,0.18);
+        z-index: 2000;
+        font-weight: 700;
+    }
+
+    .form-drawer, .list-card {
+        transition: transform 0.18s ease, opacity 0.18s;
     }
 </style>
 
 @code {
-    public string Categoria { get; set; }
-    public int? Prioridade { get; set; }
-    public string Titulo { get; set; }
-    public string Descricao { get; set; }
-
-    public string MensagemStatus { get; set; }
-    public string StatusClass { get; set; }
-
-    public List<string> Categorias = new() { "Infraestrutura", "Suporte", "Financeiro" };
-
-    public Dictionary<string, int> Prioridades = new()
+    public class ChamadoLocal
     {
-        { "Baixa", 0 }, { "Média", 1 }, { "Alta", 2 }
-    };
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Categoria { get; set; } = "";
+        public int Prioridade { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descricao { get; set; } = "";
+        public string Status { get; set; } = "Aberto";
+        public DateTime DataAbertura { get; set; } = DateTime.Now;
+        public DateTime DataVencimento { get; set; } = DateTime.Now.AddDays(7);
+        public string Autor { get; set; } = "";
+    }
 
-    private async Task EnviarChamado()
+    List<ChamadoLocal> Chamados = new();
+    bool FormAberto = false;
+    bool ListaAberta = false;
+    bool MenuAberto = false;
+
+    string Categoria { get; set; } = "";
+    int? Prioridade { get; set; }
+    string Titulo { get; set; } = "";
+    string Descricao { get; set; } = "";
+
+    string MensagemStatus = "";
+    bool IsSuccess = true;
+
+    List<string> Categorias = new() { "Infraestrutura", "Suporte", "Financeiro" };
+    Dictionary<string, int> Prioridades = new() { { "Baixa", 0 }, { "Média", 1 }, { "Alta", 2 } };
+
+    string UsuarioNome = "Cliente";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        MensagemStatus = "";
-
-        if (string.IsNullOrEmpty(Categoria) ||
-            Prioridade == null ||
-            string.IsNullOrEmpty(Titulo) ||
-            string.IsNullOrEmpty(Descricao))
-        {
-            MensagemStatus = "Preencha todos os campos!";
-            StatusClass = "alert-danger";
-            return;
-        }
-
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        if (string.IsNullOrEmpty(token))
-        {
-            MensagemStatus = "Erro: Usuário não autenticado!";
-            StatusClass = "alert-danger";
-            return;
-        }
-
-        var payload = new ChamadoCreateDTO
-        {
-            Categoria = new CategoriaDTO { Nome = Categoria },
-            Prioridade = Prioridade.Value,
-            Titulo = Titulo,
-            Descricao = Descricao
-        };
+        if (!firstRender) return;
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "Chamados")
-            {
-                Content = JsonContent.Create(payload, options: new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                })
-            };
-
-            request.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var response = await Http.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                MensagemStatus = "Chamado criado com sucesso!";
-                StatusClass = "alert-success";
-
-                var jsonChamado = await response.Content.ReadAsStringAsync();
-                var chamadoCriado = JsonSerializer.Deserialize<JsonElement>(jsonChamado);
-
-                await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta",
-                    chamadoCriado.GetProperty("descricao").GetString());
-
-                await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta",
-                    chamadoCriado.GetProperty("sugestaoGemini").GetString());
-
-                await Task.Delay(1500);
-                Nav.NavigateTo("/chatboot");
-
-                Categoria = "";
-                Prioridade = null;
-                Titulo = "";
-                Descricao = "";
-            }
-            else
-            {
-                MensagemStatus = $"Erro ao abrir chamado: {await response.Content.ReadAsStringAsync()}";
-                StatusClass = "alert-danger";
-            }
+            var username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+            if (!string.IsNullOrEmpty(username)) UsuarioNome = username;
         }
-        catch (Exception ex)
-        {
-            MensagemStatus = $"Erro inesperado: {ex.Message}";
-            StatusClass = "alert-danger";
-        }
+        catch {}
+
+        await CarregarChamados();
+        StateHasChanged();
     }
 
-    bool MenuAberto = false;
+    async Task CarregarChamados()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string>("localStorage.getItem", "meusChamados");
+            if (!string.IsNullOrEmpty(json))
+            {
+                Chamados = JsonSerializer.Deserialize<List<ChamadoLocal>>(json) ?? new List<ChamadoLocal>();
+            }
+        }
+        catch { Chamados = new List<ChamadoLocal>(); }
+    }
+
+    void ToggleForm()
+    {
+        FormAberto = !FormAberto;
+        ListaAberta = false;
+        MenuAberto = false;
+    }
+
+    void CloseForm()
+    {
+        FormAberto = false;
+    }
+
+    void ToggleList()
+    {
+        ListaAberta = !ListaAberta;
+        FormAberto = false;
+        MenuAberto = false;
+    }
 
     void ToggleMenu()
     {
         MenuAberto = !MenuAberto;
-        StateHasChanged();
     }
 
     void IrParaPerfil()
@@ -265,25 +526,87 @@
         Nav.NavigateTo("/perfil-cliente");
     }
 
-    private async Task Logout()
+    async Task EnviarChamado()
+    {
+        MensagemStatus = "";
+        if (string.IsNullOrWhiteSpace(Categoria) || Prioridade == null || string.IsNullOrWhiteSpace(Titulo) || string.IsNullOrWhiteSpace(Descricao))
+        {
+            MensagemStatus = "Preencha todos os campos!";
+            IsSuccess = false;
+            StateHasChanged();
+            await Task.Delay(1500);
+            MensagemStatus = "";
+            StateHasChanged();
+            return;
+        }
+
+        var chamado = new ChamadoLocal
+            {
+                Categoria = Categoria,
+                Prioridade = Prioridade.Value,
+                Titulo = Titulo,
+                Descricao = Descricao,
+                Status = "Aberto",
+                DataAbertura = DateTime.Now,
+                DataVencimento = DateTime.Now.AddDays(7),
+                Autor = UsuarioNome
+            };
+
+        Chamados.Add(chamado);
+
+        await PersistirChamados();
+
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", chamado.Descricao);
+
+        var sugestao = $"Sugestão automática: verifique reinício e limpeza de cache para o problema descrito em \"{chamado.Titulo}\".";
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugestao);
+
+        MensagemStatus = "Chamado criado com sucesso!";
+        IsSuccess = true;
+        StateHasChanged();
+
+        Categoria = "";
+        Prioridade = null;
+        Titulo = "";
+        Descricao = "";
+        FormAberto = false;
+        ListaAberta = true;
+
+        await Task.Delay(1200);
+
+        Nav.NavigateTo("/chatboot");
+    }
+
+    async Task PersistirChamados()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(Chamados);
+            await JS.InvokeVoidAsync("localStorage.setItem", "meusChamados", json);
+        }
+        catch {}
+    }
+
+    void IrChatBoot()
+    {
+        Nav.NavigateTo("/chatboot");
+    }
+
+    async Task Logout()
     {
         await JS.InvokeVoidAsync("localStorage.removeItem", "token");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
-
+        await JS.InvokeVoidAsync("localStorage.removeItem", "username");
         Nav.NavigateTo("/login", forceLoad: true);
     }
 
-    public class ChamadoCreateDTO
+    string ObterClasseStatus(string status)
     {
-        public CategoriaDTO Categoria { get; set; }
-        public int Prioridade { get; set; }
-        public string Titulo { get; set; }
-        public string Descricao { get; set; }
-    }
-
-    public class CategoriaDTO
-    {
-        public string Nome { get; set; }
+        return status?.ToLower() switch
+        {
+            "aberto" => "status-open",
+            "em andamento" => "status-inprogress",
+            "fechado" => "status-closed",
+            _ => "status-open"
+        };
     }
 }
