@@ -118,6 +118,7 @@
         </div>
     }
 
+    <!-- ChatBoot Flutuante -->
     <button class="chatboot" @onclick="IrChatBoot">💬 ChatBoot</button>
 </div>
 
@@ -478,7 +479,7 @@
             var username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
             if (!string.IsNullOrEmpty(username)) UsuarioNome = username;
         }
-        catch {}
+        catch { }
 
         await CarregarChamados();
         StateHasChanged();
@@ -497,34 +498,11 @@
         catch { Chamados = new List<ChamadoLocal>(); }
     }
 
-    void ToggleForm()
-    {
-        FormAberto = !FormAberto;
-        ListaAberta = false;
-        MenuAberto = false;
-    }
-
-    void CloseForm()
-    {
-        FormAberto = false;
-    }
-
-    void ToggleList()
-    {
-        ListaAberta = !ListaAberta;
-        FormAberto = false;
-        MenuAberto = false;
-    }
-
-    void ToggleMenu()
-    {
-        MenuAberto = !MenuAberto;
-    }
-
-    void IrParaPerfil()
-    {
-        Nav.NavigateTo("/perfil-cliente");
-    }
+    void ToggleForm() { FormAberto = !FormAberto; ListaAberta = false; MenuAberto = false; }
+    void CloseForm() => FormAberto = false;
+    void ToggleList() { ListaAberta = !ListaAberta; FormAberto = false; MenuAberto = false; }
+    void ToggleMenu() => MenuAberto = !MenuAberto;
+    void IrParaPerfil() => Nav.NavigateTo("/perfil-cliente");
 
     async Task EnviarChamado()
     {
@@ -553,13 +531,10 @@
             };
 
         Chamados.Add(chamado);
-
         await PersistirChamados();
 
-        await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", chamado.Descricao);
-
-        var sugestao = $"Sugestão automática: verifique reinício e limpeza de cache para o problema descrito em \"{chamado.Titulo}\".";
-        await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugestao);
+        // Salva para o técnico receber
+        await JS.InvokeVoidAsync("localStorage.setItem", "chamado_para_tecnico", chamado.Descricao);
 
         MensagemStatus = "Chamado criado com sucesso!";
         IsSuccess = true;
@@ -571,7 +546,6 @@
         Descricao = "";
         FormAberto = false;
         ListaAberta = true;
-
         await Task.Delay(1200);
 
         Nav.NavigateTo("/chatboot");
@@ -584,13 +558,10 @@
             var json = JsonSerializer.Serialize(Chamados);
             await JS.InvokeVoidAsync("localStorage.setItem", "meusChamados", json);
         }
-        catch {}
+        catch { }
     }
 
-    void IrChatBoot()
-    {
-        Nav.NavigateTo("/chatboot");
-    }
+    void IrChatBoot() => Nav.NavigateTo("/chatboot");
 
     async Task Logout()
     {
@@ -599,14 +570,11 @@
         Nav.NavigateTo("/login", forceLoad: true);
     }
 
-    string ObterClasseStatus(string status)
+    string ObterClasseStatus(string status) => status?.ToLower() switch
     {
-        return status?.ToLower() switch
-        {
-            "aberto" => "status-open",
-            "em andamento" => "status-inprogress",
-            "fechado" => "status-closed",
-            _ => "status-open"
-        };
-    }
+        "aberto" => "status-open",
+        "em andamento" => "status-inprogress",
+        "fechado" => "status-closed",
+        _ => "status-open"
+    };
 }
