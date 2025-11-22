@@ -2,83 +2,109 @@
 
 <PageTitle>Painel do Administrador</PageTitle>
 
-<div class="container py-5">
-    <h3 class="text-primary fw-bold mb-4 text-center">
-        🛠️ Painel do Administrador
-    </h3>
+<div class="container py-4">
+    <h3 class="text-primary fw-bold mb-3 text-center">🛠️ Painel do Administrador</h3>
 
-    <ul class="nav nav-tabs justify-content-center mb-4">
+    <div class="d-flex justify-content-center mb-3 gap-2">
         @foreach (var aba in Abas)
         {
-            <li class="nav-item">
-                <button class="nav-link @(abaAtual == aba.Id ? "active" : "")"
-                        @onclick="() => abaAtual = aba.Id">
-                    @aba.Icone @aba.Nome
-                </button>
-            </li>
+            <button class="btn @(abaAtual == aba.Id ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => abaAtual = aba.Id">
+                @aba.Icone @aba.Nome
+            </button>
         }
-    </ul>
+    </div>
 
-    <div class="tab-content mt-3">
-        @if (abaAtual == "chamados") { @RenderChamados() }
-        else if (abaAtual == "usuarios") { @RenderUsuarios() }
-        else if (abaAtual == "relatorios") { @RenderRelatorios() }
-        else if (abaAtual == "config") { @RenderConfiguracoes() }
-        else if (abaAtual == "chat") { @RenderChatBot() }
+    <div>
+        @switch (abaAtual)
+        {
+            case "chamados":
+                @RenderChamados()
+                break;
+
+            case "usuarios":
+                @RenderUsuarios()
+                break;
+
+            case "categorias":
+                @RenderCategorias()
+                break;
+
+            case "departamentos":
+                @RenderDepartamentos()
+                break;
+
+            case "roles":
+                @RenderRoles()
+                break;
+
+            case "relatorios":
+                @RenderRelatorios()
+                break;
+
+            case "chat":
+                @RenderChatBot()
+                break;
+        }
     </div>
 </div>
 
-<style>
-    .nav-tabs .nav-link {
-        color: #555;
-        border-radius: 10px 10px 0 0;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-    .nav-tabs .nav-link.active {
-        background-color: #4e73df;
-        color: white !important;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-    }
-    .nav-tabs .nav-link:hover {
-        color: #4e73df;
-        transform: scale(1.05);
-    }
-    .card {
-        border-radius: 15px;
-    }
-</style>
+<ConfirmDialog @ref="confirmDialog" />
+<MessageBox @ref="messageBox" />
 
 @code {
+
     private string abaAtual = "chamados";
 
-    private List<Aba> Abas = new()
+    private ConfirmDialog? confirmDialog;
+    private MessageBox? messageBox;
+
+    record Aba(string Id, string Icone, string Nome);
+
+    List<Aba> Abas = new()
     {
         new("chamados", "📋", "Chamados"),
         new("usuarios", "👥", "Usuários"),
+        new("categorias", "🏷️", "Categorias"),
+        new("departamentos", "🏢", "Departamentos"),
+        new("roles", "🛡️", "Roles"),
         new("relatorios", "📊", "Relatórios"),
-        new("config", "⚙️", "Configurações"),
         new("chat", "🤖", "ChatBot")
     };
 
-    // ==================== CHAMADOS ====================
-    private List<ChamadoDTO> chamados = new()
+    // ======================================================================================
+    // CHAMADOS
+    // ======================================================================================
+    List<ChamadoDTO> chamados = new()
     {
-        new() { Id = Guid.NewGuid(), Titulo = "Erro no sistema", ClienteNome = "João", TecnicoNome = "Maria", Status = "Em Andamento", Prioridade = "Alta" },
-        new() { Id = Guid.NewGuid(), Titulo = "Impressora travando", ClienteNome = "Carla", TecnicoNome = "", Status = "Aberto", Prioridade = "Média" }
+        new() { Id = Guid.NewGuid(), Titulo = "Erro no sistema", ClienteNome = "João", Prioridade = "Alta", Status = "Aberto" },
+        new() { Id = Guid.NewGuid(), Titulo = "Impressora travando", ClienteNome = "Carla", Prioridade = "Média", Status = "Em Andamento" }
     };
+
+    private async Task RemoverChamado(Guid id)
+    {
+        bool confirmar = await confirmDialog!.Show("Excluir Chamado", "Tem certeza que deseja remover?");
+        if (!confirmar) return;
+
+        var item = chamados.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            chamados.Remove(item);
+            await messageBox!.Show("Removido", "Chamado excluído com sucesso.");
+        }
+    }
 
     private RenderFragment RenderChamados() => __builder =>
     {
-        <div class="card shadow p-4 rounded-4">
-            <h5 class="fw-bold text-primary mb-3">📋 Gerenciamento de Chamados</h5>
-            <table class="table table-striped align-middle text-center">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">📋 Gerenciamento de Chamados</h5>
+
+            <table class="table table-hover text-center">
                 <thead class="table-primary">
                     <tr>
                         <th>ID</th>
                         <th>Título</th>
                         <th>Cliente</th>
-                        <th>Técnico</th>
                         <th>Status</th>
                         <th>Prioridade</th>
                         <th>Ações</th>
@@ -91,12 +117,11 @@
                             <td>@c.Id.ToString().Substring(0, 6)</td>
                             <td>@c.Titulo</td>
                             <td>@c.ClienteNome</td>
-                            <td>@(string.IsNullOrEmpty(c.TecnicoNome) ? "—" : c.TecnicoNome)</td>
-                            <td><span class="badge bg-@ObterCorStatus(c.Status)">@c.Status</span></td>
+                            <td>@c.Status</td>
                             <td>@c.Prioridade</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary me-1">✏️</button>
-                                <button class="btn btn-sm btn-outline-danger">🗑️</button>
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => RemoverChamado(c.Id)">Excluir</button>
                             </td>
                         </tr>
                     }
@@ -105,32 +130,26 @@
         </div>;
     };
 
-    private string ObterCorStatus(string status) => status.ToLower() switch
+    // ======================================================================================
+    // USUÁRIOS
+    // ======================================================================================
+    List<UsuarioDTO> usuarios = new()
     {
-        "aberto" => "info",
-        "em andamento" => "warning",
-        "fechado" => "success",
-        _ => "secondary"
-    };
-
-    private List<UsuarioDTO> usuarios = new()
-    {
-        new() { Id = Guid.NewGuid(), Nome = "Maria Silva", Email = "maria@empresa.com", Tipo = "Técnico", Ativo = true },
-        new() { Id = Guid.NewGuid(), Nome = "João Oliveira", Email = "joao@cliente.com", Tipo = "Colaborador", Ativo = true }
+        new() { Id = Guid.NewGuid(), Nome = "Maria", Email = "maria@empresa.com", Tipo = "Técnico", Ativo = true }
     };
 
     private RenderFragment RenderUsuarios() => __builder =>
     {
-        <div class="card shadow p-4 rounded-4">
-            <h5 class="fw-bold text-primary mb-3">👥 Gerenciamento de Usuários</h5>
-            <table class="table table-hover text-center">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">👥 Usuários</h5>
+
+            <table class="table table-striped text-center">
                 <thead class="table-secondary">
                     <tr>
                         <th>Nome</th>
                         <th>Email</th>
                         <th>Tipo</th>
                         <th>Status</th>
-                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,11 +159,7 @@
                             <td>@u.Nome</td>
                             <td>@u.Email</td>
                             <td>@u.Tipo</td>
-                            <td>@(u.Ativo ? "✅ Ativo" : "⛔ Inativo")</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-warning me-1">✏️</button>
-                                <button class="btn btn-sm btn-outline-danger">❌</button>
-                            </td>
+                            <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
                         </tr>
                     }
                 </tbody>
@@ -152,65 +167,90 @@
         </div>;
     };
 
-    // ==================== RELATÓRIOS ====================
+    // ======================================================================================
+    // CATEGORIAS
+    // ======================================================================================
+    List<string> categorias = new() { "Infra", "Software", "Rede" };
+
+    private RenderFragment RenderCategorias() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🏷️ Categorias</h5>
+
+            @foreach (var c in categorias)
+            {
+                <div class="border p-2 rounded mb-2">@c</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // DEPARTAMENTOS
+    // ======================================================================================
+    List<string> departamentos = new() { "TI", "RH", "Financeiro" };
+
+    private RenderFragment RenderDepartamentos() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🏢 Departamentos</h5>
+
+            @foreach (var d in departamentos)
+            {
+                <div class="border p-2 rounded mb-2">@d</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // ROLES
+    // ======================================================================================
+    List<string> roles = new() { "Administrador", "Técnico", "Colaborador" };
+
+    private RenderFragment RenderRoles() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🛡️ Roles</h5>
+
+            @foreach (var r in roles)
+            {
+                <div class="border p-2 rounded mb-2">@r</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // RELATÓRIOS
+    // ======================================================================================
     private RenderFragment RenderRelatorios() => __builder =>
     {
-        <div class="card shadow p-4 rounded-4">
-            <h5 class="fw-bold text-primary mb-3">📊 Relatórios e Métricas</h5>
-            <div class="row text-center">
-                <div class="col-md-3 mb-3"><div class="card p-3 bg-primary text-white"><h6>Total de Chamados</h6><h3>152</h3></div></div>
-                <div class="col-md-3 mb-3"><div class="card p-3 bg-success text-white"><h6>Resolvidos</h6><h3>128</h3></div></div>
-                <div class="col-md-3 mb-3"><div class="card p-3 bg-warning text-dark"><h6>Em Andamento</h6><h3>18</h3></div></div>
-                <div class="col-md-3 mb-3"><div class="card p-3 bg-danger text-white"><h6>Pendentes</h6><h3>6</h3></div></div>
-            </div>
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">📊 Relatórios</h5>
+            <p>Exibir estatísticas...</p>
         </div>;
     };
 
-    private RenderFragment RenderConfiguracoes() => __builder =>
-    {
-        <div class="card shadow p-4 rounded-4">
-            <h5 class="fw-bold text-primary mb-3">⚙️ Configurações do Sistema</h5>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Ativar ChatBot IA</label>
-                <input type="checkbox" class="form-check-input ms-2" checked />
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Nível de Acesso Padrão</label>
-                <select class="form-select rounded-pill">
-                    <option>Colaborador</option>
-                    <option>Técnico</option>
-                    <option>Administrador</option>
-                </select>
-            </div>
-            <button class="btn btn-success rounded-pill">💾 Salvar Configurações</button>
-        </div>;
-    };
-
-    // ==================== CHATBOT ====================
     private List<MensagemChat> mensagens = new()
     {
         new() { De = "Usuário", Texto = "O sistema está lento." },
-        new() { De = "IA", Texto = "Tente reiniciar o navegador e limpar o cache." }
+        new() { De = "IA", Texto = "Tente limpar o cache." }
     };
 
     private RenderFragment RenderChatBot() => __builder =>
     {
-        <div class="card shadow p-4 rounded-4">
-            <h5 class="fw-bold text-primary mb-3">🤖 Monitoramento do ChatBot</h5>
-            <div class="border rounded-4 p-3" style="height: 300px; overflow-y: auto;">
-                @foreach (var msg in mensagens)
-                {
-                    <div class="mb-2">
-                        <strong>@(msg.De == "IA" ? "🤖 IA:" : "👤 Usuário:")</strong> @msg.Texto
-                    </div>
-                }
-            </div>
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🤖 ChatBot</h5>
+
+            @foreach (var m in mensagens)
+            {
+                <div class="mb-2">
+                    <strong>@m.De:</strong> @m.Texto
+                </div>
+            }
         </div>;
     };
 
-    // ==================== MODELOS ====================
-    public record Aba(string Id, string Icone, string Nome);
-    public class ChamadoDTO { public Guid Id { get; set; } public string Titulo { get; set; } = ""; public string ClienteNome { get; set; } = ""; public string TecnicoNome { get; set; } = ""; public string Status { get; set; } = ""; public string Prioridade { get; set; } = ""; }
+    public class ChamadoDTO { public Guid Id { get; set; } public string Titulo { get; set; } = ""; public string ClienteNome { get; set; } = ""; public string Status { get; set; } = ""; public string Prioridade { get; set; } = ""; }
     public class UsuarioDTO { public Guid Id { get; set; } public string Nome { get; set; } = ""; public string Email { get; set; } = ""; public string Tipo { get; set; } = ""; public bool Ativo { get; set; } }
     public class MensagemChat { public string De { get; set; } = ""; public string Texto { get; set; } = ""; }
 }
+

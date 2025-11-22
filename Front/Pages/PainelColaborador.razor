@@ -1,6 +1,7 @@
-﻿@page "/painel-cliente"
+﻿@page "/painel-colaborador"
 @using System.Text.Json
-@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager Nav
 
 <PageTitle>Painel do Cliente</PageTitle>
@@ -111,8 +112,8 @@
                 <textarea class="form-control" rows="4" @bind="Descricao"></textarea>
 
                 <div class="form-actions">
-                    <button class="btn-cancel" @onclick="CloseForm">Cancelar</button>
-                    <button class="btn-send" @onclick="EnviarChamado">Enviar Chamado</button>
+                    <button class="btn-cancel" @onclick="CloseForm" disabled="@isSending">Cancelar</button>
+                    <button class="btn-send" @onclick="EnviarChamado" disabled="@isSending">@((isSending) ? "Enviando..." : "Enviar Chamado")</button>
                 </div>
             </div>
         </div>
@@ -131,10 +132,6 @@
         --bg: #ffffff;
     }
 
-    body {
-        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-
     .panel-wrap {
         min-height: 100vh;
         background: var(--bg);
@@ -149,97 +146,42 @@
         gap: 12px;
     }
 
-    .top-left .app-title {
-        margin: 0;
-        color: var(--primary-dark);
-        font-size: 22px;
-    }
-
-    .top-left .subtitle {
-        margin: 0;
-        color: var(--muted);
-        font-size: 13px;
-    }
-
-    .top-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
     .btn-primary {
-        background: linear-gradient(90deg,var(--primary),var(--primary-dark));
+        background: linear-gradient(90deg, var(--primary), var(--primary-dark));
         color: white;
         border: none;
         padding: 10px 14px;
         border-radius: 10px;
         font-weight: 700;
         cursor: pointer;
-        box-shadow: 0 8px 20px rgba(19,59,146,0.12);
+        box-shadow: 0 8px 20px rgba(19, 59, 146, 0.12);
+        transition: transform .12s ease;
     }
 
         .btn-primary:hover {
             transform: translateY(-3px);
         }
 
-    .btn-outline {
+    .form-drawer {
+        position: fixed;
+        right: 40px;
+        top: 90px;
+        width: 420px;
         background: white;
-        border: 1px solid #eef2ff;
-        padding: 8px 12px;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        color: var(--primary-dark);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 25px 60px rgba(2, 6, 23, 0.16);
+        z-index: 1501;
+        transform-origin: right top;
+        transition: transform .18s ease, opacity .18s;
     }
 
-    .user-menu {
-        position: relative;
-        display: inline-block;
-        margin-left: 8px;
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: 1500;
     }
-
-    .user-main {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        background: #fff;
-        cursor: pointer;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-        font-weight: 600;
-    }
-
-    .user-dropdown {
-        position: absolute;
-        right: 0;
-        top: 48px;
-        background: white;
-        padding: 8px;
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        z-index: 2000;
-    }
-
-    .dropdown-item {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        text-align: left;
-        border: none;
-        background: none;
-        cursor: pointer;
-        border-radius: 6px;
-    }
-
-        .dropdown-item.danger {
-            color: white;
-            background: var(--accent);
-        }
-
-            .dropdown-item.danger:hover {
-                filter: brightness(.95);
-            }
 
     .toast {
         position: fixed;
@@ -250,195 +192,54 @@
         border-radius: 10px;
         z-index: 3000;
         font-weight: 700;
-        box-shadow: 0 8px 24px rgba(2,6,23,0.08);
+        box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
     }
 
     .toast-success {
         background: #10b981;
         color: white;
+        animation: fadeIn .28s;
     }
 
     .toast-error {
         background: #ef4444;
         color: white;
+        animation: shake .36s;
     }
 
-    .content {
-        margin-top: 18px;
-    }
-
-    .list-card {
-        background: white;
-        padding: 16px;
-        border-radius: 12px;
-        box-shadow: 0 8px 30px rgba(19,59,146,0.04);
-        border: 1px solid #eef5ff;
-    }
-
-    .empty {
-        color: var(--muted);
-        padding: 12px 0;
-    }
-
-    .chamados-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-height: 65vh;
-        overflow: auto;
-        padding-right: 6px;
-    }
-
-    .chamado-item {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px;
-        border-radius: 10px;
-        border: 1px solid #f3f7ff;
-        background: #fff;
-        align-items: flex-start;
-    }
-
-    .chamado-info .titulo {
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .chamado-info .descricao {
-        color: var(--muted);
-        margin-top: 6px;
-        font-size: 14px;
-        max-width: 520px;
-    }
-
-    .chamado-meta {
-        text-align: right;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        align-items: flex-end;
-    }
-
-    .status {
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-weight: 700;
-        font-size: 12px;
-        color: white;
-    }
-
-    .status-open {
-        background: #f59e0b;
-    }
-
-    .status-inprogress {
-        background: #06b6d4;
-    }
-
-    .status-closed {
-        background: #10b981;
-    }
-
-    .meta {
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.25);
-        z-index: 1500;
-    }
-
-    .form-drawer {
-        position: fixed;
-        right: 40px;
-        top: 90px;
-        width: 420px;
-        background: white;
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 25px 60px rgba(2,6,23,0.16);
-        z-index: 1501;
-    }
-
-    .drawer-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-        .drawer-head h4 {
-            margin: 0;
+    @@keyframes fadeIn {
+        from
+        {
+            opacity: 0;
+            transform: translateY(-8px);
         }
 
-    .close {
-        border: none;
-        background: none;
-        font-size: 16px;
-        cursor: pointer;
-    }
+        to {
+            opacity: 1;
+            transform: none;
+        }
 
-    .form-body {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 12px;
-    }
+        }
 
-    .form-control {
-        padding: 8px 10px;
-        border-radius: 8px;
-        border: 1px solid #e6e9f2;
-    }
+    @@keyframes shake {
+        0%
+        {
+            transform: translateX(-2px);
+        }
 
-    .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 10px;
-    }
+        50% {
+            transform: translateX(2px);
+        }
 
-    .btn-cancel {
-        background: #f1f5f9;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
+        100% {
+            transform: translateX(0);
+        }
 
-    .btn-send {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
-    .chatboot {
-        position: fixed;
-        bottom: 28px;
-        right: 28px;
-        background: linear-gradient(90deg,var(--primary),var(--primary-dark));
-        color: white;
-        border: none;
-        padding: 12px 14px;
-        border-radius: 12px;
-        cursor: pointer;
-        box-shadow: 0 16px 40px rgba(19,59,146,0.18);
-        z-index: 2000;
-        font-weight: 700;
-    }
-
-    .form-drawer, .list-card {
-        transition: transform 0.18s ease, opacity 0.18s;
-    }
+        }
 </style>
 
 @code {
+    // modelos locais
     public class ChamadoLocal
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -452,10 +253,22 @@
         public string Autor { get; set; } = "";
     }
 
+    public class AdminNotification
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Titulo { get; set; } = "";
+        public string Mensagem { get; set; } = "";
+        public DateTime CriadoEm { get; set; } = DateTime.Now;
+        public bool Lida { get; set; } = false;
+    }
+
+    // estado UI
     List<ChamadoLocal> Chamados = new();
     bool FormAberto = false;
     bool ListaAberta = false;
     bool MenuAberto = false;
+
+    bool isSending = false;
 
     string Categoria { get; set; } = "";
     int? Prioridade { get; set; }
@@ -474,12 +287,16 @@
     {
         if (!firstRender) return;
 
+        // Carrega username de armazenamento protegido (C#)
         try
         {
-            var username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
-            if (!string.IsNullOrEmpty(username)) UsuarioNome = username;
+            var userResult = await LocalStorage.GetAsync<string>("username");
+            if (userResult.Success && !string.IsNullOrEmpty(userResult.Value))
+            {
+                UsuarioNome = userResult.Value!;
+            }
         }
-        catch { }
+        catch { /* swallow */ }
 
         await CarregarChamados();
         StateHasChanged();
@@ -489,13 +306,20 @@
     {
         try
         {
-            var json = await JS.InvokeAsync<string>("localStorage.getItem", "meusChamados");
-            if (!string.IsNullOrEmpty(json))
+            var result = await LocalStorage.GetAsync<List<ChamadoLocal>>("meusChamados");
+            if (result.Success && result.Value is not null)
             {
-                Chamados = JsonSerializer.Deserialize<List<ChamadoLocal>>(json) ?? new List<ChamadoLocal>();
+                Chamados = result.Value!;
+            }
+            else
+            {
+                Chamados = new List<ChamadoLocal>();
             }
         }
-        catch { Chamados = new List<ChamadoLocal>(); }
+        catch
+        {
+            Chamados = new List<ChamadoLocal>();
+        }
     }
 
     void ToggleForm() { FormAberto = !FormAberto; ListaAberta = false; MenuAberto = false; }
@@ -507,7 +331,8 @@
     async Task EnviarChamado()
     {
         MensagemStatus = "";
-        if (string.IsNullOrWhiteSpace(Categoria) || Prioridade == null || string.IsNullOrWhiteSpace(Titulo) || string.IsNullOrWhiteSpace(Descricao))
+        if (string.IsNullOrWhiteSpace(Categoria) || Prioridade == null ||
+            string.IsNullOrWhiteSpace(Titulo) || string.IsNullOrWhiteSpace(Descricao))
         {
             MensagemStatus = "Preencha todos os campos!";
             IsSuccess = false;
@@ -518,36 +343,51 @@
             return;
         }
 
+        isSending = true;
+        StateHasChanged();
+
         var chamado = new ChamadoLocal
-            {
-                Categoria = Categoria,
-                Prioridade = Prioridade.Value,
-                Titulo = Titulo,
-                Descricao = Descricao,
-                Status = "Aberto",
-                DataAbertura = DateTime.Now,
-                DataVencimento = DateTime.Now.AddDays(7),
-                Autor = UsuarioNome
-            };
+        {
+            Categoria = Categoria,
+            Prioridade = Prioridade.Value,
+            Titulo = Titulo,
+            Descricao = Descricao,
+            Status = "Aberto",
+            DataAbertura = DateTime.Now,
+            DataVencimento = DateTime.Now.AddDays(7),
+            Autor = UsuarioNome
+        };
 
         Chamados.Add(chamado);
         await PersistirChamados();
 
-        // Salva para o técnico receber
-        await JS.InvokeVoidAsync("localStorage.setItem", "chamado_para_tecnico", chamado.Descricao);
+        // Sugestão IA (placeholder)
+        string respostaIA = $"Sugestão automática: com base na categoria '{chamado.Categoria}', sugiro priorizar a análise do problema.";
+
+        // Guardamos as mensagens úteis para o ChatBoot no armazenamento protegido (C#)
+        await LocalStorage.SetAsync("chatPergunta", chamado.Descricao);
+        await LocalStorage.SetAsync("chatResposta", respostaIA);
+        await LocalStorage.SetAsync("chamadoId", chamado.Id);
+        await LocalStorage.SetAsync("chamado_para_tecnico", chamado.Descricao);
 
         MensagemStatus = "Chamado criado com sucesso!";
         IsSuccess = true;
         StateHasChanged();
 
+        // limpa form
         Categoria = "";
         Prioridade = null;
         Titulo = "";
         Descricao = "";
         FormAberto = false;
         ListaAberta = true;
-        await Task.Delay(1200);
 
+        await Task.Delay(600);
+
+        isSending = false;
+        StateHasChanged();
+
+        // redireciona para chatboot
         Nav.NavigateTo("/chatboot");
     }
 
@@ -555,18 +395,17 @@
     {
         try
         {
-            var json = JsonSerializer.Serialize(Chamados);
-            await JS.InvokeVoidAsync("localStorage.setItem", "meusChamados", json);
+            await LocalStorage.SetAsync("meusChamados", Chamados);
         }
-        catch { }
+        catch { /* swallow */ }
     }
 
     void IrChatBoot() => Nav.NavigateTo("/chatboot");
 
     async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "token");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+        await LocalStorage.DeleteAsync("token");
+        await LocalStorage.DeleteAsync("username");
         Nav.NavigateTo("/login", forceLoad: true);
     }
 
@@ -577,4 +416,35 @@
         "fechado" => "status-closed",
         _ => "status-open"
     };
+
+    // ==========================
+    // NOTIFICAÇÕES PARA O ADMIN (LOCAL-ONLY)
+    // ==========================
+    // Quando um usuário novo for cadastrado na aplicação local, chame:
+    //    await NotifyAdminNewUser("Nome do Usuário", "email@exemplo.com");
+    //
+    // O administrador (no painel ADM) poderá ler a lista "adminNotifications" do armazenamento protegido.
+    public async Task NotifyAdminNewUser(string nome, string email)
+    {
+        try
+        {
+            var res = await LocalStorage.GetAsync<List<AdminNotification>>("adminNotifications");
+            List<AdminNotification> lista = res.Success && res.Value != null ? res.Value! : new List<AdminNotification>();
+
+            var note = new AdminNotification
+            {
+                Titulo = "Novo usuário cadastrado",
+                Mensagem = $"{nome} ({email})",
+                CriadoEm = DateTime.Now,
+                Lida = false
+            };
+
+            lista.Insert(0, note); // mais recente primeiro
+            await LocalStorage.SetAsync("adminNotifications", lista);
+        }
+        catch
+        {
+            // falha silenciosa; não bloquear fluxo
+        }
+    }
 }

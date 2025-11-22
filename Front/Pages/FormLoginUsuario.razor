@@ -64,7 +64,6 @@
 
         try
         {
-            // Envia login para o backend normalmente
             var response = await Http.PostAsJsonAsync("Autenticacao/login", login);
 
             if (!response.IsSuccessStatusCode)
@@ -81,7 +80,6 @@
                 return;
             }
 
-            // 🔥 SALVA NO LOCALSTORAGE
             await JS.InvokeVoidAsync("localStorage.setItem", "username", usuarioRetorno.Nome);
             await JS.InvokeVoidAsync("localStorage.setItem", "token", usuarioRetorno.Token);
 
@@ -89,19 +87,17 @@
             mensagem = "Login realizado com sucesso!";
             await Task.Delay(700);
 
-            // 🔥 REGRAS DE REDIRECIONAMENTO
             if (login.Email.ToLower() == "bob@empresa.com" && login.Senha == "senha123")
             {
                 Navigation.NavigateTo("/painel-tecnico", forceLoad: true);
             }
             else if (login.Email.ToLower() == "alice@empresa.com" && login.Senha == "senha123")
             {
-                Navigation.NavigateTo("/painel-cliente", forceLoad: true);
+                Navigation.NavigateTo("/paineladm", forceLoad: true);
             }
             else
             {
-                // Qualquer outro novo usuário vai para o painel do cliente
-                Navigation.NavigateTo("/painel-cliente", forceLoad: true);
+                Navigation.NavigateTo("/painel-colaborador", forceLoad: true);
             }
         }
         catch

@@ -7,116 +7,43 @@
 
 <PageTitle>Painel do Técnico</PageTitle>
 
-<div class="panel-wrap">
-
-    <!-- Topbar -->
-    <div class="topbar">
-        <div class="top-left">
-            <h2 class="app-title">🧠 Painel do Técnico</h2>
-            <p class="subtitle">Gerencie chamados, acompanhe atendimentos e novos chamados.</p>
-        </div>
-
-        <div class="top-right">
-            <button class="btn-outline" @onclick="async () => RefreshChamados()">⟳ Atualizar</button>
-            <button class="btn-outline" @onclick="ToggleView">@((IsKanban) ? "Lista" : "Kanban")</button>
-            <div class="user-menu">
-                <div class="user-main" @onclick="ToggleMenu">
-                    <span class="user-ico">👤</span>
-                    <span class="user-name">Técnico</span>
-                    <span class="caret">▾</span>
-                </div>
-                @if (MenuAberto)
+<div class="panel-wrap"> <!-- Topbar --> <div class="topbar"> <div class="top-left"> <h2 class="app-title">🧠 Painel do Técnico</h2> <p class="subtitle">Gerencie chamados, acompanhe atendimentos e novos chamados.</p> </div> <div class="top-right"> <button class="btn-outline" @onclick="async () => RefreshChamados()">⟳ Atualizar</button> <button class="btn-outline" @onclick="ToggleView">@((IsKanban) ? "Lista" : "Kanban")</button> <div class="user-menu"> <div class="user-main" @onclick="ToggleMenu"> <span class="user-ico">👤</span> <span class="user-name">Técnico</span> <span class="caret">▾</span> </div> @if (MenuAberto)
                 {
-                    <div class="user-dropdown" @onclick:stopPropagation>
-                        <button class="dropdown-item danger" @onclick="Sair">Sair</button>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabs -->
-    <nav class="tabs">
-        <button class="tab @(ActiveTab==Tab.Novo ? "active" : "")" @onclick="() => SelectTab(Tab.Novo)">Novo (@CountNovo)</button>
-        <button class="tab @(ActiveTab==Tab.Pendentes ? "active" : "")" @onclick="() => SelectTab(Tab.Pendentes)">Pendentes (@CountPendentes)</button>
-        <button class="tab @(ActiveTab==Tab.EmAtendimento ? "active" : "")" @onclick="() => SelectTab(Tab.EmAtendimento)">Em Atendimento (@CountEmAtendimento)</button>
-        <button class="tab @(ActiveTab==Tab.Expirados ? "active" : "")" @onclick="() => SelectTab(Tab.Expirados)">Expirados (@CountExpirados)</button>
-    </nav>
-
-    <!-- Conteúdo -->
-    <div class="content">
-        @if (IsKanban)
+                    <div class="user-dropdown" @onclick:stopPropagation> <button class="dropdown-item danger" @onclick="Sair">Sair</button> </div>
+                } </div> </div> </div> <!-- Tabs --> <nav class="tabs"> <button class="tab @(ActiveTab==Tab.Novo ? "active" : "")" @onclick="() => SelectTab(Tab.Novo)">Novo (@CountNovo)</button> <button class="tab @(ActiveTab==Tab.Pendentes ? "active" : "")" @onclick="() => SelectTab(Tab.Pendentes)">Pendentes (@CountPendentes)</button> <button class="tab @(ActiveTab==Tab.EmAtendimento ? "active" : "")" @onclick="() => SelectTab(Tab.EmAtendimento)">Em Atendimento (@CountEmAtendimento)</button> <button class="tab @(ActiveTab==Tab.Expirados ? "active" : "")" @onclick="() => SelectTab(Tab.Expirados)">Expirados (@CountExpirados)</button> </nav> <!-- Conteúdo --> <div class="content"> @if (IsKanban)
         {
-            <div class="kanban">
-                @foreach (var grupo in new[]
-               {
-            ("Novo", CountNovo, Chamados.Where(x => x.Novo && !x.Fechado && !x.Cancelado)),
-            ("Pendentes", CountPendentes, Chamados.Where(x => string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)),
-            ("Em Atendimento", CountEmAtendimento, Chamados.Where(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)),
-            ("Expirados", CountExpirados, Chamados.Where(x => x.Expirado && !x.Fechado && !x.Cancelado))
-            })
+            <div class="kanban"> @foreach (var grupo in new[] { ("Novo", CountNovo, Chamados.Where(x => x.Novo && !x.Fechado && !x.Cancelado)), ("Pendentes", CountPendentes, Chamados.Where(x => string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)), ("Em Atendimento", CountEmAtendimento, Chamados.Where(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)), ("Expirados", CountExpirados, Chamados.Where(x => x.Expirado && !x.Fechado && !x.Cancelado)) })
                 {
-                    <div class="kanban-col">
-                        <h3>@grupo.Item1 (@grupo.Item2)</h3>
-                        @foreach (var c in grupo.Item3.OrderByDescending(x => x.Data))
+                    <div class="kanban-col"> <h3>@grupo.Item1 (@grupo.Item2)</h3> @foreach (var c in grupo.Item3.OrderByDescending(x => x.Data))
                         {
-                            <div class="chamado-card">
-                                <div class="card-top">
-                                    <span class="title">@c.Titulo</span>
-                                    <span class="meta">@c.Data.ToString("g")</span>
-                                </div>
-                                <p>@c.Pergunta</p>
-                                <div class="card-actions">
-                                    @if (string.IsNullOrEmpty(c.Tecnico))
+                            <div class="chamado-card"> <div class="card-top"> <span class="title">@c.Titulo</span> <span class="meta">@c.Data.ToString("g")</span> </div> <p>@c.Pergunta</p> <div class="card-actions"> @if (string.IsNullOrEmpty(c.Tecnico))
                                     {
                                         <button class="btn-primary" @onclick="async () => AssumirChamado(c)">Assumir</button>
-                                    }
-                                    <button class="btn-outline" @onclick="async () => AbrirDetalhe(c)">Ver</button>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
+                                    } <button class="btn-outline" @onclick="async () => AbrirDetalhe(c)">Ver</button> </div> </div>
+                        } </div>
+                } </div>
         }
         else
-        {
-            @if (ListaCarregando)
+        { @if (ListaCarregando)
             {
                 <div class="empty">Carregando chamados...</div>
             }
             else
             {
-                var toShow = ChamadosToShow();
-                @if (!toShow.Any())
+                var toShow = ChamadosToShow(); @if (!toShow.Any())
                 {
                     <div class="empty">Nenhum chamado nesta aba.</div>
                 }
                 else
                 {
-                    <div class="lista-chamados">
-                        @foreach (var chamado in toShow)
+                    <div class="lista-chamados"> @foreach (var chamado in toShow)
                         {
-                            <div class="chamado-card">
-                                <h4>@chamado.Titulo</h4>
-                                <p>@chamado.Pergunta</p>
-                                <p class="meta">@((string.IsNullOrEmpty(chamado.Tecnico)) ? "Sem técnico" : $"Técnico: {chamado.Tecnico}")</p>
-                                <div class="card-actions">
-                                    @if (string.IsNullOrEmpty(chamado.Tecnico))
+                            <div class="chamado-card"> <h4>@chamado.Titulo</h4> <p>@chamado.Pergunta</p> <p class="meta">@((string.IsNullOrEmpty(chamado.Tecnico)) ? "Sem técnico" : $"Técnico: {chamado.Tecnico}")</p> <div class="card-actions"> @if (string.IsNullOrEmpty(chamado.Tecnico))
                                     {
                                         <button class="btn-primary" @onclick="async () => AssumirChamado(chamado)">Assumir</button>
-                                    }
-                                    <button class="btn-outline" @onclick="async () => AbrirDetalhe(chamado)">Abrir</button>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-            }
-        }
-    </div>
-</div>
-
+                                    } <button class="btn-outline" @onclick="async () => AbrirDetalhe(chamado)">Abrir</button> </div> </div>
+                        } </div>
+                }              } } </div> </div>
 <style>
     .panel-wrap {
         min-height: 100vh;
@@ -334,6 +261,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadFromLocalStorage();
+        await LoadChamadoDoUsuario(); // Carrega chamado enviado pelo ChatBoot
         await RefreshChamados();
     }
 
@@ -348,6 +276,21 @@
             }
         }
         catch { Chamados = new(); }
+    }
+
+    async Task LoadChamadoDoUsuario()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoTecnico");
+        if (!string.IsNullOrEmpty(json))
+        {
+            var novoChamado = JsonSerializer.Deserialize<ChamadoDTO>(json);
+            if (novoChamado != null)
+            {
+                Chamados.Add(novoChamado);
+                await PersistToLocalStorage();
+                await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoTecnico");
+            }
+        }
     }
 
     async Task PersistToLocalStorage()
@@ -392,7 +335,7 @@
     void ToggleView() => IsKanban = !IsKanban;
     void ToggleMenu() => MenuAberto = !MenuAberto;
 
-    void AbrirDetalhe(ChamadoDTO c) { /* seu código de abrir detalhe */ }
-    async Task AssumirChamado(ChamadoDTO c) { /* seu código de assumir chamado */ }
+    void AbrirDetalhe(ChamadoDTO c) { /* implementar detalhes */ }
+    async Task AssumirChamado(ChamadoDTO c) { /* implementar assumir chamado */ }
     async Task Sair() { await JS.InvokeVoidAsync("localStorage.removeItem", "chamados_tecnico"); Nav.NavigateTo("/login", true); }
 }

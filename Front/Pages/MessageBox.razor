@@ -1,0 +1,24 @@
+﻿@if (Visible)
+{
+    <div class="alert alert-info mt-3">
+        <strong>@Title:</strong> @Message
+    </div>
+}
+
+@code {
+    private bool Visible = false;
+
+    public string Title { get; set; } = "";
+    public string Message { get; set; } = "";
+
+    public Task Show(string title, string message)
+    {
+        Title = title;
+        Message = message;
+        Visible = true;
+
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+}
