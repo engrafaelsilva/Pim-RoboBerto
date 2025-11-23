@@ -25,22 +25,21 @@ namespace IA_RoboBerto.Servico
 
         public async Task<MensagemDTO> ComentarAsync(Chamado chamado,MensagemInsertDTO dto)
         {
-
             var mensagem = new Mensagem();
             await CopiarDtoPraEntidadeAsync(mensagem, dto);
 
-            // persiste o comentário e obtém o chamado atualizado (com mensagens)
+            // persiste o comentário e obtém o chamado atualizado (com Mensagens e Autores)
             var chamadoAtualizado = await _chamadoRepo.AdicionarComentarioAsync(chamado, mensagem);
 
-            // pega a mensagem que acabou de ser salva — usando a lista do chamado atualizado
-            // assumindo que AdicionarComentarioAsync adiciona a mensagem e atualiza chamado.Mensagens
+            // pegar a mensagem salva pelo Id (garante Autor carregado)
             var mensagemSalva = chamadoAtualizado.Mensagens
-                .OrderByDescending(m => m.DataHoraMensagem)
-                .FirstOrDefault(m => m.Id == mensagem.Id) ?? mensagem;
+                .FirstOrDefault(m => m.Id == mensagem.Id);
 
-            // opcional: garantir que Autor esteja carregado
-            if (mensagemSalva.Autor == null && mensagem.Autor != null)
-                mensagemSalva.Autor = mensagem.Autor;
+            if (mensagemSalva == null)
+            {
+                // fallback: recarregar via repo de mensagens
+                mensagemSalva = await _mensagemRepo.ObterPorIdAsync(mensagem.Id);
+            }
 
             var mensagemDto = new MensagemDTO(mensagemSalva);
 
