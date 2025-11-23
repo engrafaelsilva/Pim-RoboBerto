@@ -18,7 +18,7 @@ namespace IA_RoboBerto.Controladores
             _servico = servico;
         }
 
-        [Authorize]
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet]
         public async Task<ActionResult<PagedList<DepartamentoDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -26,7 +26,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado);
         }
 
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<DepartamentoDTO>> GetById(Guid id)
         {
@@ -35,7 +35,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(departamento);
         }
 
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<DepartamentoDTO>> GetByNome(string nome)
         {

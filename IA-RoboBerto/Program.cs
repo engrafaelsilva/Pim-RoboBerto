@@ -1,6 +1,7 @@
 ﻿using IA_RoboBerto.Autenticação;
 using IA_RoboBerto.Contratos.ContratosRepositorio;
 using IA_RoboBerto.Contratos.ContratosServicos;
+using IA_RoboBerto.Hub;
 using IA_RoboBerto.Middlewares;
 using IA_RoboBerto.Modelos;
 using IA_RoboBerto.Repositorio;
@@ -39,13 +40,43 @@ builder.Services.AddAuthentication(x =>
             ValidateIssuer = false,
             ValidateAudience = false
         };
+        x.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+
+                // deve ser o mesmo endpoint que você mapear no MapHub
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/chat"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+
     });
 
-        
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(_ => true) // ou especifique o front se quiser
+            .AllowCredentials();
+    });
+});
+
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<RoboBertoContext>(options => options.UseNpgsql(connectionString));
@@ -60,8 +91,8 @@ builder.Services.AddScoped<IAuthServico, AuthServico>();
 builder.Services.AddScoped<ISLAServico, SLAServico>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
-builder.Services.AddScoped<IRoleRepositorio,RoleRepositorio>(); 
-builder.Services.AddScoped<IRoleServico,RoleServico>();
+builder.Services.AddScoped<IRoleRepositorio, RoleRepositorio>();
+builder.Services.AddScoped<IRoleServico, RoleServico>();
 
 builder.Services.AddScoped<IDepartamentoServico, DepartamentoServico>();
 builder.Services.AddScoped<IDepartamentoRepositorio, DepartamentoRepositorio>();
@@ -80,8 +111,9 @@ builder.Services.AddScoped<IMensagensRepositorio, MensagensRepositorio>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { 
-        Title = "Roboberto", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Roboberto",
         Version = "v1",
         Description = @"
 Essa API permite gerenciar usuários, departamentos, categorias e chamados, com controle de acesso baseado em roles (ADM, TECNICO e COLABORADOR) e autenticação via JWT.
@@ -135,15 +167,11 @@ Essa API permite gerenciar usuários, departamentos, categorias e chamados, com 
                 });
 });
 
-var app = builder.Build();
-
-
-app.UseSwagger();
-app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
 });
-
-
+var app = builder.Build();
 
 
 using (var scope = app.Services.CreateScope())
@@ -168,9 +196,15 @@ app.UseMiddleware(typeof(GlobalErrorHandlingMiddleware));
 
 app.UseHttpsRedirection();
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.MapHub<ChatHub>("/hubs/chat");
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+});
 app.MapControllers();
 
 app.Run();

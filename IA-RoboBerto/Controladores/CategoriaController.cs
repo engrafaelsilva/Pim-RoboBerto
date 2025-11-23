@@ -19,7 +19,7 @@ namespace IA_RoboBerto.Controladores
         {
             _servico = servico;
         }
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet]
         public async Task<ActionResult<PagedListDTO<CategoriaMinDTO>>> Get([FromQuery] int paginaAtual = 0, [FromQuery] int tamanho = 2)
         {
@@ -27,7 +27,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(resultado.Items);
         }
 
-       [Authorize(Roles = "ADM")]
+       [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetById(Guid id)
         {
@@ -36,7 +36,7 @@ namespace IA_RoboBerto.Controladores
             return Ok(categoria);
         }
 
-        [Authorize(Roles = "ADM")]
+        [Authorize(Roles = "ADM,COLABORADOR,TECNICO")]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<CategoriaMinDTO>> GetByNome(string nome)
         {
