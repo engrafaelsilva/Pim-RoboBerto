@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:roboberto_ia/Model/chamado.dart';
-import 'package:roboberto_ia/ViewModel/chamado_detalhe_view_model.dart';
+import 'package:roboberto_ia/ViewModel/ChamadoDetalheViewModel.dart';
 import 'package:uuid/uuid.dart';
 
 class ChamadoDetalhePage extends StatefulWidget {

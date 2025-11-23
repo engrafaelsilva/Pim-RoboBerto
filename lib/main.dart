@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roboberto_ia/ViewModel/UserHomePageViewModel.dart';
-import 'package:roboberto_ia/ViewModel/novo_chamado_view_model.dart';
-import 'package:roboberto_ia/ViewModel/chamado_detalhe_view_model.dart';
+import 'package:roboberto_ia/ViewModel/NovoChamadoViewModel.dart';
+import 'package:roboberto_ia/ViewModel/ChamadoDetalheViewModel.dart';
 import 'ViewModel/AuthViewModel.dart';
 import 'View/home.dart';
 

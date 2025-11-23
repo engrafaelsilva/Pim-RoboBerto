@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:roboberto_ia/ViewModel/novo_chamado_view_model.dart';
+import 'package:roboberto_ia/ViewModel/NovoChamadoViewModel.dart';
 
 class NovoChamadoPage extends StatefulWidget {
   const NovoChamadoPage({Key? key}) : super(key: key);

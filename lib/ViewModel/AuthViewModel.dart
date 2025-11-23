@@ -17,7 +17,7 @@ class AuthViewModel extends ChangeNotifier {
 
   String get mensagemErro => _mensagemErro;
 
-  var ipApi = '192.168.0.28';
+  var ipApi = 'robobertoapi-e6cgbaawhxagdwg2.brazilsouth-01.azurewebsites.net';
 
   Future<Map<String, String>?> fazerLogin(String email, String senha) async {
     _estaCarregando = true;
@@ -32,7 +32,7 @@ class AuthViewModel extends ChangeNotifier {
     }
 
     try {
-      final url = Uri.parse('http://' + ipApi + ':5129/Autenticacao/login');
+      final url = Uri.parse('https://' + ipApi + '/Autenticacao/login');
       final body = jsonEncode({'email': email, 'senha': senha});
 
       final response = await http.post(
@@ -85,7 +85,7 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<Map<String, String>?> _buscarDadosUsuario(String token) async {
     try {
-      final url = Uri.parse('http://$ipApi:5129/Usuario/eu');
+      final url = Uri.parse('https://$ipApi/Usuario/eu');
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -127,9 +127,7 @@ class AuthViewModel extends ChangeNotifier {
       var uuid = Uuid();
       String novaUuid = uuid.v4();
 
-      DateTime agora = DateTime.now();
-      String dataFormatada = agora.toIso8601String();
-      final url = Uri.parse('http://' + ipApi + ':5129/Usuario');
+      final url = Uri.parse('https://' + ipApi + '/Usuario');
       final body = jsonEncode({
         'id': novaUuid,
         'nome': usuario,
@@ -151,17 +149,39 @@ class AuthViewModel extends ChangeNotifier {
       } else {
         try {
           final errorData = jsonDecode(response.body);
-          _mensagemErro = errorData['message'] ?? 'Erro ao criar a conta';
+          print("Log de Erro: ${response.body}");
+
+          if (errorData['error'] != null) {
+            _mensagemErro = errorData['error'];
+          }
+          else if (errorData['errors'] != null) {
+            Map<String, dynamic> errorsMap = errorData['errors'];
+
+            if (errorsMap.isNotEmpty) {
+              var listaDeErros = errorsMap.values.first;
+
+              if (listaDeErros is List && listaDeErros.isNotEmpty) {
+                _mensagemErro = listaDeErros[0];
+              } else {
+                _mensagemErro = 'Verifique os dados informados.';
+              }
+            } else {
+              _mensagemErro = errorData['title'] ?? 'Erro de validação nos dados.';
+            }
+          }
+          else {
+            _mensagemErro = errorData['title'] ?? 'Erro ao criar a conta';
+          }
         } catch (e) {
-          _mensagemErro = 'Erro ao criar a conta';
+          _mensagemErro = 'Erro ao processar resposta do servidor.';
         }
+
         _estaCarregando = false;
         notifyListeners();
         return false;
       }
     } on TimeoutException catch (_) {
-      _mensagemErro =
-      'O servidor demorou muito para responder. Tente novamente.';
+      _mensagemErro = 'O servidor demorou muito para responder. Tente novamente.';
       _estaCarregando = false;
       notifyListeners();
       return false;

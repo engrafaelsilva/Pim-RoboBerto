@@ -21,7 +21,7 @@ class UserHomePageViewModel extends ChangeNotifier {
   List<Chamado> _chamados = [];
   List<Chamado> get chamados => _chamados;
 
-  var ipApi = "192.168.0.28";
+  var ipApi = "robobertoapi-e6cgbaawhxagdwg2.brazilsouth-01.azurewebsites.net";
 
   void FazerLogout(BuildContext context) async {
     _storage.deleteAll();
@@ -47,9 +47,9 @@ class UserHomePageViewModel extends ChangeNotifier {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
-
+    
     try {
-      final url = Uri.parse('http://$ipApi:5129/Chamados/meus?paginaAtual=0&tamanho=999');
+      final url = Uri.parse('https://$ipApi/Chamados/meus?paginaAtual=0&tamanho=999');
       final response = await http
           .get(
         url,
