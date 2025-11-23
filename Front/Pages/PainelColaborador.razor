@@ -1,0 +1,450 @@
+﻿@page "/painel-colaborador"
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager Nav
+
+<PageTitle>Painel do Cliente</PageTitle>
+
+<div class="panel-wrap">
+
+    <div class="topbar">
+        <div class="top-left">
+            <h2 class="app-title">📌 Painel do Cliente</h2>
+            <p class="subtitle">Abra e acompanhe seus chamados — rápido e simples.</p>
+        </div>
+
+        <div class="top-right">
+            <button class="btn-outline" @onclick="ToggleList">🔍 Ver Chamados (@(Chamados?.Count ?? 0))</button>
+            <button class="btn-primary" @onclick="ToggleForm">➕ Abrir Chamado</button>
+
+            <div class="user-menu">
+                <div class="user-main" @onclick="ToggleMenu">
+                    <span class="user-ico">👤</span>
+                    <span class="user-name">@UsuarioNome</span>
+                    <span class="caret">▾</span>
+                </div>
+                @if (MenuAberto)
+                {
+                    <div class="user-dropdown" @onclick:stopPropagation>
+                        <button class="dropdown-item" @onclick="IrParaPerfil">Perfil</button>
+                        <button class="dropdown-item danger" @onclick="Logout">Sair</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(MensagemStatus))
+    {
+        <div class="toast @(IsSuccess ? "toast-success" : "toast-error")">
+            @MensagemStatus
+        </div>
+    }
+
+    <div class="content">
+        @if (ListaAberta)
+        {
+            <div class="card list-card">
+                <h4>Meus Chamados</h4>
+
+                @if (Chamados == null || Chamados.Count == 0)
+                {
+                    <p class="empty">Você ainda não tem chamados. Abra um pelo botão “Abrir Chamado”.</p>
+                }
+                else
+                {
+                    <div class="chamados-list">
+                        @foreach (var c in Chamados.OrderByDescending(x => x.DataAbertura))
+                        {
+                            <div class="chamado-item">
+                                <div class="chamado-info">
+                                    <div class="titulo">@c.Titulo</div>
+                                    <div class="descricao">@c.Descricao</div>
+                                </div>
+                                <div class="chamado-meta">
+                                    <div class="status @ObterClasseStatus(c.Status)">@c.Status</div>
+                                    <div class="meta">Aberto: @c.DataAbertura.ToString("g")</div>
+                                    <div class="meta">Venc.: @c.DataVencimento.ToString("d")</div>
+                                    <div class="meta">Autor: @c.Autor</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (FormAberto)
+    {
+        <div class="overlay" @onclick="CloseForm"></div>
+
+        <div class="form-drawer" @onclick:stopPropagation>
+            <div class="drawer-head">
+                <h4>Novo Chamado</h4>
+                <button class="close" @onclick="CloseForm">✕</button>
+            </div>
+
+            <div class="form-body">
+                <label>Categoria</label>
+                <select class="form-control" @bind="Categoria">
+                    <option value="">Selecione...</option>
+                    @foreach (var cat in Categorias)
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+
+                <label class="mt-2">Prioridade</label>
+                <select class="form-control" @bind="Prioridade">
+                    <option value="">Selecione...</option>
+                    @foreach (var p in Prioridades)
+                    {
+                        <option value="@p.Value">@p.Key</option>
+                    }
+                </select>
+
+                <label class="mt-2">Título</label>
+                <input class="form-control" @bind="Titulo" />
+
+                <label class="mt-2">Descrição</label>
+                <textarea class="form-control" rows="4" @bind="Descricao"></textarea>
+
+                <div class="form-actions">
+                    <button class="btn-cancel" @onclick="CloseForm" disabled="@isSending">Cancelar</button>
+                    <button class="btn-send" @onclick="EnviarChamado" disabled="@isSending">@((isSending) ? "Enviando..." : "Enviar Chamado")</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ChatBoot Flutuante -->
+    <button class="chatboot" @onclick="IrChatBoot">💬 ChatBoot</button>
+</div>
+
+<style>
+    :root {
+        --primary: #2064F8;
+        --primary-dark: #133B92;
+        --accent: #dc3545;
+        --muted: #6b7280;
+        --bg: #ffffff;
+    }
+
+    .panel-wrap {
+        min-height: 100vh;
+        background: var(--bg);
+        padding: 28px;
+        box-sizing: border-box;
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(19, 59, 146, 0.12);
+        transition: transform .12s ease;
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+        }
+
+    .form-drawer {
+        position: fixed;
+        right: 40px;
+        top: 90px;
+        width: 420px;
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 25px 60px rgba(2, 6, 23, 0.16);
+        z-index: 1501;
+        transform-origin: right top;
+        transition: transform .18s ease, opacity .18s;
+    }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: 1500;
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 16px;
+        border-radius: 10px;
+        z-index: 3000;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
+    }
+
+    .toast-success {
+        background: #10b981;
+        color: white;
+        animation: fadeIn .28s;
+    }
+
+    .toast-error {
+        background: #ef4444;
+        color: white;
+        animation: shake .36s;
+    }
+
+    @@keyframes fadeIn {
+        from
+        {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+
+        }
+
+    @@keyframes shake {
+        0%
+        {
+            transform: translateX(-2px);
+        }
+
+        50% {
+            transform: translateX(2px);
+        }
+
+        100% {
+            transform: translateX(0);
+        }
+
+        }
+</style>
+
+@code {
+    // modelos locais
+    public class ChamadoLocal
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Categoria { get; set; } = "";
+        public int Prioridade { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descricao { get; set; } = "";
+        public string Status { get; set; } = "Aberto";
+        public DateTime DataAbertura { get; set; } = DateTime.Now;
+        public DateTime DataVencimento { get; set; } = DateTime.Now.AddDays(7);
+        public string Autor { get; set; } = "";
+    }
+
+    public class AdminNotification
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Titulo { get; set; } = "";
+        public string Mensagem { get; set; } = "";
+        public DateTime CriadoEm { get; set; } = DateTime.Now;
+        public bool Lida { get; set; } = false;
+    }
+
+    // estado UI
+    List<ChamadoLocal> Chamados = new();
+    bool FormAberto = false;
+    bool ListaAberta = false;
+    bool MenuAberto = false;
+
+    bool isSending = false;
+
+    string Categoria { get; set; } = "";
+    int? Prioridade { get; set; }
+    string Titulo { get; set; } = "";
+    string Descricao { get; set; } = "";
+
+    string MensagemStatus = "";
+    bool IsSuccess = true;
+
+    List<string> Categorias = new() { "Infraestrutura", "Suporte", "Financeiro" };
+    Dictionary<string, int> Prioridades = new() { { "Baixa", 0 }, { "Média", 1 }, { "Alta", 2 } };
+
+    string UsuarioNome = "Cliente";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Carrega username de armazenamento protegido (C#)
+        try
+        {
+            var userResult = await LocalStorage.GetAsync<string>("username");
+            if (userResult.Success && !string.IsNullOrEmpty(userResult.Value))
+            {
+                UsuarioNome = userResult.Value!;
+            }
+        }
+        catch { /* swallow */ }
+
+        await CarregarChamados();
+        StateHasChanged();
+    }
+
+    async Task CarregarChamados()
+    {
+        try
+        {
+            var result = await LocalStorage.GetAsync<List<ChamadoLocal>>("meusChamados");
+            if (result.Success && result.Value is not null)
+            {
+                Chamados = result.Value!;
+            }
+            else
+            {
+                Chamados = new List<ChamadoLocal>();
+            }
+        }
+        catch
+        {
+            Chamados = new List<ChamadoLocal>();
+        }
+    }
+
+    void ToggleForm() { FormAberto = !FormAberto; ListaAberta = false; MenuAberto = false; }
+    void CloseForm() => FormAberto = false;
+    void ToggleList() { ListaAberta = !ListaAberta; FormAberto = false; MenuAberto = false; }
+    void ToggleMenu() => MenuAberto = !MenuAberto;
+    void IrParaPerfil() => Nav.NavigateTo("/perfil-cliente");
+
+    async Task EnviarChamado()
+    {
+        MensagemStatus = "";
+        if (string.IsNullOrWhiteSpace(Categoria) || Prioridade == null ||
+            string.IsNullOrWhiteSpace(Titulo) || string.IsNullOrWhiteSpace(Descricao))
+        {
+            MensagemStatus = "Preencha todos os campos!";
+            IsSuccess = false;
+            StateHasChanged();
+            await Task.Delay(1500);
+            MensagemStatus = "";
+            StateHasChanged();
+            return;
+        }
+
+        isSending = true;
+        StateHasChanged();
+
+        var chamado = new ChamadoLocal
+        {
+            Categoria = Categoria,
+            Prioridade = Prioridade.Value,
+            Titulo = Titulo,
+            Descricao = Descricao,
+            Status = "Aberto",
+            DataAbertura = DateTime.Now,
+            DataVencimento = DateTime.Now.AddDays(7),
+            Autor = UsuarioNome
+        };
+
+        Chamados.Add(chamado);
+        await PersistirChamados();
+
+        // Sugestão IA (placeholder)
+        string respostaIA = $"Sugestão automática: com base na categoria '{chamado.Categoria}', sugiro priorizar a análise do problema.";
+
+        // Guardamos as mensagens úteis para o ChatBoot no armazenamento protegido (C#)
+        await LocalStorage.SetAsync("chatPergunta", chamado.Descricao);
+        await LocalStorage.SetAsync("chatResposta", respostaIA);
+        await LocalStorage.SetAsync("chamadoId", chamado.Id);
+        await LocalStorage.SetAsync("chamado_para_tecnico", chamado.Descricao);
+
+        MensagemStatus = "Chamado criado com sucesso!";
+        IsSuccess = true;
+        StateHasChanged();
+
+        // limpa form
+        Categoria = "";
+        Prioridade = null;
+        Titulo = "";
+        Descricao = "";
+        FormAberto = false;
+        ListaAberta = true;
+
+        await Task.Delay(600);
+
+        isSending = false;
+        StateHasChanged();
+
+        // redireciona para chatboot
+        Nav.NavigateTo("/chatboot");
+    }
+
+    async Task PersistirChamados()
+    {
+        try
+        {
+            await LocalStorage.SetAsync("meusChamados", Chamados);
+        }
+        catch { /* swallow */ }
+    }
+
+    void IrChatBoot() => Nav.NavigateTo("/chatboot");
+
+    async Task Logout()
+    {
+        await LocalStorage.DeleteAsync("token");
+        await LocalStorage.DeleteAsync("username");
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    string ObterClasseStatus(string status) => status?.ToLower() switch
+    {
+        "aberto" => "status-open",
+        "em andamento" => "status-inprogress",
+        "fechado" => "status-closed",
+        _ => "status-open"
+    };
+
+    // ==========================
+    // NOTIFICAÇÕES PARA O ADMIN (LOCAL-ONLY)
+    // ==========================
+    // Quando um usuário novo for cadastrado na aplicação local, chame:
+    //    await NotifyAdminNewUser("Nome do Usuário", "email@exemplo.com");
+    //
+    // O administrador (no painel ADM) poderá ler a lista "adminNotifications" do armazenamento protegido.
+    public async Task NotifyAdminNewUser(string nome, string email)
+    {
+        try
+        {
+            var res = await LocalStorage.GetAsync<List<AdminNotification>>("adminNotifications");
+            List<AdminNotification> lista = res.Success && res.Value != null ? res.Value! : new List<AdminNotification>();
+
+            var note = new AdminNotification
+            {
+                Titulo = "Novo usuário cadastrado",
+                Mensagem = $"{nome} ({email})",
+                CriadoEm = DateTime.Now,
+                Lida = false
+            };
+
+            lista.Insert(0, note); // mais recente primeiro
+            await LocalStorage.SetAsync("adminNotifications", lista);
+        }
+        catch
+        {
+            // falha silenciosa; não bloquear fluxo
+        }
+    }
+}

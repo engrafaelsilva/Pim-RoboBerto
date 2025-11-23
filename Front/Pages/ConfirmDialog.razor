@@ -1,0 +1,43 @@
+﻿@if (Visible)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+                <h5>@Title</h5>
+                <p>@Message</p>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" @onclick="() => Close(false)">Cancelar</button>
+                    <button class="btn btn-danger" @onclick="() => Close(true)">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool Visible;
+    private TaskCompletionSource<bool>? tcs;
+
+    public string Title { get; set; } = "";
+    public string Message { get; set; } = "";
+
+    public Task<bool> Show(string title, string message)
+    {
+        Title = title;
+        Message = message;
+        Visible = true;
+
+        tcs = new();
+        StateHasChanged();
+
+        return tcs.Task;
+    }
+
+    private void Close(bool result)
+    {
+        Visible = false;
+        tcs?.SetResult(result);
+    }
+}

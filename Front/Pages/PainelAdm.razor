@@ -1,0 +1,256 @@
+﻿@page "/paineladm"
+
+<PageTitle>Painel do Administrador</PageTitle>
+
+<div class="container py-4">
+    <h3 class="text-primary fw-bold mb-3 text-center">🛠️ Painel do Administrador</h3>
+
+    <div class="d-flex justify-content-center mb-3 gap-2">
+        @foreach (var aba in Abas)
+        {
+            <button class="btn @(abaAtual == aba.Id ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => abaAtual = aba.Id">
+                @aba.Icone @aba.Nome
+            </button>
+        }
+    </div>
+
+    <div>
+        @switch (abaAtual)
+        {
+            case "chamados":
+                @RenderChamados()
+                break;
+
+            case "usuarios":
+                @RenderUsuarios()
+                break;
+
+            case "categorias":
+                @RenderCategorias()
+                break;
+
+            case "departamentos":
+                @RenderDepartamentos()
+                break;
+
+            case "roles":
+                @RenderRoles()
+                break;
+
+            case "relatorios":
+                @RenderRelatorios()
+                break;
+
+            case "chat":
+                @RenderChatBot()
+                break;
+        }
+    </div>
+</div>
+
+<ConfirmDialog @ref="confirmDialog" />
+<MessageBox @ref="messageBox" />
+
+@code {
+
+    private string abaAtual = "chamados";
+
+    private ConfirmDialog? confirmDialog;
+    private MessageBox? messageBox;
+
+    record Aba(string Id, string Icone, string Nome);
+
+    List<Aba> Abas = new()
+    {
+        new("chamados", "📋", "Chamados"),
+        new("usuarios", "👥", "Usuários"),
+        new("categorias", "🏷️", "Categorias"),
+        new("departamentos", "🏢", "Departamentos"),
+        new("roles", "🛡️", "Roles"),
+        new("relatorios", "📊", "Relatórios"),
+        new("chat", "🤖", "ChatBot")
+    };
+
+    // ======================================================================================
+    // CHAMADOS
+    // ======================================================================================
+    List<ChamadoDTO> chamados = new()
+    {
+        new() { Id = Guid.NewGuid(), Titulo = "Erro no sistema", ClienteNome = "João", Prioridade = "Alta", Status = "Aberto" },
+        new() { Id = Guid.NewGuid(), Titulo = "Impressora travando", ClienteNome = "Carla", Prioridade = "Média", Status = "Em Andamento" }
+    };
+
+    private async Task RemoverChamado(Guid id)
+    {
+        bool confirmar = await confirmDialog!.Show("Excluir Chamado", "Tem certeza que deseja remover?");
+        if (!confirmar) return;
+
+        var item = chamados.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            chamados.Remove(item);
+            await messageBox!.Show("Removido", "Chamado excluído com sucesso.");
+        }
+    }
+
+    private RenderFragment RenderChamados() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">📋 Gerenciamento de Chamados</h5>
+
+            <table class="table table-hover text-center">
+                <thead class="table-primary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Cliente</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in chamados)
+                    {
+                        <tr>
+                            <td>@c.Id.ToString().Substring(0, 6)</td>
+                            <td>@c.Titulo</td>
+                            <td>@c.ClienteNome</td>
+                            <td>@c.Status</td>
+                            <td>@c.Prioridade</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => RemoverChamado(c.Id)">Excluir</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>;
+    };
+
+    // ======================================================================================
+    // USUÁRIOS
+    // ======================================================================================
+    List<UsuarioDTO> usuarios = new()
+    {
+        new() { Id = Guid.NewGuid(), Nome = "Maria", Email = "maria@empresa.com", Tipo = "Técnico", Ativo = true }
+    };
+
+    private RenderFragment RenderUsuarios() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">👥 Usuários</h5>
+
+            <table class="table table-striped text-center">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in usuarios)
+                    {
+                        <tr>
+                            <td>@u.Nome</td>
+                            <td>@u.Email</td>
+                            <td>@u.Tipo</td>
+                            <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>;
+    };
+
+    // ======================================================================================
+    // CATEGORIAS
+    // ======================================================================================
+    List<string> categorias = new() { "Infra", "Software", "Rede" };
+
+    private RenderFragment RenderCategorias() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🏷️ Categorias</h5>
+
+            @foreach (var c in categorias)
+            {
+                <div class="border p-2 rounded mb-2">@c</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // DEPARTAMENTOS
+    // ======================================================================================
+    List<string> departamentos = new() { "TI", "RH", "Financeiro" };
+
+    private RenderFragment RenderDepartamentos() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🏢 Departamentos</h5>
+
+            @foreach (var d in departamentos)
+            {
+                <div class="border p-2 rounded mb-2">@d</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // ROLES
+    // ======================================================================================
+    List<string> roles = new() { "Administrador", "Técnico", "Colaborador" };
+
+    private RenderFragment RenderRoles() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🛡️ Roles</h5>
+
+            @foreach (var r in roles)
+            {
+                <div class="border p-2 rounded mb-2">@r</div>
+            }
+        </div>;
+    };
+
+    // ======================================================================================
+    // RELATÓRIOS
+    // ======================================================================================
+    private RenderFragment RenderRelatorios() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">📊 Relatórios</h5>
+            <p>Exibir estatísticas...</p>
+        </div>;
+    };
+
+    private List<MensagemChat> mensagens = new()
+    {
+        new() { De = "Usuário", Texto = "O sistema está lento." },
+        new() { De = "IA", Texto = "Tente limpar o cache." }
+    };
+
+    private RenderFragment RenderChatBot() => __builder =>
+    {
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">🤖 ChatBot</h5>
+
+            @foreach (var m in mensagens)
+            {
+                <div class="mb-2">
+                    <strong>@m.De:</strong> @m.Texto
+                </div>
+            }
+        </div>;
+    };
+
+    public class ChamadoDTO { public Guid Id { get; set; } public string Titulo { get; set; } = ""; public string ClienteNome { get; set; } = ""; public string Status { get; set; } = ""; public string Prioridade { get; set; } = ""; }
+    public class UsuarioDTO { public Guid Id { get; set; } public string Nome { get; set; } = ""; public string Email { get; set; } = ""; public string Tipo { get; set; } = ""; public bool Ativo { get; set; } }
+    public class MensagemChat { public string De { get; set; } = ""; public string Texto { get; set; } = ""; }
+}
+

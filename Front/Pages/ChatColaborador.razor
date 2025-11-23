@@ -1,0 +1,97 @@
+﻿@page "/chat-colaborador"
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>Chat com Técnico</PageTitle>
+
+<h3 class="mb-3">Chat com o Técnico 🛠️</h3>
+
+<div class="chat-container shadow rounded-4 p-3">
+
+    <div class="chat-window" id="chatWindow">
+        @foreach (var msg in Mensagens)
+        {
+            <div class="message @(msg.Remetente == "usuario" ? "user" : "bot")">
+                <div class="avatar">@((msg.Remetente == "usuario") ? "🧑" : "👨‍🔧")</div>
+                <div class="bubble">@msg.Texto</div>
+            </div>
+        }
+    </div>
+
+    <div class="chat-input mt-3 d-flex gap-2">
+        <input class="form-control" @bind="NovaMensagem" @bind:event="oninput" placeholder="Digite sua mensagem..." />
+        <button class="btn btn-primary" @onclick="EnviarMensagem">Enviar</button>
+    </div>
+</div>
+
+<style>
+    .chat-container { max-width: 700px; margin: 0 auto; background-color: #f8f9fa; display: flex; flex-direction: column; height: 80vh; }
+    .chat-window { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+    .message { display: flex; align-items: flex-start; gap: 10px; }
+    .message.user { flex-direction: row-reverse; }
+    .avatar { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background-color: #e0e0e0; border-radius: 50%; font-size: 20px; }
+    .bubble { max-width: 70%; padding: 10px 15px; border-radius: 20px; line-height: 1.4; word-wrap: break-word; font-size: 15px; }
+    .message.bot .bubble { background-color: #ffffff; border: 1px solid #ddd; }
+    .message.user .bubble { background-color: #007bff; color: white; }
+</style>
+
+@code {
+    public class Mensagem
+    {
+        public string Remetente { get; set; }
+        public string Texto { get; set; }
+    }
+
+    List<Mensagem> Mensagens = new();
+    string NovaMensagem = "";
+    System.Timers.Timer timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarMensagens();
+
+        timer = new System.Timers.Timer(1000);
+        timer.Elapsed += async (_, __) => await AtualizarMensagens();
+        timer.AutoReset = true;
+        timer.Enabled = true;
+    }
+
+    async Task EnviarMensagem()
+    {
+        if (string.IsNullOrWhiteSpace(NovaMensagem)) return;
+
+        Mensagens.Add(new Mensagem { Remetente = "usuario", Texto = NovaMensagem });
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnico", JsonSerializer.Serialize(Mensagens));
+        NovaMensagem = "";
+    }
+
+    async Task CarregarMensagens()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
+        if (!string.IsNullOrEmpty(json))
+            Mensagens = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new List<Mensagem>();
+        StateHasChanged();
+    }
+
+    async Task AtualizarMensagens()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
+        if (!string.IsNullOrEmpty(json))
+        {
+            var msgs = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new List<Mensagem>();
+            if (msgs.Count != Mensagens.Count)
+            {
+                Mensagens = msgs;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        timer?.Stop();
+        timer?.Dispose();
+    }
+}

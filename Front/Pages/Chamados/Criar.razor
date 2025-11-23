@@ -1,5 +1,191 @@
-﻿<h3>Criar</h3>
+﻿@page "/chamados"
+@using System.Text.Json
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Meus Chamados</PageTitle>
+
+<div class="lista-wrapper">
+    <div class="header-section text-white">
+        <h2 class="fw-bold">📋 Meus Chamados</h2>
+        <p class="opacity-75">Consulte todos os chamados registrados</p>
+
+        <button class="btn btn-light btn-lg fw-semibold mt-3 shadow"
+                @onclick="CarregarChamados">
+            🔄 Recarregar Lista
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(MensagemStatus))
+    {
+        <div class="alert @StatusClass mt-3">@MensagemStatus</div>
+    }
+
+    <div class="card mt-4 p-4 shadow-lg fade-in">
+        @if (isLoading)
+        {
+            <p class="text-center text-muted">Carregando chamados...</p>
+        }
+        else if (Chamados.Count == 0)
+        {
+            <div class="alert alert-info text-center">
+                Nenhum chamado encontrado.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-striped rounded-3 text-center align-middle shadow-sm">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Título</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Prioridade</th>
+                            <th>Status</th>
+                            <th>Data de Abertura</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Chamados)
+                        {
+                            <tr>
+                                <td>@c.Titulo</td>
+                                <td class="text-start">@c.Descricao</td>
+                                <td>@c.Categoria?.Nome</td>
+                                <td>@c.Prioridade</td>
+                                <td>
+                                    <span class="badge bg-@CorStatus(c.Status.ToString())">
+                                        @c.Status
+                                    </span>
+                                </td>
+                                <td>@c.DataAbertura.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .lista-wrapper {
+        min-height: 100vh;
+        padding: 40px 20px;
+        background: linear-gradient(135deg, #2064F8 0%, #12437C 100%);
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.35s ease-out;
+    }
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+</style>
 
 @code {
+    private List<ChamadoDTO> Chamados = new();
+    private bool isLoading = true;
 
+    public string MensagemStatus { get; set; }
+    public string StatusClass { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarChamados();
+    }
+
+    private async Task CarregarChamados()
+    {
+        isLoading = true;
+        MensagemStatus = "";
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var response = await Http.GetAsync("Chamados/meus?paginaAtual=0&tamanho=10");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+
+                var paged = JsonSerializer.Deserialize<PagedListChamadoDTO>(
+                    json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                Chamados = paged?.Items ?? new();
+            }
+            else
+            {
+                MensagemStatus = "Erro ao carregar chamados.";
+                StatusClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            MensagemStatus = $"Erro inesperado: {ex.Message}";
+            StatusClass = "alert-danger";
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private string CorStatus(string status) => status?.ToLower() switch
+    {
+        "aberto" => "info",
+        "em andamento" => "warning",
+        "fechado" => "success",
+        "cancelado" => "danger",
+        _ => "secondary"
+    };
+
+    public class ChamadoDTO
+    {
+        public Guid Id { get; set; }
+        public CategoriaNomeDTO Categoria { get; set; }
+        public string Titulo { get; set; }
+        public string Descricao { get; set; }
+        public string Prioridade { get; set; }
+        public string Status { get; set; }
+        public DateTime DataAbertura { get; set; }
+    }
+
+    public class CategoriaNomeDTO
+    {
+        public string Nome { get; set; }
+    }
+
+    public class PagedListChamadoDTO
+    {
+        public List<ChamadoDTO> Items { get; set; }
+        public int PaginaAtual { get; set; }
+        public int TotalPaginas { get; set; }
+        public int TotalCount { get; set; }
+    }
 }

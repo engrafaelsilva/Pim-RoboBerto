@@ -16,7 +16,7 @@ namespace Front
             builder.Services.AddSingleton<WeatherForecastService>();
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("https://localhost:7187/") // URL da sua API
+                BaseAddress = new Uri("https://robobertoapi-e6cgbaawhxagdwg2.brazilsouth-01.azurewebsites.net/") // URL da sua API
             });
 
             var app = builder.Build();

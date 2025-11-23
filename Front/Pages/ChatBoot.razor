@@ -1,0 +1,307 @@
+﻿@page "/chatboot"
+@using System.Text.Json
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>ChatBoot</PageTitle>
+
+<div class="chat-container">
+
+    <div class="chat-header">
+        💬 Assistente Virtual
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+
+        @if (SemChamado)
+        {
+            <div class="message bot">
+                <div class="avatar bot-avatar">🤖</div>
+                <div class="bubble bot-bubble animate">
+                    Não encontrei nenhum chamado ativo.<br />
+                    Abra um chamado no painel para iniciar a conversa comigo!
+                </div>
+            </div>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(UserMessage))
+            {
+                <div class="message user">
+                    <div class="avatar user-avatar">🧑</div>
+                    <div class="bubble user-bubble">@UserMessage</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(BotMessage))
+            {
+                <div class="message bot">
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="bubble bot-bubble animate">@BotMessage</div>
+                </div>
+            }
+
+            @if (AwaitingResolution)
+            {
+                <div class="message bot">
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="bubble bot-bubble animate">
+                        A sugestão acima ajudou a resolver seu problema?<br />
+                        Responda: <strong>Sim</strong> ou <strong>Não</strong>.
+                    </div>
+                </div>
+
+                <input class="resolution-input"
+                       @bind="UserResolution"
+                       @bind:event="oninput"
+                       placeholder="Digite Sim ou Não" />
+
+                <button class="btn-send" @onclick="ProcessarResposta">Enviar</button>
+            }
+        }
+    </div>
+</div>
+
+<style>
+    .chat-container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 80vh;
+    }
+
+    .chat-header {
+        background: #0d6efd;
+        color: white;
+        padding: 20px;
+        font-size: 20px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .chat-window {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .message {
+        display: flex;
+        gap: 10px;
+    }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ddd;
+        border-radius: 50%;
+        font-size: 24px;
+    }
+
+    .user-avatar {
+        background: #007bff;
+        color: white;
+    }
+
+    .bot-avatar {
+        background: #ffeec4;
+    }
+
+    .bubble {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .user-bubble {
+        background: #007bff;
+        color: white;
+    }
+
+    .bot-bubble {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+
+    .animate {
+        animation: fadeInUp 0.4s ease-in-out;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .resolution-input {
+        padding: 10px;
+        width: 60%;
+        margin-top: 8px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    .btn-send {
+        margin-top: 6px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #0d6efd;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    bool SemChamado = false;
+    bool AwaitingResolution = false;
+
+    Guid ChamadoId;
+    string UserMessage = "";
+    string BotMessage = "";
+    string UserResolution = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var chamadoStr = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId");
+
+        if (string.IsNullOrWhiteSpace(chamadoStr) || !Guid.TryParse(chamadoStr, out ChamadoId))
+        {
+            SemChamado = true;
+            return;
+        }
+
+        UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta");
+        BotMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatResposta");
+
+        if (string.IsNullOrEmpty(UserMessage) || string.IsNullOrEmpty(BotMessage))
+        {
+            try
+            {
+                var json = await Http.GetStringAsync($"Chamados/{ChamadoId}");
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("descricao", out var descProp) &&
+                    descProp.ValueKind == JsonValueKind.String)
+                {
+                    UserMessage = descProp.GetString();
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", UserMessage);
+                }
+
+                if (root.TryGetProperty("sugestaoGemini", out var sugProp) &&
+                    sugProp.ValueKind == JsonValueKind.String)
+                {
+                    BotMessage = sugProp.GetString();
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", BotMessage);
+                }
+
+                bool? sugestaoResolveu = null;
+
+                if (root.TryGetProperty("sugestaoResolveu", out var srProp) &&
+                    srProp.ValueKind != JsonValueKind.Null)
+                {
+                    if (srProp.ValueKind == JsonValueKind.True || srProp.ValueKind == JsonValueKind.False)
+                        sugestaoResolveu = srProp.GetBoolean();
+                }
+
+                AwaitingResolution = sugestaoResolveu == null && !string.IsNullOrEmpty(BotMessage);
+
+                SemChamado = string.IsNullOrEmpty(UserMessage) && string.IsNullOrEmpty(BotMessage);
+            }
+            catch
+            {
+                SemChamado = true;
+            }
+        }
+        else
+        {
+            AwaitingResolution = !string.IsNullOrEmpty(BotMessage);
+            SemChamado = false;
+        }
+    }
+
+    async Task ProcessarResposta()
+    {
+        if (string.IsNullOrWhiteSpace(UserResolution))
+            return;
+
+        string resposta = UserResolution.Trim().ToLower();
+
+        if (resposta != "sim" && resposta != "não" && resposta != "nao")
+        {
+            await JS.InvokeVoidAsync("alert", "Por favor, responda apenas: Sim ou Não.");
+            return;
+        }
+
+        if (resposta == "sim")
+        {
+            await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", true);
+
+            BotMessage = "Perfeito! Seu chamado foi resolvido com sucesso!";
+
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+
+            AwaitingResolution = false;
+
+            StateHasChanged();
+
+            await Task.Delay(900);
+            Navigation.NavigateTo("/painel-colaborador");
+        }
+        else
+        {
+            await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", false);
+
+            var chamadoParaTecnico = new
+            {
+                Pergunta = UserMessage,
+                Resposta = BotMessage,
+                Data = DateTime.UtcNow
+            };
+
+            var json = JsonSerializer.Serialize(chamadoParaTecnico);
+
+            await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
+            await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", json);
+
+            BotMessage = "Entendido! Vou encaminhar seu chamado para um técnico.";
+
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+
+            AwaitingResolution = false;
+
+            StateHasChanged();
+
+            await Task.Delay(900);
+            Navigation.NavigateTo("/painel-colaborador");
+        }
+    }
+}

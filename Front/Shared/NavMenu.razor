@@ -1,44 +1,79 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Front</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+﻿<div class="sidebar d-flex flex-column justify-content-between">
+    <div>
+        <div class="sidebar-header text-center py-4">
+            <img src="/image/LogoRoboBertoIA.png" alt="Logo" class="sidebar-logo mb-2" />
+            <h5 class="fw-bold text-white">RoboBerto</h5>
+        </div>
+
+        <nav class="nav flex-column px-3">
+            <NavLink href="/" class="nav-item-custom" Match="NavLinkMatch.All">
+                <i class="oi oi-home me-2"></i> Home
+            </NavLink>
+
+            <NavLink href="/login" class="nav-item-custom">
+                <i class="oi oi-person me-2"></i> Login
+            </NavLink>
+
+            <NavLink href="/cadastre-se" class="nav-item-custom">
+                <i class="oi oi-plus me-2"></i> Cadastre-se
+            </NavLink>
+
+            <NavLink href="/chamados" class="nav-item-custom">
+                <i class="oi oi-list-rich me-2"></i> Chamados
+            </NavLink>
+        </nav>
     </div>
+
+    <footer class="text-center py-3 text-white-50 small">
+        © @DateTime.Now.Year RoboBerto
+    </footer>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="categorias">
-                <span class="oi oi-folder" aria-hidden="true"></span> Categorias
-            </NavLink>
-        </li>
-    </nav>
-</div>
+<style>
+    .sidebar {
+        width: 240px;
+        background: linear-gradient(180deg, #2064F8 0%, #12437C 100%);
+        color: white;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidebar-logo {
+        width: 80px;
+        height: auto;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .nav-item-custom {
+        display: flex;
+        align-items: center;
+        color: #fff;
+        padding: 12px 14px;
+        margin: 6px 8px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+        .nav-item-custom:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .nav-item-custom.active {
+            background-color: #fff;
+            color: #12437C !important;
+            font-weight: 600;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+</style>
 
 @code {
     private bool collapseNavMenu = true;
-
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
 }
