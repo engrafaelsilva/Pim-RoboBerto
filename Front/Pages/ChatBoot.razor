@@ -1,5 +1,6 @@
 ﻿@page "/chatboot"
 @using System.Text.Json
+@using System.Threading
 @inject NavigationManager Navigation
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -43,8 +44,19 @@
                 </div>
             }
 
+            <!-- Indicação que a IA está sendo gerada -->
+            @if (IsWaitingSuggestion)
+            {
+                <div class="message bot">
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="bubble bot-bubble animate">
+                        Gerando sugestão da IA... <span class="dots">●●●</span>
+                    </div>
+                </div>
+            }
+
             <!-- Sugestão da IA -->
-            @if (!string.IsNullOrEmpty(BotMessage))
+            @if (!string.IsNullOrEmpty(BotMessage) && !IsWaitingSuggestion)
             {
                 <div class="message bot">
                     <div class="avatar bot-avatar">🤖</div>
@@ -62,31 +74,64 @@
                     </div>
                 </div>
 
-                <input class="resolution-input"
-                       @bind="UserResolution"
-                       @bind:event="oninput"
-                       placeholder="Digite Sim ou Não" />
-
-                <button class="btn-send" @onclick="ProcessarResposta">Enviar</button>
+                <input class="resolution-input" @bind="UserResolution" @bind:event="oninput" placeholder="Digite Sim ou Não" />
+                <button class="btn-send" @onclick="ProcessarResposta">@((processingResponse) ? "Enviando..." : "Enviar")</button>
             }
         }
     </div>
 </div>
 
-@code {
+<style>
+/* Mantive o seu CSS original do ChatBoot, acrescentei um pequeno spinner/dots */
+.chat-container { max-width:600px; margin:40px auto; background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.15); overflow:hidden; display:flex; flex-direction:column; height:80vh; }
+.chat-header { background:#0d6efd; color:white; padding:20px; font-size:20px; text-align:center; font-weight:bold; }
+.chat-window { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+.message { display:flex; gap:10px; }
+.message.user { flex-direction:row-reverse; }
+.avatar { width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:#ddd; border-radius:50%; font-size:24px; }
+.user-avatar { background:#007bff; color:white; }
+.bot-avatar { background:#ffeec4; }
+.bubble { max-width:75%; padding:12px 16px; border-radius:14px; font-size:14px; line-height:1.4; }
+.user-bubble { background:#007bff; color:white; }
+.bot-bubble { background:#f5f5f5; border:1px solid #ddd; }
+.animate { animation:fadeInUp 0.4s ease-in-out; }
+@@keyframes fadeInUp { from{ opacity:0; transform:translateY(12px);} to{ opacity:1; transform:translateY(0);} }
+.resolution-input { padding:10px; width:60%; margin-top:8px; border-radius:8px; border:1px solid #ccc; }
+.btn-send { margin-top:6px; padding:10px 20px; border:none; border-radius:8px; background:#0d6efd; color:white; cursor:pointer; font-weight:bold; }
+/* dots animation */
+.dots { display:inline-block; margin-left:6px; color:#666; font-weight:700; animation: blink 1s steps(4, end) infinite; }
+@@keyframes blink { 0%,20% { color: rgba(0,0,0,0);} 40% { color: rgba(0,0,0,0.3);} 60% { color: rgba(0,0,0,0.6);} 100% { color: rgba(0,0,0,0.9);} }
+</style>
 
+@code {
     bool SemChamado = false;
     bool AwaitingResolution = false;
+    bool processingResponse = false;
 
     Guid ChamadoId;
     string UserMessage = "";
     string BotMessage = "";
     string UserResolution = "";
 
+    // polling & state
+    bool IsWaitingSuggestion = false;
+    CancellationTokenSource? pollingCts;
+
+    // tentativas
+    const int PollIntervalMs = 3000;
+    const int MaxPollAttempts = 10;
+
     protected override async Task OnInitializedAsync()
     {
-        // Recupera ID
-        var chamadoStr = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId");
+        SemChamado = false;
+        AwaitingResolution = false;
+        processingResponse = false;
+        IsWaitingSuggestion = false;
+
+        // recupera chamadoId do localStorage
+        string? chamadoStr = null;
+        try { chamadoStr = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId"); }
+        catch { chamadoStr = null; }
 
         if (string.IsNullOrEmpty(chamadoStr) || !Guid.TryParse(chamadoStr, out ChamadoId))
         {
@@ -94,102 +139,260 @@
             return;
         }
 
-        // Recupera apenas a descrição que veio do Painel
-        UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta");
+        // pega a descrição que o Painel gravou (se existir)
+        try { UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta") ?? ""; }
+        catch { UserMessage = ""; }
 
+        // garante que o HttpClient tenha Authorization (se token existir)
+        await EnsureAuthAsync();
+
+        // tenta carregar o chamado uma vez (pode já conter sugestaoGemini)
         try
         {
-            // Busca o chamado completo na API
-            var json = await Http.GetStringAsync($"Chamados/{ChamadoId}");
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            // Sugestão da IA
-            if (root.TryGetProperty("sugestaoGemini", out var sProp) &&
-                sProp.ValueKind == JsonValueKind.String)
+            var resp = await Http.GetAsync($"Chamados/{ChamadoId}");
+            if (!resp.IsSuccessStatusCode)
             {
-                BotMessage = sProp.GetString();
-                await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", BotMessage);
-            }
-
-            // Se não há sugestão ainda, aguarda nada
-            if (string.IsNullOrEmpty(BotMessage))
-            {
-                BotMessage = "Ainda não há resposta gerada pelo sistema.";
-                AwaitingResolution = false;
+                // sem chamado na API — pelo menos mantenha a descrição local (se houver)
+                SemChamado = string.IsNullOrEmpty(UserMessage);
                 return;
             }
 
-            // Verifica se já existe resposta dada pelo usuário
-            bool? resolveu = null;
+            var json = await resp.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-            if (root.TryGetProperty("sugestaoResolveu", out var resProp) &&
-                resProp.ValueKind != JsonValueKind.Null)
+            // atualiza descrição, caso a API tenha uma mais completa
+            if (root.TryGetProperty("descricao", out var descProp) && descProp.ValueKind == JsonValueKind.String)
             {
-                resolveu = resProp.GetBoolean();
+                var desc = descProp.GetString() ?? "";
+                if (string.IsNullOrWhiteSpace(UserMessage) && !string.IsNullOrWhiteSpace(desc))
+                {
+                    UserMessage = desc;
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", desc);
+                }
             }
 
-            AwaitingResolution = (resolveu == null);
+            // tenta pegar sugestaoGemini
+            if (root.TryGetProperty("sugestaoGemini", out var sgProp) && sgProp.ValueKind == JsonValueKind.String)
+            {
+                BotMessage = sgProp.GetString() ?? "";
+                if (!string.IsNullOrEmpty(BotMessage))
+                {
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", BotMessage);
+                }
+            }
 
+            // verifica sugestaoResolveu
+            bool? resolveu = null;
+            if (root.TryGetProperty("sugestaoResolveu", out var srProp) && srProp.ValueKind != JsonValueKind.Null)
+            {
+                if (srProp.ValueKind == JsonValueKind.True || srProp.ValueKind == JsonValueKind.False)
+                    resolveu = srProp.GetBoolean();
+            }
+
+            AwaitingResolution = !string.IsNullOrEmpty(BotMessage) && (resolveu == null);
+            SemChamado = string.IsNullOrEmpty(UserMessage) && string.IsNullOrEmpty(BotMessage);
+
+            // se não houver sugestão ainda, inicia polling para buscá-la (assíncrono)
+            if (string.IsNullOrEmpty(BotMessage))
+            {
+                _ = StartPollingForSuggestionAsync();
+            }
         }
         catch
         {
-            SemChamado = true;
+            // se falhar, tenta usar apenas a descrição
+            SemChamado = string.IsNullOrEmpty(UserMessage);
+        }
+    }
+
+    async Task StartPollingForSuggestionAsync()
+    {
+        // cancela qualquer polling anterior
+        pollingCts?.Cancel();
+        pollingCts = new CancellationTokenSource();
+        var ct = pollingCts.Token;
+
+        IsWaitingSuggestion = true;
+        int attempts = 0;
+
+        try
+        {
+            while (attempts < MaxPollAttempts && !ct.IsCancellationRequested)
+            {
+                attempts++;
+
+                // aguarda intervalo antes de tentar (no primeiro loop já esperamos 0 ms? aqui colocamos delay)
+                await Task.Delay(PollIntervalMs, ct);
+
+                // garante token no header (caso tenha expirado entre requests)
+                await EnsureAuthAsync();
+
+                HttpResponseMessage resp;
+                try
+                {
+                    resp = await Http.GetAsync($"Chamados/{ChamadoId}", ct);
+                }
+                catch
+                {
+                    // ignorar e tentar novamente
+                    continue;
+                }
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    // se 401 -> interrompe e pede login
+                    if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+                        Navigation.NavigateTo("/login");
+                        return;
+                    }
+                    continue;
+                }
+
+                var json = await resp.Content.ReadAsStringAsync(ct);
+                try
+                {
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("sugestaoGemini", out var sgProp) &&
+                        sgProp.ValueKind == JsonValueKind.String)
+                    {
+                        var suggestion = sgProp.GetString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(suggestion))
+                        {
+                            BotMessage = suggestion;
+                            await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", BotMessage);
+
+                            // verificar sugestaoResolveu
+                            bool? resolveu = null;
+                            if (root.TryGetProperty("sugestaoResolveu", out var srProp) && srProp.ValueKind != JsonValueKind.Null)
+                            {
+                                if (srProp.ValueKind == JsonValueKind.True || srProp.ValueKind == JsonValueKind.False)
+                                    resolveu = srProp.GetBoolean();
+                            }
+
+                            AwaitingResolution = !string.IsNullOrEmpty(BotMessage) && (resolveu == null);
+
+                            IsWaitingSuggestion = false;
+                            InvokeAsync(StateHasChanged);
+                            break;
+                        }
+                    }
+                }
+                catch
+                {
+                    // parse falhou — tenta novamente
+                }
+            }
+        }
+        catch (TaskCanceledException) { /* cancelado */ }
+        finally
+        {
+            IsWaitingSuggestion = false;
+
+            // se chegou ao fim das tentativas e ainda não tem sugestão, mostra mensagem leve (opcional)
+            if (string.IsNullOrEmpty(BotMessage))
+            {
+                // você pode exibir uma mensagem alternativa aqui ou deixar o usuário clicar em "Recarregar"
+                // por enquanto, apenas para UX, deixa AwaitingResolution = false e sem BotMessage
+                AwaitingResolution = false;
+                InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    async Task EnsureAuthAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+        catch
+        {
+            // ignore
         }
     }
 
     async Task ProcessarResposta()
     {
-        if (string.IsNullOrWhiteSpace(UserResolution))
-            return;
+        if (string.IsNullOrWhiteSpace(UserResolution)) return;
 
-        string resposta = UserResolution.Trim().ToLower();
-
+        var resposta = UserResolution.Trim().ToLower();
         if (resposta != "sim" && resposta != "não" && resposta != "nao")
         {
             await JS.InvokeVoidAsync("alert", "Digite apenas: Sim ou Não.");
             return;
         }
 
-        if (resposta == "sim")
+        // garante cancelamento do polling (se estiver rodando)
+        try { pollingCts?.Cancel(); } catch { }
+
+        processingResponse = true;
+
+        try
         {
-            await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", true);
+            // garante token antes de PATCH
+            await EnsureAuthAsync();
 
-            BotMessage = "Perfeito! Seu chamado foi resolvido!";
-
-            // Limpa tudo
-            await JS.InvokeVoidAsync("localStorage.clear");
-
-            AwaitingResolution = false;
-
-            await Task.Delay(1000);
-            Navigation.NavigateTo("/painel-colaborador");
-        }
-        else
-        {
-            await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", false);
-
-            // Envia para o técnico
-            var pacote = new
+            if (resposta == "sim")
             {
-                Pergunta = UserMessage,
-                Resposta = BotMessage,
-                Data = DateTime.UtcNow
-            };
+                try { await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", true); } catch { }
 
-            var json = JsonSerializer.Serialize(pacote);
+                BotMessage = "Perfeito! Seu chamado foi resolvido!";
+                try
+                {
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
+                }
+                catch { }
 
-            await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
-            await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", json);
+                AwaitingResolution = false;
+                StateHasChanged();
+                await Task.Delay(900);
+                Navigation.NavigateTo("/painel-colaborador");
+            }
+            else
+            {
+                try { await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", false); } catch { }
 
-            BotMessage = "Entendido! Vou encaminhar isso para um técnico.";
+                var pacote = new { Pergunta = UserMessage, Resposta = BotMessage, Data = DateTime.UtcNow };
+                var json = JsonSerializer.Serialize(pacote);
 
-            await JS.InvokeVoidAsync("localStorage.clear");
+                try
+                {
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", json);
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
+                }
+                catch { }
 
-            AwaitingResolution = false;
-
-            await Task.Delay(900);
-            Navigation.NavigateTo("/chat-colaborador");
+                BotMessage = "Entendido! Vou encaminhar isso para um técnico.";
+                AwaitingResolution = false;
+                StateHasChanged();
+                await Task.Delay(900);
+                Navigation.NavigateTo("/chat-colaborador");
+            }
         }
+        finally
+        {
+            processingResponse = false;
+            UserResolution = "";
+        }
+    }
+
+    public void Dispose()
+    {
+        try { pollingCts?.Cancel(); pollingCts?.Dispose(); } catch { }
     }
 }

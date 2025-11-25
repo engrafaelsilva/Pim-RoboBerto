@@ -1,6 +1,11 @@
 ﻿@page "/painel-colaborador"
 
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
 @inject NavigationManager Navigation
+@inject HttpClient Http
+@inject IJSRuntime JS
 
 <link rel="stylesheet" href="css/PainelColaborador.css" />
 
@@ -11,48 +16,30 @@
         <h2 class="logo">Colaborador</h2>
 
         <nav class="menu">
-            <button class="menu-item" @onclick="() => AbaSelecionada = 0">
-                Home
-            </button>
-
-            <button class="menu-item" @onclick="() => AbaSelecionada = 1">
-                Abrir Chamado
-            </button>
-
-            <button class="menu-item" @onclick="() => AbaSelecionada = 2">
-                Meus Chamados
-            </button>
-
-            <button class="menu-item" @onclick="() => AbaSelecionada = 3">
-                Chat com Técnico
-            </button>
-
-            <button class="menu-item logout" @onclick="Logout">
-                Logout
-            </button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 1">Abrir Chamado</button>
+            <button class="menu-item" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 3">Chat com Técnico</button>
+            <button class="menu-item logout" @onclick="Logout">Sair</button>
         </nav>
     </aside>
-
 
     <!-- Conteúdo Principal -->
     <main class="conteudo">
         @if (AbaSelecionada == 0)
         {
-            <!-- FORMULÁRIO DE CHAMADO -->
             <section class="card">
                 <h1>Seja bem-vindo(a)!</h1>
-                <p>Aqui você poderá abrir um chamado, acompanhar o status do chamado, conversar com algum técnico</p>
+                <p>Aqui você poderá abrir um chamado, acompanhar o status do chamado e conversar com um técnico.</p>
             </section>
         }
 
         @if (AbaSelecionada == 1)
         {
-            <!-- FORMULÁRIO DE CHAMADO -->
             <section class="card">
                 <h3>Abrir Novo Chamado</h3>
 
                 <div class="form-grid">
-
                     <div class="form-control">
                         <label>Título</label>
                         <input class="input" @bind="NovoChamado.Titulo" placeholder="Informe o título do chamado" />
@@ -83,20 +70,26 @@
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn secondary" @onclick="LimparFormulario">Limpar</button>
-                    <button class="btn primary" @onclick="EnviarChamado">Enviar</button>
+                    <button class="btn secondary" @onclick="LimparFormulario" disabled="@isSending">Limpar</button>
+                    <button class="btn primary" @onclick="EnviarChamado" disabled="@isSending">@((isSending) ? "Enviando..." : "Enviar")</button>
                 </div>
             </section>
         }
 
-
         @if (AbaSelecionada == 2)
         {
-            <!-- LISTA DE CHAMADOS -->
             <section class="card">
                 <h3>Meus Chamados</h3>
 
-                @if (Chamados.Count == 0)
+                <div style="margin-bottom:12px;">
+                    <button class="btn-secondary" @onclick="() => CarregarMeusChamados()">Atualizar</button>
+                </div>
+
+                @if (isLoadingChamados)
+                {
+                    <p>Carregando...</p>
+                }
+                else if (Chamados.Count == 0)
                 {
                     <p class="msg-empty">Nenhum chamado encontrado.</p>
                 }
@@ -105,10 +98,22 @@
                     <div class="lista-chamados">
                         @foreach (var c in Chamados)
                         {
-                            <div class="chamado-item">
-                                <h4>@c.Titulo</h4>
-                                <p>@c.Descricao</p>
-                                <span class="status">@c.Status</span>
+                            <div class="chamado-item" style="margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <h4>@c.Titulo</h4>
+                                        <p class="descricao">@c.Descricao</p>
+                                        <small>Aberto: @c.DataAbertura.ToString("g")</small>
+                                    </div>
+
+                                    <div style="text-align:right;">
+                                        <div><span class="status">@c.Status</span></div>
+                                        <div style="margin-top:8px;">
+                                            <button class="btn-secondary" @onclick="() => VerDetalhes(c.Id)">Ver detalhes</button>
+                                            <button class="btn-primary" style="margin-left:6px;" @onclick="() => AbrirChatBootPara(c.Id)">Abrir Chat</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         }
                     </div>
@@ -116,12 +121,10 @@
             </section>
         }
 
-
         @if (AbaSelecionada == 3)
         {
-            <!-- CHAT COM TÉCNICO -->
             <section class="card">
-                <h3>Chat com Técnico</h3>
+                <h3>Chat com Técnico (local)</h3>
 
                 <div class="chat-window">
                     @foreach (var m in ChatMensagens)
@@ -132,23 +135,103 @@
                     }
                 </div>
 
-                <div class="chat-input">
-                    <input class="input" @bind="MensagemChat" placeholder="Digite sua mensagem..." />
+                <div class="chat-input" style="display:flex; gap:8px; margin-top:10px;">
+                    <input class="input" style="flex:1" @bind="MensagemChat" placeholder="Digite sua mensagem..." />
                     <button class="btn primary" @onclick="EnviarMensagemChat">Enviar</button>
                 </div>
             </section>
         }
 
+        @if (MostrarDetalhes && ChamadoDetalhe != null)
+        {
+            <section class="card" style="margin-top:16px;">
+                <h4>Detalhes do Chamado</h4>
+                <p><strong>Título:</strong> @ChamadoDetalhe.Titulo</p>
+                <p><strong>Descrição:</strong> @ChamadoDetalhe.Descricao</p>
+                <p><strong>Sugestão IA:</strong> @(!string.IsNullOrEmpty(ChamadoDetalhe.SugestaoGemini) ? ChamadoDetalhe.SugestaoGemini : "—")</p>
+
+                <h5>Mensagens</h5>
+                @if (ChamadoDetalhe.Mensagens?.Any() != true)
+                {
+                    <p>Nenhuma mensagem.</p>
+                }
+                else
+                {
+                    @foreach (var msg in ChamadoDetalhe.Mensagens)
+                    {
+                        <div style="border-left:3px solid #eee; padding:8px; margin-bottom:6px;">
+                            <small>@msg.AutorNome • @msg.DataHoraMensagem.ToString("g")</small>
+                            <div>@msg.Texto</div>
+                        </div>
+                    }
+                }
+
+                <div style="margin-top:10px;">
+                    <label>Enviar comentário</label>
+                    <textarea class="textarea" rows="3" @bind="ComentarioTexto"></textarea>
+                    <div style="margin-top:8px;">
+                        <button class="btn-secondary" @onclick="FecharDetalhes">Fechar</button>
+                        <button class="btn-primary" style="margin-left:8px;" @onclick="EnviarComentario" disabled="@isSendingComentario">
+                            @(isSendingComentario ? "Enviando..." : "Enviar comentário")
+                        </button>
+                    </div>
+                </div>
+            </section>
+        }
     </main>
-
 </div>
-
 
 @code {
 
+    // ======================= MÉTODO NOVO — ESSENCIAL =======================
+    async Task<bool> InjetarToken()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+            Navigation.NavigateTo("/login");
+            return false;
+        }
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        return true;
+    }
+
+    // ================= MODELOS =================
+    class ChamadoListItem
+    {
+        public Guid Id { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descricao { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime DataAbertura { get; set; } = DateTime.Now;
+        public string SugestaoGemini { get; set; } = "";
+    }
+
+    class ChamadoDetailDTO
+    {
+        public Guid Id { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descricao { get; set; } = "";
+        public string SugestaoGemini { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime DataAbertura { get; set; } = DateTime.Now;
+        public List<MensagemDTO>? Mensagens { get; set; }
+    }
+
+    class MensagemDTO
+    {
+        public string Texto { get; set; } = "";
+        public DateTime DataHoraMensagem { get; set; } = DateTime.Now;
+        public string AutorNome { get; set; } = "";
+    }
+
     int AbaSelecionada = 0;
 
-    // Modelo básico do chamado
     public class Chamado
     {
         public string Titulo { get; set; } = "";
@@ -158,30 +241,180 @@
         public string Status { get; set; } = "Aberto";
     }
 
-    // Chat
-    public class Mensagem
-    {
-        public string Remetente { get; set; } = "usuario"; // usuario | tecnico
-        public string Texto { get; set; } = "";
-    }
-
     Chamado NovoChamado = new();
-    List<Chamado> Chamados = new();
+    List<ChamadoListItem> Chamados = new();
     List<Mensagem> ChatMensagens = new();
     string MensagemChat = "";
 
-    void EnviarChamado()
-    {
-        Chamados.Add(new Chamado
-            {
-                Titulo = NovoChamado.Titulo,
-                Descricao = NovoChamado.Descricao,
-                Prioridade = NovoChamado.Prioridade,
-                Categoria = NovoChamado.Categoria,
-                Status = "Aberto"
-            });
+    bool isSending = false;
 
-        LimparFormulario();
+    bool MostrarDetalhes = false;
+    ChamadoDetailDTO? ChamadoDetalhe = null;
+    string ComentarioTexto = "";
+    bool isSendingComentario = false;
+
+    bool isLoadingChamados = false;
+
+    protected override async Task OnInitializedAsync() { }
+
+    // =================== LISTAR MEUS CHAMADOS ====================
+    async Task CarregarMeusChamados()
+    {
+        isLoadingChamados = true;
+        Chamados.Clear();
+
+        if (!await InjetarToken()) return;
+
+        try
+        {
+            var resp = await Http.GetAsync("Chamados/meus?paginaAtual=0&tamanho=10");
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var el in root.EnumerateArray())
+                    {
+                        var item = new ChamadoListItem();
+
+                        if (el.TryGetProperty("id", out var idp) && idp.ValueKind == JsonValueKind.String)
+                        {
+                            if (Guid.TryParse(idp.GetString(), out var tmpId))
+                                item.Id = tmpId;
+                        }
+
+                        if (el.TryGetProperty("titulo", out var tp)) item.Titulo = tp.GetString() ?? "";
+                        if (el.TryGetProperty("descricao", out var dp)) item.Descricao = dp.GetString() ?? "";
+                        if (el.TryGetProperty("status", out var sp)) item.Status = sp.GetString() ?? "";
+
+                        if (el.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
+                        {
+                            if (DateTime.TryParse(dtp.GetString(), out var tmpDt))
+                                item.DataAbertura = tmpDt;
+                        }
+
+                        if (el.TryGetProperty("sugestaoGemini", out var sg) && sg.ValueKind == JsonValueKind.String)
+                            item.SugestaoGemini = sg.GetString() ?? "";
+
+                        Chamados.Add(item);
+                    }
+                }
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await JS.InvokeVoidAsync("alert", "Não autorizado (401) — faça login.");
+            }
+            else
+            {
+                var txt = await resp.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao listar chamados: {resp.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao listar chamados: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingChamados = false;
+            StateHasChanged();
+        }
+    }
+
+    // =================== ENVIAR CHAMADO ====================
+    // =================== ENVIAR CHAMADO ====================
+    async Task EnviarChamado()
+    {
+        if (string.IsNullOrWhiteSpace(NovoChamado.Titulo) || string.IsNullOrWhiteSpace(NovoChamado.Descricao))
+        {
+            await JS.InvokeVoidAsync("alert", "Preencha título e descrição antes de enviar.");
+            return;
+        }
+
+        // 🔥 GARANTE QUE O TOKEN FOI INJETADO 🔥
+        if (!await InjetarToken()) return;
+
+        isSending = true;
+
+        try
+        {
+            int prioridadeNum = NovoChamado.Prioridade?.ToLower() switch
+            {
+                "baixa" => 0,
+                "média" => 1,
+                "media" => 1,
+                "alta" => 2,
+                _ => 0
+            };
+
+            var payload = new
+            {
+                categoria = new { nome = NovoChamado.Categoria },
+                prioridade = prioridadeNum,
+                titulo = NovoChamado.Titulo,
+                descricao = NovoChamado.Descricao
+            };
+
+            var response = await Http.PostAsJsonAsync("Chamados", payload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var respostaJson = await response.Content.ReadAsStringAsync();
+
+                Guid criadoId = Guid.Empty;
+                string sugestaoGemini = "";
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(respostaJson);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("id", out var idProp) &&
+                        idProp.ValueKind == JsonValueKind.String)
+                    {
+                        Guid.TryParse(idProp.GetString(), out criadoId);
+                    }
+
+                    if (root.TryGetProperty("sugestaoGemini", out var sgProp) &&
+                        sgProp.ValueKind == JsonValueKind.String)
+                    {
+                        sugestaoGemini = sgProp.GetString() ?? "";
+                    }
+                }
+                catch { }
+
+                // 🔥 Salva dados necessário para o ChatBoot
+                await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", NovoChamado.Descricao ?? "");
+                await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugestaoGemini);
+                await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", criadoId.ToString());
+
+                // 🔥 NÃO adiciona em lista local (lista agora vem da API)
+                LimparFormulario();
+
+                // Vai para o ChatBoot
+                Navigation.NavigateTo("/chatboot");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await JS.InvokeVoidAsync("alert", "Não autorizado (401). Faça login e tente novamente.");
+            }
+            else
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao criar chamado: {response.StatusCode}\n{erro}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar chamado: {ex.Message}");
+        }
+        finally
+        {
+            isSending = false;
+        }
     }
 
     void LimparFormulario()
@@ -189,21 +422,155 @@
         NovoChamado = new Chamado();
     }
 
+    // =================== DETALHES DO CHAMADO ====================
+    async Task VerDetalhes(Guid id)
+    {
+        if (!await InjetarToken()) return;
+
+        MostrarDetalhes = false;
+        ChamadoDetalhe = null;
+        ComentarioTexto = "";
+
+        try
+        {
+            var resp = await Http.GetAsync($"Chamados/{id}");
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                var det = new ChamadoDetailDTO();
+
+                if (root.TryGetProperty("id", out var idp) && idp.ValueKind == JsonValueKind.String)
+                {
+                    if (Guid.TryParse(idp.GetString(), out var tmpId))
+                        det.Id = tmpId;
+                }
+
+                if (root.TryGetProperty("titulo", out var tp)) det.Titulo = tp.GetString() ?? "";
+                if (root.TryGetProperty("descricao", out var dp)) det.Descricao = dp.GetString() ?? "";
+                if (root.TryGetProperty("sugestaoGemini", out var sg)) det.SugestaoGemini = sg.GetString() ?? "";
+                if (root.TryGetProperty("status", out var st)) det.Status = st.GetString() ?? "";
+
+                if (root.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
+                {
+                    if (DateTime.TryParse(dtp.GetString(), out var tmpDt))
+                        det.DataAbertura = tmpDt;
+                }
+
+                if (root.TryGetProperty("mensagens", out var msgs) && msgs.ValueKind == JsonValueKind.Array)
+                {
+                    det.Mensagens = new List<MensagemDTO>();
+                    foreach (var m in msgs.EnumerateArray())
+                    {
+                        var md = new MensagemDTO();
+                        if (m.TryGetProperty("texto", out var txt)) md.Texto = txt.GetString() ?? "";
+
+                        if (m.TryGetProperty("dataHoraMensagem", out var dt) && dt.ValueKind == JsonValueKind.String)
+                        {
+                            if (DateTime.TryParse(dt.GetString(), out var tmpDt2))
+                                md.DataHoraMensagem = tmpDt2;
+                        }
+
+                        if (m.TryGetProperty("autor", out var autor) && autor.ValueKind == JsonValueKind.Object)
+                        {
+                            if (autor.TryGetProperty("nome", out var nomeP)) md.AutorNome = nomeP.GetString() ?? "";
+                        }
+
+                        det.Mensagens.Add(md);
+                    }
+                }
+
+                ChamadoDetalhe = det;
+                MostrarDetalhes = true;
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao obter chamado: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao obter detalhes: {ex.Message}");
+        }
+    }
+
+    void FecharDetalhes()
+    {
+        MostrarDetalhes = false;
+        ChamadoDetalhe = null;
+        ComentarioTexto = "";
+    }
+
+    // =================== COMENTAR ====================
+    async Task EnviarComentario()
+    {
+        if (ChamadoDetalhe == null) return;
+        if (string.IsNullOrWhiteSpace(ComentarioTexto))
+        {
+            await JS.InvokeVoidAsync("alert", "Escreva um comentário antes de enviar.");
+            return;
+        }
+
+        if (!await InjetarToken()) return;
+
+        isSendingComentario = true;
+        try
+        {
+            var payload = new { texto = ComentarioTexto };
+            var resp = await Http.PatchAsJsonAsync($"Chamados/{ChamadoDetalhe.Id}/comentar", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                ChamadoDetalhe.Mensagens ??= new List<MensagemDTO>();
+                ChamadoDetalhe.Mensagens.Add(new MensagemDTO
+                {
+                    Texto = ComentarioTexto,
+                    DataHoraMensagem = DateTime.Now,
+                    AutorNome = "Você"
+                });
+
+                ComentarioTexto = "";
+                StateHasChanged();
+                await JS.InvokeVoidAsync("alert", "Comentário enviado.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+        }
+        finally
+        {
+            isSendingComentario = false;
+        }
+    }
+
+    // ================= AUXILIARES ====================
     void EnviarMensagemChat()
     {
         if (string.IsNullOrWhiteSpace(MensagemChat)) return;
-
-        ChatMensagens.Add(new Mensagem
-            {
-                Remetente = "usuario",
-                Texto = MensagemChat
-            });
-
+        ChatMensagens.Add(new Mensagem { Remetente = "usuario", Texto = MensagemChat });
         MensagemChat = "";
+    }
+
+    void AbrirChatBootPara(Guid id)
+    {
+        _ = JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", id.ToString());
+        _ = JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", Chamados.FirstOrDefault(c => c.Id == id)?.Descricao ?? "");
+        Navigation.NavigateTo("/chatboot");
     }
 
     void Logout()
     {
         Navigation.NavigateTo("/login");
     }
+
+    public class Mensagem { public string Remetente { get; set; } = "usuario"; public string Texto { get; set; } = ""; }
+
 }
