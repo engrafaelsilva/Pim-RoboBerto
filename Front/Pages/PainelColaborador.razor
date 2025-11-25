@@ -7,19 +7,21 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 
+<PageTitle>Painel do Colaborador</PageTitle>
+
 <link rel="stylesheet" href="css/PainelColaborador.css" />
 
 <div class="layout">
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <h2 class="logo">Colaborador</h2>
+        <h2 class="logo">Painel do Colaborador</h2>
 
         <nav class="menu">
             <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
             <button class="menu-item" @onclick="() => AbaSelecionada = 1">Abrir Chamado</button>
             <button class="menu-item" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
-            <button class="menu-item" @onclick="() => AbaSelecionada = 3">Chat com Técnico</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 3">Conversar com Técnico</button>
             <button class="menu-item logout" @onclick="Logout">Sair</button>
         </nav>
     </aside>
@@ -207,6 +209,7 @@
         public Guid Id { get; set; }
         public string Titulo { get; set; } = "";
         public string Descricao { get; set; } = "";
+        public string Prioridade { get; set; } = "";  // ← ADICIONADO
         public string Status { get; set; } = "";
         public DateTime DataAbertura { get; set; } = DateTime.Now;
         public string SugestaoGemini { get; set; } = "";
@@ -280,22 +283,67 @@
                     {
                         var item = new ChamadoListItem();
 
+                        // Id
                         if (el.TryGetProperty("id", out var idp) && idp.ValueKind == JsonValueKind.String)
                         {
                             if (Guid.TryParse(idp.GetString(), out var tmpId))
                                 item.Id = tmpId;
                         }
 
+                        // Título e Descrição
                         if (el.TryGetProperty("titulo", out var tp)) item.Titulo = tp.GetString() ?? "";
                         if (el.TryGetProperty("descricao", out var dp)) item.Descricao = dp.GetString() ?? "";
-                        if (el.TryGetProperty("status", out var sp)) item.Status = sp.GetString() ?? "";
 
+                        // Status (número -> string)
+                        if (el.TryGetProperty("status", out var sp))
+                        {
+                            switch (sp.ValueKind)
+                            {
+                                case JsonValueKind.Number:
+                                    int statusInt = sp.GetInt32();
+                                    item.Status = statusInt switch
+                                    {
+                                        0 => "Aberto",
+                                        1 => "Em andamento",
+                                        2 => "Fechado",
+                                        _ => "Desconhecido"
+                                    };
+                                    break;
+                                case JsonValueKind.String:
+                                    item.Status = sp.GetString() ?? "Desconhecido";
+                                    break;
+                            }
+                        }
+
+                        // Prioridade (número -> string)
+                        if (el.TryGetProperty("prioridade", out var pp))
+                        {
+                            switch (pp.ValueKind)
+                            {
+                                case JsonValueKind.Number:
+                                    int prioridadeInt = pp.GetInt32();
+                                    item.Prioridade = prioridadeInt switch
+                                    {
+                                        0 => "Baixa",
+                                        1 => "Média",
+                                        2 => "Alta",
+                                        _ => "Desconhecida"
+                                    };
+                                    break;
+                                case JsonValueKind.String:
+                                    item.Prioridade = pp.GetString() ?? "Desconhecida";
+                                    break;
+                            }
+                        }
+
+                        // Data de abertura
                         if (el.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
                         {
                             if (DateTime.TryParse(dtp.GetString(), out var tmpDt))
                                 item.DataAbertura = tmpDt;
                         }
 
+                        // Sugestão IA
                         if (el.TryGetProperty("sugestaoGemini", out var sg) && sg.ValueKind == JsonValueKind.String)
                             item.SugestaoGemini = sg.GetString() ?? "";
 
@@ -324,7 +372,6 @@
         }
     }
 
-    // =================== ENVIAR CHAMADO ====================
     // =================== ENVIAR CHAMADO ====================
     async Task EnviarChamado()
     {

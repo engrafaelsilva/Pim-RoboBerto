@@ -1,228 +1,132 @@
 ﻿@page "/painel-tecnico"
+
 @using System.Net.Http.Json
 @using System.Text.Json
+
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject HttpClient Http
 
 <PageTitle>Painel do Técnico</PageTitle>
 
-<div class="panel-wrap"> <!-- Topbar --> <div class="topbar"> <div class="top-left"> <h2 class="app-title">🧠 Painel do Técnico</h2> <p class="subtitle">Gerencie chamados, acompanhe atendimentos e novos chamados.</p> </div> <div class="top-right"> <button class="btn-outline" @onclick="async () => RefreshChamados()">⟳ Atualizar</button> <button class="btn-outline" @onclick="ToggleView">@((IsKanban) ? "Lista" : "Kanban")</button> <div class="user-menu"> <div class="user-main" @onclick="ToggleMenu"> <span class="user-ico">👤</span> <span class="user-name">Técnico</span> <span class="caret">▾</span> </div> @if (MenuAberto)
-                {
-                    <div class="user-dropdown" @onclick:stopPropagation> <button class="dropdown-item danger" @onclick="Sair">Sair</button> </div>
-                } </div> </div> </div> <!-- Tabs --> <nav class="tabs"> <button class="tab @(ActiveTab==Tab.Novo ? "active" : "")" @onclick="() => SelectTab(Tab.Novo)">Novo (@CountNovo)</button> <button class="tab @(ActiveTab==Tab.Pendentes ? "active" : "")" @onclick="() => SelectTab(Tab.Pendentes)">Pendentes (@CountPendentes)</button> <button class="tab @(ActiveTab==Tab.EmAtendimento ? "active" : "")" @onclick="() => SelectTab(Tab.EmAtendimento)">Em Atendimento (@CountEmAtendimento)</button> <button class="tab @(ActiveTab==Tab.Expirados ? "active" : "")" @onclick="() => SelectTab(Tab.Expirados)">Expirados (@CountExpirados)</button> </nav> <!-- Conteúdo --> <div class="content"> @if (IsKanban)
+<link rel="stylesheet" href="css/PainelTecnico.css" />
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2 class="logo">Painel do Técnico</h2>
+
+        <nav class="menu">
+            <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 1">Chamados</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 2">Chat com Colaborador</button>
+            <button class="menu-item logout" @onclick="Sair">Sair</button>
+        </nav>
+    </aside>
+
+    <!-- Conteúdo -->
+    <main class="conteudo">
+        @if (AbaSelecionada == 0)
         {
-            <div class="kanban"> @foreach (var grupo in new[] { ("Novo", CountNovo, Chamados.Where(x => x.Novo && !x.Fechado && !x.Cancelado)), ("Pendentes", CountPendentes, Chamados.Where(x => string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)), ("Em Atendimento", CountEmAtendimento, Chamados.Where(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado)), ("Expirados", CountExpirados, Chamados.Where(x => x.Expirado && !x.Fechado && !x.Cancelado)) })
-                {
-                    <div class="kanban-col"> <h3>@grupo.Item1 (@grupo.Item2)</h3> @foreach (var c in grupo.Item3.OrderByDescending(x => x.Data))
+            <section class="card">
+                <h1>Seja bem-vindo(a)!</h1>
+                <p>Aqui você poderá gerenciar chamados, assumir, comentar, fechar e conversar com colaboradores.</p>
+            </section>
+        }
+
+        @if (AbaSelecionada == 1)
+        {
+            <section class="card">
+                <h3>Chamados</h3>
+
+                <div class="tabs">
+                    <button class="tab @(ActiveTab==Tab.Novo?"active":"")" @onclick="() => SelectTab(Tab.Novo)">Novo (@CountNovo)</button>
+                    <button class="tab @(ActiveTab==Tab.Pendentes?"active":"")" @onclick="() => SelectTab(Tab.Pendentes)">Pendentes (@CountPendentes)</button>
+                    <button class="tab @(ActiveTab==Tab.EmAtendimento?"active":"")" @onclick="() => SelectTab(Tab.EmAtendimento)">Em Atendimento (@CountEmAtendimento)</button>
+                    <button class="tab @(ActiveTab==Tab.Expirados?"active":"")" @onclick="() => SelectTab(Tab.Expirados)">Expirados (@CountExpirados)</button>
+                </div>
+
+                <div class="content">
+                    @if (ListaCarregando)
+                    {
+                        <p>Carregando chamados...</p>
+                    }
+                    else
+                    {
+                        var toShow = ChamadosToShow();
+                        if (!toShow.Any())
                         {
-                            <div class="chamado-card"> <div class="card-top"> <span class="title">@c.Titulo</span> <span class="meta">@c.Data.ToString("g")</span> </div> <p>@c.Pergunta</p> <div class="card-actions"> @if (string.IsNullOrEmpty(c.Tecnico))
-                                    {
-                                        <button class="btn-primary" @onclick="async () => AssumirChamado(c)">Assumir</button>
-                                    } <button class="btn-outline" @onclick="async () => AbrirDetalhe(c)">Ver</button> </div> </div>
-                        } </div>
-                } </div>
-        }
-        else
-        { @if (ListaCarregando)
-            {
-                <div class="empty">Carregando chamados...</div>
-            }
-            else
-            {
-                var toShow = ChamadosToShow(); @if (!toShow.Any())
-                {
-                    <div class="empty">Nenhum chamado nesta aba.</div>
-                }
-                else
-                {
-                    <div class="lista-chamados"> @foreach (var chamado in toShow)
+                            <p>Nenhum chamado nesta aba.</p>
+                        }
+                        else
                         {
-                            <div class="chamado-card"> <h4>@chamado.Titulo</h4> <p>@chamado.Pergunta</p> <p class="meta">@((string.IsNullOrEmpty(chamado.Tecnico)) ? "Sem técnico" : $"Técnico: {chamado.Tecnico}")</p> <div class="card-actions"> @if (string.IsNullOrEmpty(chamado.Tecnico))
-                                    {
-                                        <button class="btn-primary" @onclick="async () => AssumirChamado(chamado)">Assumir</button>
-                                    } <button class="btn-outline" @onclick="async () => AbrirDetalhe(chamado)">Abrir</button> </div> </div>
-                        } </div>
-                }              } } </div> </div>
-<style>
-    .panel-wrap {
-        min-height: 100vh;
-        padding: 28px;
-        font-family: Inter,sans-serif;
-        background: #f9faff;
-    }
-
-    .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .top-left .app-title {
-        margin: 0;
-        color: #133B92;
-        font-size: 22px;
-    }
-
-    .top-left .subtitle {
-        margin: 0;
-        color: #6b7280;
-        font-size: 13px;
-    }
-
-    .top-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .tabs {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-        flex-wrap: wrap;
-    }
-
-    .tab {
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: 1px solid #eef2ff;
-        background: #fff;
-        cursor: pointer;
-        font-weight: 600;
-    }
-
-        .tab.active {
-            background: #133B92;
-            color: white;
+                            <div class="lista-chamados">
+                                @foreach (var c in toShow)
+                                {
+                                    <div class="chamado-item">
+                                        <h4>@c.Titulo</h4>
+                                        <p>@c.Pergunta</p>
+                                        <p class="meta">Técnico: @(string.IsNullOrEmpty(c.Tecnico) ? "Sem técnico" : c.Tecnico)</p>
+                                        <div class="card-actions">
+                                            @if (string.IsNullOrEmpty(c.Tecnico))
+                                            {
+                                                <button class="btn-primary" @onclick="() => AssumirChamado(c)">Assumir</button>
+                                            }
+                                            <button class="btn-outline" @onclick="() => AbrirDetalhe(c)">Abrir</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
         }
 
-    .kanban {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-    }
+        @if (AbaSelecionada == 2)
+        {
+            <section class="card">
+                <h3>Chat com Colaborador</h3>
 
-    .kanban-col {
-        background: #fff;
-        padding: 12px;
-        border-radius: 10px;
-        flex: 1;
-        min-width: 250px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-    }
+                <div class="chat-window" id="chatWindow">
+                    @foreach (var msg in Mensagens)
+                    {
+                        <div class="msg @(msg.Remetente == "tecnico" ? "user" : "bot")">
+                            <div class="avatar">@((msg.Remetente == "tecnico") ? "👨‍🔧" : "🧑")</div>
+                            <div class="bubble">@msg.Texto</div>
+                        </div>
+                    }
+                </div>
 
-    .chamado-card {
-        background: #fff;
-        padding: 12px;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        margin-bottom: 10px;
-    }
-
-    .card-top {
-        display: flex;
-        justify-content: space-between;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-
-    .card-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-    }
-
-    .btn-outline {
-        background: none;
-        border: 1px solid #2064F8;
-        color: #2064F8;
-        padding: 6px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
-    .btn-primary {
-        background: #2064F8;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
-    .user-menu {
-        position: relative;
-        display: inline-block;
-    }
-
-    .user-main {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        background: #fff;
-        cursor: pointer;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-        font-weight: 600;
-    }
-
-    .user-dropdown {
-        position: absolute;
-        right: 0;
-        top: 48px;
-        background: #fff;
-        padding: 8px;
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        z-index: 2000;
-    }
-
-    .dropdown-item {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        text-align: left;
-        border: none;
-        background: none;
-        cursor: pointer;
-        border-radius: 6px;
-    }
-
-        .dropdown-item.danger {
-            color: white;
-            background: #dc3545;
+                <div class="chat-input mt-3 d-flex gap-2">
+                    <input class="form-control" @bind="NovaMensagem" placeholder="Digite sua mensagem..." />
+                    <button class="btn btn-primary" @onclick="EnviarMensagem">Enviar</button>
+                </div>
+            </section>
         }
-
-            .dropdown-item.danger:hover {
-                filter: brightness(.95);
-            }
-
-    .content {
-        margin-top: 18px;
-    }
-
-    .lista-chamados {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-height: 65vh;
-        overflow: auto;
-    }
-
-    .empty {
-        color: #6b7280;
-        padding: 12px 0;
-    }
-</style>
+    </main>
+</div>
 
 @code {
-    readonly string apiBase = "/Chamados";
 
+    // =================== ESTADOS ===================
+    int AbaSelecionada = 0;
+
+    List<ChamadoDTO> Chamados = new();
+    bool ListaCarregando = false;
+
+    enum Tab { Novo, Pendentes, EmAtendimento, Expirados }
+    Tab ActiveTab = Tab.Novo;
+
+    int CountNovo => Chamados.Count(x => x.Novo && !x.Fechado && !x.Cancelado);
+    int CountPendentes => Chamados.Count(x => string.IsNullOrEmpty(x.Tecnico) && !x.Cancelado && !x.Fechado);
+    int CountEmAtendimento => Chamados.Count(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado);
+    int CountExpirados => Chamados.Count(x => x.Expirado && !x.Fechado && !x.Cancelado);
+
+    bool MenuAberto = false;
+
+    // =================== MODELOS ===================
     public class ChamadoDTO
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -245,83 +149,30 @@
         public DateTime When { get; set; } = DateTime.Now;
     }
 
-    List<ChamadoDTO> Chamados = new();
-    bool ListaCarregando = false;
-    bool IsKanban = false;
-    bool MenuAberto = false;
-
-    enum Tab { Novo, Pendentes, EmAtendimento, Expirados }
-    Tab ActiveTab = Tab.Novo;
-
-    int CountNovo => Chamados.Count(x => x.Novo && !x.Fechado && !x.Cancelado);
-    int CountPendentes => Chamados.Count(x => string.IsNullOrEmpty(x.Tecnico) && !x.Cancelado && !x.Fechado);
-    int CountEmAtendimento => Chamados.Count(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado);
-    int CountExpirados => Chamados.Count(x => x.Expirado && !x.Fechado && !x.Cancelado);
-
-    protected override async Task OnInitializedAsync()
+    // =================== CHAT ===================
+    public class Mensagem
     {
-        await LoadFromLocalStorage();
-        await LoadChamadoDoUsuario(); // Carrega chamado enviado pelo ChatBoot
-        await RefreshChamados();
+        public string Remetente { get; set; } = "usuario"; // "tecnico" ou "colaborador"
+        public string Texto { get; set; } = "";
     }
 
-    async Task LoadFromLocalStorage()
-    {
-        try
-        {
-            var json = await JS.InvokeAsync<string>("localStorage.getItem", "chamados_tecnico");
-            if (!string.IsNullOrEmpty(json))
-            {
-                Chamados = JsonSerializer.Deserialize<List<ChamadoDTO>>(json) ?? new();
-            }
-        }
-        catch { Chamados = new(); }
-    }
+    List<Mensagem> Mensagens = new();
+    string NovaMensagem = "";
+    PeriodicTimer timer;
 
-    async Task LoadChamadoDoUsuario()
+    // =================== CICLO ===================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoTecnico");
-        if (!string.IsNullOrEmpty(json))
+        if (firstRender)
         {
-            var novoChamado = JsonSerializer.Deserialize<ChamadoDTO>(json);
-            if (novoChamado != null)
-            {
-                Chamados.Add(novoChamado);
-                await PersistToLocalStorage();
-                await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoTecnico");
-            }
+            await LoadChamados();
+            await InicializarChat();
+            StartTimer();
         }
     }
 
-    async Task PersistToLocalStorage()
-    {
-        try
-        {
-            var json = JsonSerializer.Serialize(Chamados);
-            await JS.InvokeVoidAsync("localStorage.setItem", "chamados_tecnico", json);
-        }
-        catch { }
-    }
-
-    async Task RefreshChamados()
-    {
-        ListaCarregando = true;
-        StateHasChanged();
-        try
-        {
-            var res = await Http.GetAsync($"{apiBase}/pendentes-tecnico");
-            if (res.IsSuccessStatusCode)
-            {
-                var list = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>();
-                if (list != null) Chamados = list;
-                await PersistToLocalStorage();
-            }
-        }
-        catch { }
-        ListaCarregando = false;
-        StateHasChanged();
-    }
-
+    // =================== MÉTODOS ===================
+    void SelectTab(Tab t) => ActiveTab = t;
     IEnumerable<ChamadoDTO> ChamadosToShow() => ActiveTab switch
     {
         Tab.Novo => Chamados.Where(x => x.Novo && !x.Fechado && !x.Cancelado).OrderByDescending(x => x.Data),
@@ -331,11 +182,130 @@
         _ => Chamados
     };
 
-    void SelectTab(Tab t) => ActiveTab = t;
-    void ToggleView() => IsKanban = !IsKanban;
-    void ToggleMenu() => MenuAberto = !MenuAberto;
+    async Task LoadChamados()
+    {
+        ListaCarregando = true;
+        StateHasChanged();
 
-    void AbrirDetalhe(ChamadoDTO c) { /* implementar detalhes */ }
-    async Task AssumirChamado(ChamadoDTO c) { /* implementar assumir chamado */ }
-    async Task Sair() { await JS.InvokeVoidAsync("localStorage.removeItem", "chamados_tecnico"); Nav.NavigateTo("/login", true); }
+        try
+        {
+            var res = await Http.GetAsync("Chamados/pendentes-tecnico");
+            if (res.IsSuccessStatusCode)
+            {
+                var list = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>();
+                if (list != null) Chamados = list;
+            }
+        }
+        catch { }
+        finally
+        {
+            ListaCarregando = false;
+            StateHasChanged();
+        }
+    }
+
+    async Task AssumirChamado(ChamadoDTO c)
+    {
+        try
+        {
+            var res = await Http.PatchAsync($"Chamados/{c.Id}/acatar-chamado", null);
+            if (res.IsSuccessStatusCode)
+            {
+                c.Tecnico = "Você";
+                StateHasChanged();
+            }
+        }
+        catch { }
+    }
+
+    void AbrirDetalhe(ChamadoDTO c)
+    {
+        // Aqui você pode implementar modal ou seção expandida de detalhes
+    }
+
+    async Task Sair()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chamados_tecnico");
+        Nav.NavigateTo("/login", true);
+    }
+
+    // =================== CHAT ===================
+    async Task InicializarChat()
+    {
+        var pergunta = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnicoMensagemInicial");
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
+
+        try
+        {
+            if (!string.IsNullOrEmpty(json))
+                Mensagens = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+        }
+        catch
+        {
+            Mensagens = new();
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatTecnico");
+        }
+
+        if (Mensagens.Count == 0 && !string.IsNullOrEmpty(pergunta))
+        {
+            Mensagens.Add(new Mensagem
+                {
+                    Remetente = "colaborador",
+                    Texto = pergunta
+                });
+            await SalvarChat();
+        }
+    }
+
+    async Task EnviarMensagem()
+    {
+        if (string.IsNullOrWhiteSpace(NovaMensagem)) return;
+
+        Mensagens.Add(new Mensagem
+            {
+                Remetente = "tecnico",
+                Texto = NovaMensagem
+            });
+
+        await SalvarChat();
+        NovaMensagem = "";
+    }
+
+    async Task SalvarChat()
+    {
+        var json = JsonSerializer.Serialize(Mensagens);
+        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnico", json);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void StartTimer()
+    {
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = Task.Run(async () =>
+        {
+            while (await timer.WaitForNextTickAsync())
+            {
+                await AtualizarMensagens();
+            }
+        });
+    }
+
+    async Task AtualizarMensagens()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
+        if (string.IsNullOrEmpty(json)) return;
+
+        try
+        {
+            var msgs = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+            if (msgs.Count != Mensagens.Count)
+            {
+                Mensagens = msgs;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { }
+    }
+
+    public void Dispose() => timer?.Dispose();
 }
