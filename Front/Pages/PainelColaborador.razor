@@ -83,13 +83,18 @@
             <section class="card">
                 <h3>Meus Chamados</h3>
 
-                <div style="margin-bottom:12px;">
-                    <button class="btn-secondary" @onclick="() => CarregarMeusChamados()">Atualizar</button>
+                <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
+                    <button class="btn-secondary" @onclick="() => CarregarMeusChamados(paginaAtual, tamanhoPagina)"> Atualizar</button>
+                    <div style="margin-left:auto;">
+                        <button class="btn" @onclick="() => ChangePage(-1)" disabled="@(paginaAtual == 0)">Anterior</button>
+                        <span style="margin: 0 8px;">Página @((paginaAtual + 1))</span>
+                        <button class="btn" @onclick="() => ChangePage(1)">Próxima</button>
+                    </div>
                 </div>
 
                 @if (isLoadingChamados)
                 {
-                    <p>Carregando...</p>
+                    <p>Carregando chamados...</p>
                 }
                 else if (Chamados.Count == 0)
                 {
@@ -105,7 +110,7 @@
                                     <div>
                                         <h4>@c.Titulo</h4>
                                         <p class="descricao">@c.Descricao</p>
-                                        <small>Aberto: @c.DataAbertura.ToString("g")</small>
+                                        <small>Aberto: @c.DataAbertura.ToString("g") — Prioridade: @c.Prioridade</small>
                                     </div>
 
                                     <div style="text-align:right;">
@@ -126,7 +131,7 @@
         @if (AbaSelecionada == 3)
         {
             <section class="card">
-                <h3>Chat com Técnico (local)</h3>
+                <h3>Conversar com Técnico</h3>
 
                 <div class="chat-window">
                     @foreach (var m in ChatMensagens)
@@ -150,9 +155,17 @@
                 <h4>Detalhes do Chamado</h4>
                 <p><strong>Título:</strong> @ChamadoDetalhe.Titulo</p>
                 <p><strong>Descrição:</strong> @ChamadoDetalhe.Descricao</p>
+                <p><strong>Técnico:</strong> @(string.IsNullOrWhiteSpace(ChamadoDetalhe.TecnicoNome) ? "—" : ChamadoDetalhe.TecnicoNome)</p>
                 <p><strong>Sugestão IA:</strong> @(!string.IsNullOrEmpty(ChamadoDetalhe.SugestaoGemini) ? ChamadoDetalhe.SugestaoGemini : "—")</p>
 
-                <h5>Mensagens</h5>
+                <div style="margin-top:8px;">
+                    <button class="btn-primary" @onclick="() => ModalConfirmacao.Show(ChamadoDetalhe.SugestaoGemini, ChamadoDetalhe.Id)">Confirmar Sugestão</button>
+                    <button class="btn-secondary" style="margin-left:8px;" @onclick="() => ReabrirChamado(ChamadoDetalhe.Id)">Reabrir</button>
+                    <button class="btn-danger" style="margin-left:8px;" @onclick="() => CancelarChamado(ChamadoDetalhe.Id)">Cancelar</button>
+                    <button class="btn-secondary" style="margin-left:8px;" @onclick="() => AbrirChatBootPara(ChamadoDetalhe.Id)">Abrir Chat</button>
+                </div>
+
+                <h5 style="margin-top:12px;">Mensagens</h5>
                 @if (ChamadoDetalhe.Mensagens?.Any() != true)
                 {
                     <p>Nenhuma mensagem.</p>
@@ -180,6 +193,9 @@
                 </div>
             </section>
         }
+
+        <!-- Modal (componente separado) -->
+        <ModalConfirmacaoIA @ref="ModalConfirmacao" OnConfirmacao="ProcessarConfirmacaoIA" OnIrParaChat="IrParaChatDoModal" />
     </main>
 </div>
 
@@ -224,6 +240,8 @@
         public string Status { get; set; } = "";
         public DateTime DataAbertura { get; set; } = DateTime.Now;
         public List<MensagemDTO>? Mensagens { get; set; }
+        public string TecnicoNome { get; set; } = "";
+        public bool? SugestaoResolveu { get; set; }
     }
 
     class MensagemDTO
@@ -258,19 +276,29 @@
 
     bool isLoadingChamados = false;
 
+    // Pagination
+    int paginaAtual = 0;
+    int tamanhoPagina = 10;
+
+    ModalConfirmacaoIA? ModalConfirmacao;
+
     protected override async Task OnInitializedAsync() { }
 
     // =================== LISTAR MEUS CHAMADOS ====================
-    async Task CarregarMeusChamados()
+    async Task CarregarMeusChamados(int pagina = 0, int tamanho = 10)
     {
         isLoadingChamados = true;
         Chamados.Clear();
 
-        if (!await InjetarToken()) return;
+        if (!await InjetarToken()) { isLoadingChamados = false; return; }
 
         try
         {
-            var resp = await Http.GetAsync("Chamados/meus?paginaAtual=0&tamanho=10");
+            paginaAtual = pagina;
+            tamanhoPagina = 10;
+
+            var resp = await Http.GetAsync($"Chamados/meus?paginaAtual={pagina}&tamanho={tamanho}");
+
             if (resp.IsSuccessStatusCode)
             {
                 var json = await resp.Content.ReadAsStringAsync();
@@ -372,12 +400,24 @@
         }
     }
 
+    void ChangePage(int delta)
+    {
+        var novo = paginaAtual + delta;
+        if (novo < 0) novo = 0;
+        paginaAtual = novo;
+        _ = CarregarMeusChamados(paginaAtual, tamanhoPagina);
+    }
+
     // =================== ENVIAR CHAMADO ====================
     async Task EnviarChamado()
     {
-        if (string.IsNullOrWhiteSpace(NovoChamado.Titulo) || string.IsNullOrWhiteSpace(NovoChamado.Descricao))
+        // Validações obrigatórias: título, descrição, prioridade, categoria
+        if (string.IsNullOrWhiteSpace(NovoChamado.Titulo) ||
+            string.IsNullOrWhiteSpace(NovoChamado.Descricao) ||
+            string.IsNullOrWhiteSpace(NovoChamado.Prioridade) ||
+            string.IsNullOrWhiteSpace(NovoChamado.Categoria))
         {
-            await JS.InvokeVoidAsync("alert", "Preencha título e descrição antes de enviar.");
+            await JS.InvokeVoidAsync("alert", "Preencha título, descrição, prioridade e categoria antes de enviar.");
             return;
         }
 
@@ -438,11 +478,17 @@
                 await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugestaoGemini);
                 await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", criadoId.ToString());
 
-                // 🔥 NÃO adiciona em lista local (lista agora vem da API)
+                // Limpa formulário
                 LimparFormulario();
 
-                // Vai para o ChatBoot
+                // Mostra confirmação ANTES de redirecionar
+                await JS.InvokeVoidAsync("alert", "Chamado enviado com sucesso!");
+
+                // Redireciona para o ChatBoot
                 Navigation.NavigateTo("/chatboot");
+
+                // Mostrar sugestão gerada em modal (usuário pode confirmar ou abrir chat)
+                ModalConfirmacao?.Show(sugestaoGemini, criadoId);
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -504,6 +550,20 @@
                 {
                     if (DateTime.TryParse(dtp.GetString(), out var tmpDt))
                         det.DataAbertura = tmpDt;
+                }
+
+                // tecnico
+                if (root.TryGetProperty("tecnico", out var t) && t.ValueKind == JsonValueKind.Object)
+                {
+                    if (t.TryGetProperty("nome", out var nomeP))
+                        det.TecnicoNome = nomeP.GetString() ?? "";
+                }
+
+                // sugestaoResolveu
+                if (root.TryGetProperty("sugestaoResolveu", out var sr) && sr.ValueKind != JsonValueKind.Null)
+                {
+                    if (sr.ValueKind == JsonValueKind.True || sr.ValueKind == JsonValueKind.False)
+                        det.SugestaoResolveu = sr.GetBoolean();
                 }
 
                 if (root.TryGetProperty("mensagens", out var msgs) && msgs.ValueKind == JsonValueKind.Array)
@@ -573,11 +633,11 @@
             {
                 ChamadoDetalhe.Mensagens ??= new List<MensagemDTO>();
                 ChamadoDetalhe.Mensagens.Add(new MensagemDTO
-                {
-                    Texto = ComentarioTexto,
-                    DataHoraMensagem = DateTime.Now,
-                    AutorNome = "Você"
-                });
+                    {
+                        Texto = ComentarioTexto,
+                        DataHoraMensagem = DateTime.Now,
+                        AutorNome = "Você"
+                    });
 
                 ComentarioTexto = "";
                 StateHasChanged();
@@ -598,6 +658,101 @@
         }
     }
 
+    // =================== AÇÕES: Cancelar / Reabrir / Confirmar Sugestão ====================
+    async Task CancelarChamado(Guid id)
+    {
+        if (!await InjetarToken()) return;
+
+        try
+        {
+            var resp = await Http.PatchAsync($"Chamados/{id}/cancelar", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Chamado cancelado.");
+                // Recarrega listagem e detalhes
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) await VerDetalhes(id);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {ex.Message}");
+        }
+    }
+
+    async Task ReabrirChamado(Guid id)
+    {
+        if (!await InjetarToken()) return;
+
+        try
+        {
+            var resp = await Http.PatchAsync($"Chamados/{id}/reabrir", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Chamado reaberto.");
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) await VerDetalhes(id);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {ex.Message}");
+        }
+    }
+
+	// Processar a confirmação da sugestão da IA vinda do modal
+    async Task ProcessarConfirmacaoIA((bool resolveu, Guid chamadoId) data)
+    {
+        var resolveu = data.resolveu;
+        var chamadoId = data.chamadoId;
+
+        if (!await InjetarToken()) return;
+
+        try
+        {
+            var resp = await Http.PatchAsJsonAsync($"Chamados/{chamadoId}/alterar-resolveu-sugestao", resolveu);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Obrigado — sua resposta foi registrada.");
+
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == chamadoId)
+                    await VerDetalhes(chamadoId);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao confirmar sugestão: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao confirmar sugestão: {ex.Message}");
+        }
+    }
+
+
+    // Chamado quando o modal solicita "Ir para Chat"
+    async Task IrParaChatDoModal(Guid chamadoId)
+    {
+        // Mantém chatPergunta/chatResposta/chamadoId no localStorage (já setados ao criar)
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", chamadoId.ToString());
+        }
+        catch { }
+        Navigation.NavigateTo("/chatboot");
+    }
+
     // ================= AUXILIARES ====================
     void EnviarMensagemChat()
     {
@@ -610,6 +765,10 @@
     {
         _ = JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", id.ToString());
         _ = JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", Chamados.FirstOrDefault(c => c.Id == id)?.Descricao ?? "");
+        // Mantemos também a chatResposta (se existir na lista)
+        var sugest = Chamados.FirstOrDefault(c => c.Id == id)?.SugestaoGemini ?? "";
+        if (!string.IsNullOrEmpty(sugest))
+            _ = JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugest);
         Navigation.NavigateTo("/chatboot");
     }
 

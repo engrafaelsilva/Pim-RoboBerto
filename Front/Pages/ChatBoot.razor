@@ -1,4 +1,5 @@
 ﻿@page "/chatboot"
+
 @using System.Text.Json
 @using System.Threading
 @inject NavigationManager Navigation
@@ -29,7 +30,6 @@
         }
         else
         {
-            <!-- Mensagem do usuário -->
             @if (!string.IsNullOrEmpty(UserMessage))
             {
                 <div class="message user">
@@ -38,7 +38,6 @@
                 </div>
             }
 
-            <!-- Mensagem inicial do bot -->
             <div class="message bot">
                 <div class="avatar bot-avatar">🤖</div>
                 <div class="bubble bot-bubble animate">
@@ -46,7 +45,6 @@
                 </div>
             </div>
 
-            <!-- Indicação que a IA está sendo gerada -->
             @if (IsWaitingSuggestion)
             {
                 <div class="message bot">
@@ -57,7 +55,6 @@
                 </div>
             }
 
-            <!-- Sugestão da IA -->
             @if (!string.IsNullOrEmpty(BotMessage) && !IsWaitingSuggestion)
             {
                 <div class="message bot">
@@ -106,15 +103,21 @@
 
     async Task InicializarChat()
     {
-        SemChamado = false;
+        BotMessage = "";
+        UserMessage = "";
+        UserResolution = "";
         AwaitingResolution = false;
-        processingResponse = false;
+        SemChamado = false;
         IsWaitingSuggestion = false;
+        processingResponse = false;
+
+        pollingCts?.Cancel();
+        pollingCts = null;
 
         string? chamadoStr = null;
         try { chamadoStr = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId"); } catch { }
 
-        if (string.IsNullOrEmpty(chamadoStr) || !Guid.TryParse(chamadoStr, out ChamadoId))
+        if (!Guid.TryParse(chamadoStr, out ChamadoId))
         {
             SemChamado = true;
             return;
@@ -137,8 +140,10 @@
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("descricao", out var descProp) && descProp.ValueKind == JsonValueKind.String)
+            if (root.TryGetProperty("descricao", out var descProp))
             {
+                await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+
                 var desc = descProp.GetString() ?? "";
                 if (string.IsNullOrWhiteSpace(UserMessage) && !string.IsNullOrWhiteSpace(desc))
                 {
@@ -147,18 +152,22 @@
                 }
             }
 
-            if (root.TryGetProperty("sugestaoGemini", out var sgProp) && sgProp.ValueKind == JsonValueKind.String)
+            // 🔥 CORREÇÃO AQUI — NÃO ZERA mais BotMessage
+            if (root.TryGetProperty("sugestaoGemini", out var sgProp))
             {
-                BotMessage = sgProp.GetString() ?? "";
-                if (!string.IsNullOrEmpty(BotMessage))
+                var sugestao = sgProp.GetString();
+
+                if (!string.IsNullOrWhiteSpace(sugestao))
+                {
+                    BotMessage = sugestao;
                     await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", BotMessage);
+                }
             }
 
             bool? resolveu = null;
             if (root.TryGetProperty("sugestaoResolveu", out var srProp) && srProp.ValueKind != JsonValueKind.Null)
             {
-                if (srProp.ValueKind == JsonValueKind.True || srProp.ValueKind == JsonValueKind.False)
-                    resolveu = srProp.GetBoolean();
+                resolveu = srProp.GetBoolean();
             }
 
             AwaitingResolution = !string.IsNullOrEmpty(BotMessage) && (resolveu == null);
@@ -191,7 +200,8 @@
                 await EnsureAuthAsync();
 
                 HttpResponseMessage resp;
-                try { resp = await Http.GetAsync($"Chamados/{ChamadoId}", ct); } catch { continue; }
+                try { resp = await Http.GetAsync($"Chamados/{ChamadoId}", ct); }
+                catch { continue; }
 
                 if (!resp.IsSuccessStatusCode)
                 {
@@ -247,7 +257,8 @@
         {
             var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
             if (!string.IsNullOrWhiteSpace(token))
-                Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         }
         catch { }
     }
@@ -289,9 +300,12 @@
             else
             {
                 try { await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", false); } catch { }
+
                 var pacote = new { Pergunta = UserMessage, Resposta = BotMessage, Data = DateTime.UtcNow };
+
                 await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
                 await JS.InvokeVoidAsync("localStorage.setItem", "chamadoTecnico", JsonSerializer.Serialize(pacote));
+
                 await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
                 await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
                 await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");

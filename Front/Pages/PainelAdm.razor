@@ -1,256 +1,390 @@
 ﻿@page "/paineladm"
 
+@using System.Net.Http.Json
+@using System.Text.Json
+
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject HttpClient Http
+
 <PageTitle>Painel do Administrador</PageTitle>
 
-<div class="container py-4">
-    <h3 class="text-primary fw-bold mb-3 text-center">🛠️ Painel do Administrador</h3>
+<link href="css/PainelTecnico.css" rel="stylesheet" />
 
-    <div class="d-flex justify-content-center mb-3 gap-2">
-        @foreach (var aba in Abas)
+<div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2 class="logo">Painel do Administrador</h2>
+
+        <nav class="menu">
+            <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 1">Chamados</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 2">Usuários</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 3">Categorias</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 4">Departamentos</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 5">Roles</button>
+            <button class="menu-item" @onclick="() => AbaSelecionada = 6">Relatórios</button>
+            <button class="menu-item logout" @onclick="Sair">Sair</button>
+        </nav>
+    </aside>
+
+    <!-- Conteúdo -->
+    <main class="conteudo">
+
+        @if (AbaSelecionada == 0)
         {
-            <button class="btn @(abaAtual == aba.Id ? "btn-primary" : "btn-outline-primary")"
-                    @onclick="() => abaAtual = aba.Id">
-                @aba.Icone @aba.Nome
-            </button>
+            <section class="card p-4">
+                <h1>Bem-vindo, Administrador!</h1>
+                <p>Aqui você pode gerenciar usuários, roles, departamentos, categorias e todos os chamados.</p>
+            </section>
         }
-    </div>
 
-    <div>
-        @switch (abaAtual)
+        @if (AbaSelecionada == 1)
         {
-            case "chamados":
-                @RenderChamados()
-                break;
-
-            case "usuarios":
-                @RenderUsuarios()
-                break;
-
-            case "categorias":
-                @RenderCategorias()
-                break;
-
-            case "departamentos":
-                @RenderDepartamentos()
-                break;
-
-            case "roles":
-                @RenderRoles()
-                break;
-
-            case "relatorios":
-                @RenderRelatorios()
-                break;
-
-            case "chat":
-                @RenderChatBot()
-                break;
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">📋 Chamados</h5>
+                <table class="table table-hover text-center">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Cliente</th>
+                            <th>Status</th>
+                            <th>Prioridade</th>
+                            <th>Técnico</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Chamados)
+                        {
+                            <tr>
+                                <td>@c.Id.Substring(0, 6)</td>
+                                <td>@c.Titulo</td>
+                                <td>@c.ClienteNome</td>
+                                <td>@c.Status</td>
+                                <td>@c.Prioridade</td>
+                                <td>@(string.IsNullOrEmpty(c.Tecnico) ? "-" : c.Tecnico)</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverChamado(c.Id)">Excluir</button>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => AbrirComentarChamado(c)">Comentar</button>
+                                    <button class="btn btn-warning btn-sm" @onclick="() => FecharChamado(c.Id)">Fechar</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => CancelarChamado(c.Id)">Cancelar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
-    </div>
+
+        @if (AbaSelecionada == 2)
+        {
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">👥 Usuários</h5>
+                <table class="table table-striped text-center">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Usuarios)
+                        {
+                            <tr>
+                                <td>@u.Nome</td>
+                                <td>@u.Email</td>
+                                <td>@u.Tipo</td>
+                                <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalUsuario(u)">Editar</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverUsuario(u.Id)">Excluir</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (AbaSelecionada == 3)
+        {
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">🏷️ Categorias</h5>
+                @foreach (var c in Categorias)
+                {
+                    <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
+                        @c.Nome
+                        <div>
+                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalCategoria(c)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverCategoria(c.Id)">Excluir</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (AbaSelecionada == 4)
+        {
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">🏢 Departamentos</h5>
+                @foreach (var d in Departamentos)
+                {
+                    <div class="border p-2 rounded mb-2">
+                        <strong>@d.Nome</strong>
+                        <ul>
+                            @foreach (var u in d.Usuarios)
+                            {
+                                <li>@u.Nome</li>
+                            }
+                        </ul>
+                        <div>
+                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalDepartamento(d)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverDepartamento(d.Id)">Excluir</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (AbaSelecionada == 5)
+        {
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">🛡️ Roles</h5>
+                @foreach (var r in Roles)
+                {
+                    <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
+                        @r.Nome
+                        <div>
+                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverRole(r.Id)">Excluir</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (AbaSelecionada == 6)
+        {
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">📊 Relatórios</h5>
+                <p>Exibir dashboards com métricas de SLA, chamados pendentes, técnicos livres etc.</p>
+            </div>
+        }
+
+    </main>
+    ```
+
 </div>
 
-<ConfirmDialog @ref="confirmDialog" />
-<MessageBox @ref="messageBox" />
+<!-- =================== MODAIS =================== -->
+@if (ModalUsuarioAtivo)
+{
+     <div class="modal-backdrop">
+        <div class="modal">
+            <h5>Editar Usuário</h5>
+            <input class="form-control mb-2" placeholder="Nome" @bind="UsuarioModal.Nome" />
+            <input class="form-control mb-2" placeholder="Email" @bind="UsuarioModal.Email" />
+            <select class="form-select mb-2" @bind="UsuarioModal.Tipo"> <option value="Usuario">Usuario</option> <option value="ADM">ADM</option> </select> <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" @bind="UsuarioModal.Ativo" /> <label class="form-check-label">Ativo</label>
+            </div>
+            <button class="btn btn-success" @onclick="SalvarUsuario">Salvar</button>
+            <button class="btn btn-secondary" @onclick="() => ModalUsuarioAtivo=false">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (ModalCategoriaAtivo)
+{
+     <div class="modal-backdrop">
+        <div class="modal">
+            <h5>Editar Categoria</h5>
+            <input class="form-control mb-2" placeholder="Nome" @bind="CategoriaModal.Nome" />
+            <button class="btn btn-success" @onclick="SalvarCategoria">Salvar</button>
+            <button class="btn btn-secondary" @onclick="() => ModalCategoriaAtivo=false">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (ModalDepartamentoAtivo)
+{
+     <div class="modal-backdrop">
+        <div class="modal">
+            <h5>Editar Departamento</h5>
+            <input class="form-control mb-2" placeholder="Nome" @bind="DepartamentoModal.Nome" />
+            <button class="btn btn-success" @onclick="SalvarDepartamento">Salvar</button>
+            <button class="btn btn-secondary" @onclick="() => ModalDepartamentoAtivo=false">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (ModalRoleAtivo)
+{
+     <div class="modal-backdrop">
+        <div class="modal">
+            <h5>Editar Role</h5>
+            <input class="form-control mb-2" placeholder="Nome" @bind="RoleModal.Nome" />
+            <button class="btn btn-success" @onclick="SalvarRole">Salvar</button>
+            <button class="btn btn-secondary" @onclick="() => ModalRoleAtivo=false">Cancelar</button>
+        </div>
+    </div>
+}
 
 @code {
+    int AbaSelecionada = 0;
 
-    private string abaAtual = "chamados";
+    List<ChamadoDTO> Chamados = new();
+    List<UsuarioDTO> Usuarios = new();
+    List<CategoriaDTO> Categorias = new();
+    List<DepartamentoDTO> Departamentos = new();
+    List<RoleDTO> Roles = new();
 
-    private ConfirmDialog? confirmDialog;
-    private MessageBox? messageBox;
-
-    record Aba(string Id, string Icone, string Nome);
-
-    List<Aba> Abas = new()
+    // =================== MODELOS ===================
+    public class ChamadoDTO
     {
-        new("chamados", "📋", "Chamados"),
-        new("usuarios", "👥", "Usuários"),
-        new("categorias", "🏷️", "Categorias"),
-        new("departamentos", "🏢", "Departamentos"),
-        new("roles", "🛡️", "Roles"),
-        new("relatorios", "📊", "Relatórios"),
-        new("chat", "🤖", "ChatBot")
-    };
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Titulo { get; set; } = "";
+        public string Pergunta { get; set; } = "";
+        public string Resposta { get; set; } = "";
+        public string ClienteNome { get; set; } = "";
+        public DateTime Data { get; set; } = DateTime.Now;
+        public string Tecnico { get; set; } = "";
+        public string Status { get; set; } = "Novo";
+        public string Prioridade { get; set; } = "Normal";
+        public bool Fechado { get; set; } = false;
+        public bool Cancelado { get; set; } = false;
+        public bool Expirado { get; set; } = false;
+        public bool Novo { get; set; } = true;
+        public List<CommentDTO> Comments { get; set; } = new();
+    }
 
-    // ======================================================================================
-    // CHAMADOS
-    // ======================================================================================
-    List<ChamadoDTO> chamados = new()
+    public class CommentDTO
     {
-        new() { Id = Guid.NewGuid(), Titulo = "Erro no sistema", ClienteNome = "João", Prioridade = "Alta", Status = "Aberto" },
-        new() { Id = Guid.NewGuid(), Titulo = "Impressora travando", ClienteNome = "Carla", Prioridade = "Média", Status = "Em Andamento" }
-    };
+        public string Author { get; set; } = "ADM";
+        public string Text { get; set; } = "";
+        public DateTime When { get; set; } = DateTime.Now;
+    }
 
-    private async Task RemoverChamado(Guid id)
+    public class UsuarioDTO
     {
-        bool confirmar = await confirmDialog!.Show("Excluir Chamado", "Tem certeza que deseja remover?");
-        if (!confirmar) return;
+        public string Id { get; set; } = "";
+        public string Nome { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Tipo { get; set; } = "Usuario";
+        public bool Ativo { get; set; } = true;
+    }
 
-        var item = chamados.FirstOrDefault(x => x.Id == id);
-        if (item != null)
+    public class CategoriaDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+
+    public class DepartamentoDTO
+    {
+        public string Id { get; set; } = "";
+        public string Nome { get; set; } = "";
+        public List<UsuarioDTO> Usuarios { get; set; } = new();
+    }
+
+    public class RoleDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+
+    // =================== MODAIS ===================
+    bool ModalUsuarioAtivo = false;
+    UsuarioDTO UsuarioModal = new();
+
+    bool ModalCategoriaAtivo = false;
+    CategoriaDTO CategoriaModal = new();
+
+    bool ModalDepartamentoAtivo = false;
+    DepartamentoDTO DepartamentoModal = new();
+
+    bool ModalRoleAtivo = false;
+    RoleDTO RoleModal = new();
+
+    void AbrirModalUsuario(UsuarioDTO u) { UsuarioModal = u; ModalUsuarioAtivo = true; }
+    void AbrirModalCategoria(CategoriaDTO c) { CategoriaModal = c; ModalCategoriaAtivo = true; }
+    void AbrirModalDepartamento(DepartamentoDTO d) { DepartamentoModal = d; ModalDepartamentoAtivo = true; }
+    void AbrirModalRole(RoleDTO r) { RoleModal = r; ModalRoleAtivo = true; }
+
+    async Task SalvarUsuario() { await Http.PutAsJsonAsync($"Usuario/{UsuarioModal.Id}", UsuarioModal); ModalUsuarioAtivo = false; await LoadUsuarios(); }
+    async Task SalvarCategoria() { await Http.PutAsJsonAsync($"Categoria/{CategoriaModal.Id}", CategoriaModal); ModalCategoriaAtivo = false; await LoadCategorias(); }
+    async Task SalvarDepartamento() { await Http.PutAsJsonAsync($"Departamento/{DepartamentoModal.Id}", DepartamentoModal); ModalDepartamentoAtivo = false; await LoadDepartamentos(); }
+    async Task SalvarRole() { await Http.PutAsJsonAsync($"Role/{RoleModal.Id}", RoleModal); ModalRoleAtivo = false; await LoadRoles(); }
+
+    // =================== CICLO ===================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await LoadAllData();
+    }
+
+    async Task LoadAllData()
+    {
+        await LoadChamados();
+        await LoadUsuarios();
+        await LoadCategorias();
+        await LoadDepartamentos();
+        await LoadRoles();
+    }
+
+    async Task LoadChamados()
+    {
+        var res = await Http.GetAsync("Chamados");
+        if (res.IsSuccessStatusCode) Chamados = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+        StateHasChanged();
+    }
+
+    async Task LoadUsuarios()
+    {
+        var res = await Http.GetAsync("Usuario");
+        if (res.IsSuccessStatusCode) Usuarios = await res.Content.ReadFromJsonAsync<List<UsuarioDTO>>() ?? new();
+        StateHasChanged();
+    }
+
+    async Task LoadCategorias()
+    {
+        var res = await Http.GetAsync("Categoria");
+        if (res.IsSuccessStatusCode) Categorias = await res.Content.ReadFromJsonAsync<List<CategoriaDTO>>() ?? new();
+        StateHasChanged();
+    }
+
+    async Task LoadDepartamentos()
+    {
+        var res = await Http.GetAsync("Departamento");
+        if (res.IsSuccessStatusCode) Departamentos = await res.Content.ReadFromJsonAsync<List<DepartamentoDTO>>() ?? new();
+        StateHasChanged();
+    }
+
+    async Task LoadRoles()
+    {
+        var res = await Http.GetAsync("Role");
+        if (res.IsSuccessStatusCode) Roles = await res.Content.ReadFromJsonAsync<List<RoleDTO>>() ?? new();
+        StateHasChanged();
+    }
+
+    // =================== CHAMADOS ===================
+    async Task AbrirComentarChamado(ChamadoDTO c)
+    {
+        var comentario = await JS.InvokeAsync<string>("prompt", "Digite seu comentário:");
+        if (!string.IsNullOrWhiteSpace(comentario))
         {
-            chamados.Remove(item);
-            await messageBox!.Show("Removido", "Chamado excluído com sucesso.");
+            var patchData = new { Text = comentario, Author = "ADM" };
+            await Http.PatchAsync($"Chamados/{c.Id}/comentar", JsonContent.Create(patchData));
+            c.Comments.Add(new CommentDTO { Author = "ADM", Text = comentario });
+            StateHasChanged();
         }
     }
 
-    private RenderFragment RenderChamados() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">📋 Gerenciamento de Chamados</h5>
+    async Task FecharChamado(string id) { await Http.PatchAsync($"Chamados/{id}/fechar-chamado", null); await LoadChamados(); }
+    async Task CancelarChamado(string id) { await Http.PatchAsync($"Chamados/{id}/cancelar", null); await LoadChamados(); }
+    async Task RemoverChamado(string id) { var res = await Http.DeleteAsync($"Chamados/{id}"); if (res.IsSuccessStatusCode) await LoadChamados(); }
 
-            <table class="table table-hover text-center">
-                <thead class="table-primary">
-                    <tr>
-                        <th>ID</th>
-                        <th>Título</th>
-                        <th>Cliente</th>
-                        <th>Status</th>
-                        <th>Prioridade</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var c in chamados)
-                    {
-                        <tr>
-                            <td>@c.Id.ToString().Substring(0, 6)</td>
-                            <td>@c.Titulo</td>
-                            <td>@c.ClienteNome</td>
-                            <td>@c.Status</td>
-                            <td>@c.Prioridade</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm"
-                                        @onclick="() => RemoverChamado(c.Id)">Excluir</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>;
-    };
+    async Task RemoverUsuario(string id) { var res = await Http.DeleteAsync($"Usuario/{id}"); if (res.IsSuccessStatusCode) await LoadUsuarios(); }
+    async Task RemoverCategoria(string id) { var res = await Http.DeleteAsync($"Categoria/{id}"); if (res.IsSuccessStatusCode) await LoadCategorias(); }
+    async Task RemoverDepartamento(string id) { var res = await Http.DeleteAsync($"Departamento/{id}"); if (res.IsSuccessStatusCode) await LoadDepartamentos(); }
+    async Task RemoverRole(string id) { var res = await Http.DeleteAsync($"Role/{id}"); if (res.IsSuccessStatusCode) await LoadRoles(); }
 
-    // ======================================================================================
-    // USUÁRIOS
-    // ======================================================================================
-    List<UsuarioDTO> usuarios = new()
-    {
-        new() { Id = Guid.NewGuid(), Nome = "Maria", Email = "maria@empresa.com", Tipo = "Técnico", Ativo = true }
-    };
+    async Task Sair() { await JS.InvokeVoidAsync("localStorage.removeItem", "adm_session"); Nav.NavigateTo("/login", true); }
 
-    private RenderFragment RenderUsuarios() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">👥 Usuários</h5>
-
-            <table class="table table-striped text-center">
-                <thead class="table-secondary">
-                    <tr>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Tipo</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var u in usuarios)
-                    {
-                        <tr>
-                            <td>@u.Nome</td>
-                            <td>@u.Email</td>
-                            <td>@u.Tipo</td>
-                            <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>;
-    };
-
-    // ======================================================================================
-    // CATEGORIAS
-    // ======================================================================================
-    List<string> categorias = new() { "Infra", "Software", "Rede" };
-
-    private RenderFragment RenderCategorias() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">🏷️ Categorias</h5>
-
-            @foreach (var c in categorias)
-            {
-                <div class="border p-2 rounded mb-2">@c</div>
-            }
-        </div>;
-    };
-
-    // ======================================================================================
-    // DEPARTAMENTOS
-    // ======================================================================================
-    List<string> departamentos = new() { "TI", "RH", "Financeiro" };
-
-    private RenderFragment RenderDepartamentos() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">🏢 Departamentos</h5>
-
-            @foreach (var d in departamentos)
-            {
-                <div class="border p-2 rounded mb-2">@d</div>
-            }
-        </div>;
-    };
-
-    // ======================================================================================
-    // ROLES
-    // ======================================================================================
-    List<string> roles = new() { "Administrador", "Técnico", "Colaborador" };
-
-    private RenderFragment RenderRoles() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">🛡️ Roles</h5>
-
-            @foreach (var r in roles)
-            {
-                <div class="border p-2 rounded mb-2">@r</div>
-            }
-        </div>;
-    };
-
-    // ======================================================================================
-    // RELATÓRIOS
-    // ======================================================================================
-    private RenderFragment RenderRelatorios() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">📊 Relatórios</h5>
-            <p>Exibir estatísticas...</p>
-        </div>;
-    };
-
-    private List<MensagemChat> mensagens = new()
-    {
-        new() { De = "Usuário", Texto = "O sistema está lento." },
-        new() { De = "IA", Texto = "Tente limpar o cache." }
-    };
-
-    private RenderFragment RenderChatBot() => __builder =>
-    {
-        <div class="card p-4">
-            <h5 class="fw-bold mb-3">🤖 ChatBot</h5>
-
-            @foreach (var m in mensagens)
-            {
-                <div class="mb-2">
-                    <strong>@m.De:</strong> @m.Texto
-                </div>
-            }
-        </div>;
-    };
-
-    public class ChamadoDTO { public Guid Id { get; set; } public string Titulo { get; set; } = ""; public string ClienteNome { get; set; } = ""; public string Status { get; set; } = ""; public string Prioridade { get; set; } = ""; }
-    public class UsuarioDTO { public Guid Id { get; set; } public string Nome { get; set; } = ""; public string Email { get; set; } = ""; public string Tipo { get; set; } = ""; public bool Ativo { get; set; } }
-    public class MensagemChat { public string De { get; set; } = ""; public string Texto { get; set; } = ""; }
 }
-
