@@ -1,7 +1,8 @@
-﻿@page "/painel-colaborador"
+﻿@page "/painelcolaborador"
 
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using Front.Pages.Modais.Colaborador;
 
 @inject NavigationManager Navigation
 @inject HttpClient Http
@@ -13,20 +14,18 @@
 
 <div class="layout">
 
-    <!-- Sidebar -->
     <aside class="sidebar">
         <h2 class="logo">Painel do Colaborador</h2>
 
         <nav class="menu">
             <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
-            <button class="menu-item" @onclick="() => AbaSelecionada = 1">Abrir Chamado</button>
+            <button class="menu-item" @onclick="() => AbrirNovoChamado()">Abrir Chamado</button>
             <button class="menu-item" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
-            <button class="menu-item" @onclick="() => AbaSelecionada = 3">Conversar com Técnico</button>
+            <button class="menu-item" @onclick="() => AbrirChatGeral()">Conversar com Técnico</button>
             <button class="menu-item logout" @onclick="Logout">Sair</button>
         </nav>
     </aside>
 
-    <!-- Conteúdo Principal -->
     <main class="conteudo">
         @if (AbaSelecionada == 0)
         {
@@ -83,43 +82,78 @@
             <section class="card">
                 <h3>Meus Chamados</h3>
 
-                <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="btn-secondary" @onclick="() => CarregarMeusChamados(paginaAtual, tamanhoPagina)"> Atualizar</button>
-                    <div style="margin-left:auto;">
-                        <button class="btn" @onclick="() => ChangePage(-1)" disabled="@(paginaAtual == 0)">Anterior</button>
-                        <span style="margin: 0 8px;">Página @((paginaAtual + 1))</span>
-                        <button class="btn" @onclick="() => ChangePage(1)">Próxima</button>
+                <div class="chamados-controls-bar">
+                    <button class="btn btn-refresh" @onclick="() => CarregarMeusChamados(paginaAtual, tamanhoPagina)">
+                        <i class="fas fa-sync-alt"></i> Atualizar Lista
+                    </button>
+
+                    <div class="pagination-group">
+                        <button class="btn btn-control" @onclick="() => ChangePage(-1)" disabled="@(paginaAtual == 0)">
+                            <i class="fas fas-chevron-left"></i> Anterior
+                        </button>
+                        <span class="page-info">Página @((paginaAtual + 1))</span>
+                        <button class="btn btn-control" @onclick="() => ChangePage(1)">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
 
+                <hr class="separator-list" />
+
                 @if (isLoadingChamados)
                 {
-                    <p>Carregando chamados...</p>
+                    <p class="msg-loading"><i class="fas fa-spinner fa-spin"></i> Carregando chamados...</p>
                 }
                 else if (Chamados.Count == 0)
                 {
-                    <p class="msg-empty">Nenhum chamado encontrado.</p>
+                    <div class="lista-vazia">
+                        <p class="msg-empty">Nenhum chamado encontrado. 🎉</p>
+                        <button class="btn-primary" @onclick="() => AbrirNovoChamado()">Abrir Novo Chamado</button>
+                    </div>
                 }
                 else
                 {
-                    <div class="lista-chamados">
+                    <div class="lista-chamados-moderna">
                         @foreach (var c in Chamados)
                         {
-                            <div class="chamado-item" style="margin-bottom:12px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div>
-                                        <h4>@c.Titulo</h4>
-                                        <p class="descricao">@c.Descricao</p>
-                                        <small>Aberto: @c.DataAbertura.ToString("g") — Prioridade: @c.Prioridade</small>
-                                    </div>
+                            <div class="chamado-ticket status-@c.Status.Replace(" ", "-").ToLower()">
+                                
+                                
+                                <div class="ticket-info">
+                                    <h4 class="ticket-title">@c.Titulo</h4>
+                                    <p class="descricao-label">Descrição:</p>
+                                    <p class="ticket-description">@c.Descricao</p>
+                                    <p class="ia-suggestion-label">Sugestão da IA:</p>
+                                    <p class="ticket-ai-suggestion">Aqui vai a sugestão da IA para resolver o chamado...</p>
+                                </div>
+                                
+                                <div class="ticket-meta">
+                                    <span class="meta-item-data">Aberto: <strong>@c.DataAbertura.ToString("g")</strong></span>
+                                    <span class="meta-item-data">Prioridade: <strong>@c.Prioridade</strong></span>
+                                    <span class="status-indicator">@c.Status</span>
+                                </div>
 
-                                    <div style="text-align:right;">
-                                        <div><span class="status">@c.Status</span></div>
-                                        <div style="margin-top:8px;">
-                                            <button class="btn-secondary" @onclick="() => VerDetalhes(c.Id)">Ver detalhes</button>
-                                            <button class="btn-primary" style="margin-left:6px;" @onclick="() => AbrirChatBootPara(c.Id)">Abrir Chat</button>
-                                        </div>
-                                    </div>
+                                <div class="ticket-actions">
+                                    <button class="btn btn-details" @onclick="() => VerDetalhes(c.Id)">
+                                        <i class="fas fa-eye"></i> Detalhes
+                                    </button>
+                                    <button class="btn btn-comment" @onclick="() => AbrirChatBootPara(c.Id)">
+                                        <i class="fas fa-comment"></i> Comentar
+                                    </button>
+
+                                    @if (c.Status == "Fechado" || c.Status == "Resolvido")
+                                    {
+                                        <button class="btn btn-reopen" @onclick="() => ReabrirChamado(c.Id)">
+                                            <i class="fas fa-undo"></i> Reabrir
+                                        </button>
+                                    }
+
+                                    @if (c.Status == "Aguardando Confirmação")
+                                    {
+                                        <button class="btn btn-confirm" @onclick="() => ModalConfirmacao.Show(c.SugestaoGemini, c.Id)">
+                                            <i class="fas fa-check-circle"></i> Confirmar Sugestão
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         }
@@ -194,7 +228,6 @@
             </section>
         }
 
-        <!-- Modal (componente separado) -->
         <ModalConfirmacaoIA @ref="ModalConfirmacao" OnConfirmacao="ProcessarConfirmacaoIA" OnIrParaChat="IrParaChatDoModal" />
     </main>
 </div>
@@ -283,6 +316,20 @@
     ModalConfirmacaoIA? ModalConfirmacao;
 
     protected override async Task OnInitializedAsync() { }
+    
+    // Método auxiliar para Abrir Novo Chamado (usado no botão da lista vazia)
+    void AbrirNovoChamado()
+    {
+        AbaSelecionada = 1;
+    }
+
+    // Método auxiliar para Abrir Chat Geral (não vinculado a chamado)
+    void AbrirChatGeral()
+    {
+        // Limpa o ID do chamado no localStorage para indicar que é um chat geral
+        _ = JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
+        AbaSelecionada = 3;
+    }
 
     // =================== LISTAR MEUS CHAMADOS ====================
     async Task CarregarMeusChamados(int pagina = 0, int tamanho = 10)
@@ -334,6 +381,8 @@
                                         0 => "Aberto",
                                         1 => "Em andamento",
                                         2 => "Fechado",
+                                        3 => "Resolvido", // Adicionei status 3, comum em sistemas de ticket
+                                        4 => "Aguardando Confirmação", // Adicionei status 4
                                         _ => "Desconhecido"
                                     };
                                     break;
@@ -481,14 +530,21 @@
                 // Limpa formulário
                 LimparFormulario();
 
-                // Mostra confirmação ANTES de redirecionar
-                await JS.InvokeVoidAsync("alert", "Chamado enviado com sucesso!");
+                // Mostra sugestão gerada em modal (usuário pode confirmar ou abrir chat)
+                if (ModalConfirmacao != null)
+                {
+                    ModalConfirmacao.Show(sugestaoGemini, criadoId);
+                }
+                else
+                {
+                     await JS.InvokeVoidAsync("alert", "Chamado enviado com sucesso! Sugestão gerada: " + sugestaoGemini);
+                }
 
-                // Redireciona para o ChatBoot
-                Navigation.NavigateTo("/chatboot");
+                // Redireciona para Meus Chamados
+                await CarregarMeusChamados();
+                AbaSelecionada = 2;
+                
 
-                // Mostrar sugestão gerada em modal (usuário pode confirmar ou abrir chat)
-                ModalConfirmacao?.Show(sugestaoGemini, criadoId);
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -544,7 +600,25 @@
                 if (root.TryGetProperty("titulo", out var tp)) det.Titulo = tp.GetString() ?? "";
                 if (root.TryGetProperty("descricao", out var dp)) det.Descricao = dp.GetString() ?? "";
                 if (root.TryGetProperty("sugestaoGemini", out var sg)) det.SugestaoGemini = sg.GetString() ?? "";
-                if (root.TryGetProperty("status", out var st)) det.Status = st.GetString() ?? "";
+                
+                // Conversão de Status (se vier como número ou string)
+                if (root.TryGetProperty("status", out var st)) 
+                {
+                     if (st.ValueKind == JsonValueKind.Number)
+                     {
+                        det.Status = st.GetInt32() switch {
+                            0 => "Aberto",
+                            1 => "Em andamento",
+                            2 => "Fechado",
+                            3 => "Resolvido",
+                            4 => "Aguardando Confirmação",
+                            _ => "Desconhecido"
+                        };
+                     } else {
+                        det.Status = st.GetString() ?? "";
+                     }
+                }
+
 
                 if (root.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
                 {
@@ -671,7 +745,7 @@
                 await JS.InvokeVoidAsync("alert", "Chamado cancelado.");
                 // Recarrega listagem e detalhes
                 await CarregarMeusChamados(paginaAtual, tamanhoPagina);
-                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) await VerDetalhes(id);
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) FecharDetalhes(); // Fecha detalhes para não mostrar info desatualizada
             }
             else
             {
@@ -724,6 +798,7 @@
             {
                 await JS.InvokeVoidAsync("alert", "Obrigado — sua resposta foi registrada.");
 
+                // Recarrega lista e detalhes
                 await CarregarMeusChamados(paginaAtual, tamanhoPagina);
 
                 if (ChamadoDetalhe != null && ChamadoDetalhe.Id == chamadoId)

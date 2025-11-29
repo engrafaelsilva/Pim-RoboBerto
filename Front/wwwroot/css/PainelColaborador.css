@@ -67,9 +67,9 @@
     border: 1px solid #ccc;
 }
 
-.input:focus, textarea:focus, select:focus {
-    border-color: #0054d8;
-}
+    .input:focus, textarea:focus, select:focus {
+        border-color: #0054d8;
+    }
 
 .btn-row {
     display: flex;
@@ -102,8 +102,6 @@
             background: #c5c5c5;
         }
 
-
-
 /* Área de conteúdo */
 .conteudo {
     flex: 1;
@@ -122,55 +120,265 @@ h3 {
     margin-bottom: 20px;
 }
 
-/* Lista de chamados */
-.lista-chamados {
+/* --- LAYOUT DE 'MEUS CHAMADOS' (NOVO) --- */
+
+/* Controles da Barra Superior */
+.chamados-controls-bar {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.chamado-item {
-    background: #f5f5f5;
-    padding: 15px;
+.btn-refresh {
+    background: #4f46e5; /* Roxo vibrante */
+    color: white;
+    padding: 8px 15px;
+    font-weight: 600;
+}
+
+    .btn-refresh:hover {
+        background: #4338ca;
+    }
+
+    .btn-refresh i {
+        margin-right: 5px;
+    }
+
+/* Paginação - Mais sutil */
+.pagination-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-control {
+    padding: 6px 10px;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+    font-size: 0.85rem;
+}
+
+    .btn-control:hover:not(:disabled) {
+        background: #e5e7eb;
+    }
+
+.page-info {
+    margin: 0 8px;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.btn-control i {
+    margin: 0 4px;
+}
+
+.separator-list {
+    border: 0;
+    height: 1px;
+    background: #f0f0f0;
+    margin: 0 0 20px 0;
+}
+
+/* Lista Vazia */
+.lista-vazia {
+    text-align: center;
+    padding: 30px;
+    border: 1px dashed #ccc;
     border-radius: 10px;
 }
 
-.chamado-item .descricao {
-    margin: 4px 0;
+.msg-loading {
+    text-align: center;
+    color: #4f46e5;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
-.btn {
-    padding: 10px 20px;
+/* --- ESTILOS DO NOVO CARD: CHAMADO-TICKET --- */
+
+.lista-chamados-moderna {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* DIVISOR VISUAL ENTRE OS CARDS */
+}
+
+.chamado-ticket {
+    /* Define o layout de coluna usando CSS Grid: Info | Meta | Ações */
+    display: grid;
+    grid-template-columns: 4fr 1.5fr 3fr;
+    gap: 20px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-left: 5px solid #000000; /* Borda Lateral Preta Fixa */
+    padding: 15px 20px;
     border-radius: 8px;
-    border: none;
-    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s;
+    align-items: center; /* Alinha o conteúdo verticalmente */
 }
 
-.btn-primary {
+    .chamado-ticket:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+/* Cores da borda de status (Sobrescrevendo para preto) */
+.status-aberto, .status-em-progresso, .status-fechado, .status-resolvido, .status-aguardando-confirmação {
+    border-left-color: #000000;
+}
+
+/* Seção de Informação Principal (Título/Descrição) */
+.ticket-info {
+    padding-right: 15px;
+}
+
+.ticket-title {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    color: #1f2937;
+    /* Line Clamp para limitar o título */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rótulos Descrição e Sugestão IA */
+.descricao-label, .ia-suggestion-label {
+    margin: 8px 0 2px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.ia-suggestion-label {
+    margin-top: 15px;
+    color: #0054d8; /* Cor de destaque para IA */
+}
+
+.ticket-description {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.3;
+    /* Line Clamp para limitar a descrição a 3 linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* NOVO CAMPO: Sugestão da IA */
+.ticket-ai-suggestion {
+    margin: 0 0 5px 0;
+    padding: 8px 10px;
+    background: #e6f0ff; /* Fundo azul claro para destacar */
+    border: 1px solid #cce0ff;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #003f9e;
+    line-height: 1.4;
+    /* Line Clamp para limitar a sugestão a 3 linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* Seção Meta (Prioridade/Data) - Coluna 2 */
+.ticket-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    /* Adicionando separadores verticais sutis */
+    border-left: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+    padding: 0 15px;
+    justify-content: center;
+    height: 100%;
+}
+
+.meta-item-data {
+    display: block;
+    color: #4b5563;
+    font-size: 0.9rem;
+}
+
+.status-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-top: 5px;
+    align-self: flex-start;
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+/* Seção de Ações (Botões) - Coluna 3 */
+.ticket-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end; /* ALINHAMENTO CORRIGIDO: Alinha os botões à direita */
+    gap: 8px; /* Espaço entre os botões */
+}
+
+    /* Estilos de Botões de Ação Específicos */
+    .ticket-actions .btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+        .ticket-actions .btn i {
+            margin-right: 4px;
+        }
+
+.btn-details {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+    .btn-details:hover {
+        background: #e5e7eb;
+    }
+
+.btn-comment {
     background: #0054d8;
     color: white;
 }
 
-.btn-primary:hover {
-    background: #003f9e;
+    .btn-comment:hover {
+        background: #003f9e;
+        color: white;
+    }
+
+.btn-reopen {
+    background: #dc2626; /* Vermelho para Reabrir */
+    color: white;
 }
 
-.btn-secondary {
-    background: #0054d8;
-    border: 0px;
-    border-radius: 8px;
-    padding: 8px;
+    .btn-reopen:hover {
+        background: #b91c1c;
+        color: white;
+    }
+
+.btn-confirm {
+    background: #10b981; /* Verde para Confirmar */
+    color: white;
 }
 
-.btn-secondary:hover {
-    background: #c5c5c5;
-}
-
-.msg-empty {
-    color: #6b7280;
-}
-
-/* Chat */
+    .btn-confirm:hover {
+        background: #059669;
+    }
+/* Chat para conversar com o técnico */
 .chat-container {
     max-width: 100%;
     background-color: #f8f9fa;

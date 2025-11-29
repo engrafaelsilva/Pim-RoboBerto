@@ -89,7 +89,7 @@
 
             if (login.Email.ToLower() == "bob@empresa.com" && login.Senha == "senha123")
             {
-                Navigation.NavigateTo("/painel-tecnico", forceLoad: true);
+                Navigation.NavigateTo("/paineltecnico", forceLoad: true);
             }
             else if (login.Email.ToLower() == "alice@empresa.com" && login.Senha == "senha123")
             {
@@ -97,7 +97,7 @@
             }
             else
             {
-                Navigation.NavigateTo("/painel-colaborador", forceLoad: true);
+                Navigation.NavigateTo("/painelcolaborador", forceLoad: true);
             }
         }
         catch

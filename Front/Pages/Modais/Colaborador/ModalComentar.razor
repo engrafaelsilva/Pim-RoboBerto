@@ -1,0 +1,38 @@
+﻿<link rel="stylesheet" href="css/PainelColaborador.css" />
+
+@if (Visible)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>Adicionar Comentário</h3>
+
+            <textarea class="modal-textarea" @bind="Comentario"></textarea>
+
+            <div class="modal-footer">
+                <button class="btn-enviar" @onclick="Enviar">Enviar</button>
+                <button class="btn-fechar" @onclick="Close">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter] public EventCallback<string> OnEnviar { get; set; }
+
+    private string Comentario { get; set; } = "";
+
+    void Close()
+    {
+        Visible = false;
+        VisibleChanged.InvokeAsync(false);
+    }
+
+    async Task Enviar()
+    {
+        await OnEnviar.InvokeAsync(Comentario);
+        Close();
+    }
+}

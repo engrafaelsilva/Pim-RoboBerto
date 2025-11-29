@@ -1,0 +1,39 @@
+﻿<link rel="stylesheet" href="css/PainelColaborador.css" />
+
+@if (Visible)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>Reabrir Solicitação</h3>
+
+            <p>Tem certeza de que deseja solicitar a reabertura desta solicitação?</p>
+
+            <textarea class="modal-textarea" placeholder="Descreva o motivo da reabertura" @bind="Motivo"></textarea>
+
+            <div class="modal-footer">
+                <button class="btn-enviar" @onclick="Enviar">Confirmar</button>
+                <button class="btn-fechar" @onclick="Close">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public EventCallback<string> OnConfirmar { get; set; }
+
+    private string Motivo { get; set; } = "";
+
+    void Close()
+    {
+        Visible = false;
+        VisibleChanged.InvokeAsync(false);
+    }
+
+    async Task Enviar()
+    {
+        await OnConfirmar.InvokeAsync(Motivo);
+        Close();
+    }
+}

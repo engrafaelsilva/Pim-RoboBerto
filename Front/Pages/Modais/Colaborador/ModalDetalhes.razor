@@ -1,0 +1,32 @@
+﻿<link rel="stylesheet" href="css/PainelColaborador.css" />
+
+@inherits LayoutComponentBase
+
+@if (Visible)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>Detalhes da Solicitação</h3>
+
+            <div class="modal-body">
+                @ChildContent
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-fechar" @onclick="Close">Fechar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    void Close()
+    {
+        Visible = false;
+        VisibleChanged.InvokeAsync(false);
+    }
+}
