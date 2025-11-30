@@ -378,31 +378,55 @@ h3 {
     .btn-confirm:hover {
         background: #059669;
     }
+
 /* Chat para conversar com o técnico */
-.chat-container {
-    max-width: 100%;
-    background-color: #f8f9fa;
+.chat-card {
+    padding: 0;
+    background: #f8f9fa;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
-    height: 400px;
+    height: 480px;
+    min-height: 350px;
+    max-height: 600px;
+    overflow: hidden;
+}
+
+.chat-header {
+    background: #0054d8;
+    color: #fff;
+    padding: 18px 28px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 .chat-window {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    padding: 18px 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    background: white;
+    gap: 16px;
+    background: #fff;
 }
 
 .message {
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 10px;
+    margin-bottom: 2px;
 }
 
     .message.user {
@@ -410,31 +434,120 @@ h3 {
     }
 
 .avatar {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #e0e0e0;
+    background-color: #e0e7ff;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 
 .bubble {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 20px;
-    line-height: 1.4;
-    word-wrap: break-word;
+    max-width: 340px;
+    min-width: 60px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    line-height: 1.5;
+    word-break: break-word;
     font-size: 15px;
-}
-
-.message.bot .bubble {
-    background-color: #ffffff;
-    border: 1px solid #ddd;
+    position: relative;
+    background: #f3f4f6;
+    color: #333;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .message.user .bubble {
-    background-color: #007bff;
-    color: white;
+    background: #0054d8;
+    color: #fff;
+}
+
+.msg-author {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.message.user .msg-author {
+    color: #c7e0ff;
+}
+
+.msg-text {
+    font-size: 1rem;
+    white-space: pre-line;
+}
+
+.chat-input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 16px 24px;
+    background: #f3f4f6;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.chat-input {
+    flex: 1;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-size: 1rem;
+    background: #fff;
+}
+
+.chat-send-btn {
+    min-width: 90px;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 8px;
+}
+
+/* Aba de comentar no chamado */
+.comentario-aba-container {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.comentario-aba-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 350px;
+    resize: vertical;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 1rem;
+    background: #fafafa;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.comentario-aba-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.comentario-label {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0054d8;
+}
+
+.ticket-comentario {
+    margin: 0 0 5px 0;
+    padding: 8px 10px;
+    background: #f6f8fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #333;
+    line-height: 1.4;
+    word-break: break-word;
 }

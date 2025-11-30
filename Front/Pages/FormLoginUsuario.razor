@@ -103,9 +103,18 @@
                 return;
             }
 
-            // 🔥 Ajuste: salvar com o nome correto
+            // 🔹 Descobrir o nome do usuário a partir do token (se existir)
+            var nomeUsuario =
+                   tokenData.name
+                ?? tokenData.nome
+                ?? tokenData.unique_name
+                ?? tokenData.given_name
+                ?? tokenData.email; // fallback: e-mail
+
+            // 🔹 Salvar dados no localStorage
             await JS.InvokeVoidAsync("localStorage.setItem", "email", tokenData.email);
-            await JS.InvokeVoidAsync("localStorage.setItem", "role", tokenData.role);
+            await JS.InvokeVoidAsync("localStorage.setItem", "role", role);
+            await JS.InvokeVoidAsync("localStorage.setItem", "usuarioNome", nomeUsuario ?? string.Empty);
 
             isSuccess = true;
             mensagem = "Login realizado com sucesso!";
@@ -172,7 +181,7 @@
         [JsonPropertyName("email")]
         public string email { get; set; } = "";
 
-        // tente todos os nomes possíveis
+        // possíveis nomes para o claim de role
         [JsonPropertyName("role")]
         public string role { get; set; }
 
@@ -181,6 +190,19 @@
 
         [JsonPropertyName("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")]
         public string roleSchema { get; set; }
+
+        // 🔹 possíveis nomes para o claim de nome
+        [JsonPropertyName("name")]
+        public string name { get; set; }
+
+        [JsonPropertyName("nome")]
+        public string nome { get; set; }
+
+        [JsonPropertyName("unique_name")]
+        public string unique_name { get; set; }
+
+        [JsonPropertyName("given_name")]
+        public string given_name { get; set; }
 
         public long nbf { get; set; }
         public long exp { get; set; }

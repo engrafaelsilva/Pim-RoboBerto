@@ -276,6 +276,13 @@
             if (resposta.IsSuccessStatusCode)
             {
                 mensagemSucesso = "Cadastro realizado com sucesso! Redirecionando...";
+
+                // 🔹 limpa qualquer token antigo (para não “herdar” chamados de outro usuário)
+                await JS.InvokeVoidAsync("localStorage.removeItem", "token");
+
+                // 🔹 guarda o nome do usuário para o painel (também pode ser usado após login)
+                await JS.InvokeVoidAsync("localStorage.setItem", "usuarioNome", usuario.Nome);
+
                 await Task.Delay(1500);
                 Navigation.NavigateTo("/painelcolaborador");
             }

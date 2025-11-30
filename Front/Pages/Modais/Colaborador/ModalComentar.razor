@@ -1,38 +1,77 @@
-﻿<link rel="stylesheet" href="css/PainelColaborador.css" />
+﻿@namespace Front.Pages.Modais.Colaborador
+@using Microsoft.AspNetCore.Components
 
-@if (Visible)
+<link rel="stylesheet" href="css/ModalComentar.css" />
+
+@if (Visivel)
 {
     <div class="modal-overlay">
-        <div class="modal-content">
-            <h3>Adicionar Comentário</h3>
+        <div class="modal-container">
+            <h3>Adicionar comentário</h3>
 
-            <textarea class="modal-textarea" @bind="Comentario"></textarea>
+            <textarea class="textarea"
+                      rows="4"
+                      placeholder="Escreva seu comentário..."
+                      @bind="TextoComentario">
+            </textarea>
 
-            <div class="modal-footer">
-                <button class="btn-enviar" @onclick="Enviar">Enviar</button>
-                <button class="btn-fechar" @onclick="Close">Cancelar</button>
+            <div class="modal-actions">
+                <button class="btn secondary" @onclick="Cancelar">Cancelar</button>
+                <button class="btn primary" @onclick="Enviar">@((IsSending) ? "Enviando..." : "Enviar")</button>
             </div>
         </div>
     </div>
 }
 
 @code {
-    [Parameter] public bool Visible { get; set; }
-    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
-
     [Parameter] public EventCallback<string> OnEnviar { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
 
-    private string Comentario { get; set; } = "";
+    bool Visivel = false;
+    bool IsSending = false;
+    string TextoComentario = string.Empty;
 
-    void Close()
+    public void Show()
     {
-        Visible = false;
-        VisibleChanged.InvokeAsync(false);
+        TextoComentario = string.Empty;
+        Visivel = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        Visivel = false;
+        StateHasChanged();
     }
 
     async Task Enviar()
     {
-        await OnEnviar.InvokeAsync(Comentario);
-        Close();
+        if (IsSending) return;
+
+        var texto = TextoComentario?.Trim() ?? "";
+
+        if (texto.Length < 3)
+        {
+            // validação básica; a mensagem mais amigável é feita no PainelColaborador
+            return;
+        }
+
+        IsSending = true;
+        try
+        {
+            if (OnEnviar.HasDelegate)
+                await OnEnviar.InvokeAsync(texto);
+        }
+        finally
+        {
+            IsSending = false;
+        }
+    }
+
+    async Task Cancelar()
+    {
+        Visivel = false;
+        if (OnFechar.HasDelegate)
+            await OnFechar.InvokeAsync();
     }
 }

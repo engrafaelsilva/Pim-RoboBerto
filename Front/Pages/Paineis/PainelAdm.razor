@@ -6,6 +6,7 @@
 @using System.Linq
 @using System.Threading.Tasks
 @using IA_RoboBerto.Models.Enums
+@using Front.Pages.Modais.Admin
 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -14,6 +15,9 @@
 <PageTitle>Painel do Administrador</PageTitle>
 
 <link href="css/PainelAdm.css" rel="stylesheet" />
+<link href="css/ModalUsuarioAdm.css" rel="stylesheet" />
+<link href="css/ModalDepartamentoAdm.css" rel="stylesheet" />
+<link href="css/ModalConfirmacaoAdm.css" rel="stylesheet" />
 
 <div class="layout">
 
@@ -90,12 +94,15 @@
                             <th>Status</th>
                             <th>Prioridade</th>
                             <th>Técnico</th>
+                            <th>Último Comentário</th>   @* NOVO *@
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var c in Chamados)
                         {
+                            var ultimoComentario = c.Mensagens?.OrderByDescending(m => m.DataHoraMensagem).FirstOrDefault()?.Texto ?? "-";
+
                             <tr>
                                 <td>@(c.Id?.Length > 6 ? c.Id.Substring(0, 6) : c.Id)</td>
                                 <td>@c.Titulo</td>
@@ -103,11 +110,27 @@
                                 <td>@GetStatusTexto(c.Status)</td>
                                 <td>@GetPrioridadeTexto(c.Prioridade)</td>
                                 <td>@(c.Tecnico?.Nome ?? "-")</td>
+                                <td>@ultimoComentario</td> @* NOVO *@
                                 <td>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverChamado(c.Id)">Excluir</button>
-                                    <button class="btn btn-primary btn-sm" @onclick="() => AbrirComentarChamado(c)">Comentar</button>
-                                    <button class="btn btn-warning btn-sm" @onclick="() => FecharChamado(c.Id)">Fechar</button>
-                                    <button class="btn btn-secondary btn-sm" @onclick="() => CancelarChamado(c.Id)">Cancelar</button>
+                                    <button class="btn btn-danger btn-sm"
+                                            @onclick='() => AbrirModalAcaoChamado(c, "excluir")'>
+                                        Excluir
+                                    </button>
+
+                                    <button class="btn btn-primary btn-sm"
+                                            @onclick="() => AbrirModalComentarChamado(c)">
+                                        Comentar
+                                    </button>
+
+                                    <button class="btn btn-warning btn-sm"
+                                            @onclick='() => AbrirModalAcaoChamado(c, "fechar")'>
+                                        Fechar
+                                    </button>
+
+                                    <button class="btn btn-secondary btn-sm"
+                                            @onclick='() => AbrirModalAcaoChamado(c, "cancelar")'>
+                                        Cancelar
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -144,7 +167,7 @@
                                 <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
                                 <td>
                                     <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalUsuario(u)">Editar</button>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverUsuario(u.Id)">Excluir</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverUsuario(u.Id, u.Nome)">Excluir</button>
                                 </td>
                             </tr>
                         }
@@ -194,7 +217,7 @@
                         </ul>
                         <div>
                             <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalDepartamento(d)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverDepartamento(d.Id)">Excluir</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverDepartamento(d.Id, d.Nome)">Excluir</button>
                         </div>
                     </div>
                 }
@@ -211,8 +234,8 @@
                     <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
                         @r.Nome
                         <div>
-                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar (se suportado)</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverRole(r.Id)">Excluir (se suportado)</button>
+                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverRole(r.Id)">Excluir</button>
                         </div>
                     </div>
                 }
@@ -244,12 +267,18 @@
                 <input class="form-control mb-2" placeholder="Senha" type="password" @bind="UsuarioModal.Senha" />
             }
             <select class="form-select mb-2" @bind="UsuarioModal.Tipo">
-                @foreach (var r in Roles) { <option value="@r.Nome">@r.Nome</option> }
+                @foreach (var r in Roles)
+                {
+                    <option value="@r.Nome">@r.Nome</option>
+                }
             </select>
 
             <select class="form-select mb-2" @bind="UsuarioModal.DepartamentoId">
                 <option value="">-- Departamento --</option>
-                @foreach (var d in Departamentos) { <option value="@d.Id">@d.Nome</option> }
+                @foreach (var d in Departamentos)
+                {
+                    <option value="@d.Id">@d.Nome</option>
+                }
             </select>
 
             <div class="form-check mb-2">
@@ -307,7 +336,185 @@
     </div>
 }
 
+<ModalConfirmarAcaoChamado
+    Mostrar="@MostrarModalConfirmacaoChamado"
+    Titulo="@TituloModalConfirmacaoChamado"
+    Mensagem="@MensagemModalConfirmacaoChamado"
+    TextoBotaoConfirmar="@TextoBotaoConfirmacaoChamado"
+    OnConfirmar="ConfirmarAcaoChamado"
+    OnCancelar="FecharModalConfirmacaoChamado" />
+
+<ModalComentarChamado
+    Mostrar="@MostrarModalComentarChamado"
+    Titulo="Comentar Chamado"
+    TextoComentario="@ComentarioChamadoTexto"
+    IsSaving="@IsSavingComentarioChamado"
+    OnEnviar="EnviarComentarioChamado"
+    OnCancelar="FecharModalComentarChamado" />
+
 @code {
+
+    bool ModalConfirmacaoUsuarioAtivo = false;
+    string UsuarioIdParaExcluir = "";
+    string UsuarioNomeParaExcluir = "";
+
+    bool ModalConfirmacaoDepartamentoAtivo = false;
+    string DepartamentoIdParaExcluir = "";
+    string DepartamentoNomeParaExcluir = "";
+
+    // ================== ESTADO PARA MODAIS DE CHAMADOS ==================
+    ChamadoDTO? ChamadoSelecionado { get; set; }
+
+    bool MostrarModalConfirmacaoChamado = false;
+    string TipoAcaoChamado = ""; // "excluir", "fechar", "cancelar"
+    string TituloModalConfirmacaoChamado = "";
+    string MensagemModalConfirmacaoChamado = "";
+    string TextoBotaoConfirmacaoChamado = "";
+
+    bool MostrarModalComentarChamado = false;
+    string ComentarioChamadoTexto = "";
+    bool IsSavingComentarioChamado = false;
+
+    void AbrirModalAcaoChamado(ChamadoDTO chamado, string tipoAcao)
+    {
+        ChamadoSelecionado = chamado;
+        TipoAcaoChamado = tipoAcao;
+
+        switch (tipoAcao)
+        {
+            case "excluir":
+                TituloModalConfirmacaoChamado = "Excluir chamado";
+                MensagemModalConfirmacaoChamado = $"Deseja realmente excluir o chamado \"{chamado.Titulo}\"? Esta ação é irreversível.";
+                TextoBotaoConfirmacaoChamado = "Excluir";
+                break;
+            case "fechar":
+                TituloModalConfirmacaoChamado = "Fechar chamado";
+                MensagemModalConfirmacaoChamado = $"Deseja marcar o chamado \"{chamado.Titulo}\" como FECHADO?";
+                TextoBotaoConfirmacaoChamado = "Fechar";
+                break;
+            case "cancelar":
+                TituloModalConfirmacaoChamado = "Cancelar chamado";
+                MensagemModalConfirmacaoChamado = $"Deseja cancelar o chamado \"{chamado.Titulo}\"?";
+                TextoBotaoConfirmacaoChamado = "Cancelar chamado";
+                break;
+        }
+
+        MostrarModalConfirmacaoChamado = true;
+    }
+
+    Task FecharModalConfirmacaoChamado()
+    {
+        MostrarModalConfirmacaoChamado = false;
+        TipoAcaoChamado = "";
+        return Task.CompletedTask;
+    }
+
+    async Task ConfirmarAcaoChamado()
+    {
+        if (ChamadoSelecionado == null || string.IsNullOrEmpty(TipoAcaoChamado))
+        {
+            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            return;
+        }
+
+        try
+        {
+            HttpResponseMessage res;
+
+            if (TipoAcaoChamado == "excluir")
+            {
+                // DELETE /Chamados/{id}
+                res = await Http.DeleteAsync($"Chamados/{ChamadoSelecionado.Id}");
+            }
+            else if (TipoAcaoChamado == "fechar")
+            {
+                // PATCH /Chamados/{id}/fechar-chamado
+                res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/fechar-chamado", null);
+            }
+            else // cancelar
+            {
+                // PATCH /Chamados/{id}/cancelar
+                res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/cancelar", null);
+            }
+
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadChamados();
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                await JS.InvokeVoidAsync("alert", "Você não tem permissão para executar esta ação.");
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                await JS.InvokeVoidAsync("alert", "Operação não permitida (409 - integridade).");
+            }
+            else
+            {
+                var txt = await res.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {res.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {ex.Message}");
+        }
+        finally
+        {
+            await FecharModalConfirmacaoChamado();
+        }
+    }
+
+    void AbrirModalComentarChamado(ChamadoDTO chamado)
+    {
+        ChamadoSelecionado = chamado;
+        ComentarioChamadoTexto = "";
+        MostrarModalComentarChamado = true;
+    }
+
+    Task FecharModalComentarChamado()
+    {
+        MostrarModalComentarChamado = false;
+        ComentarioChamadoTexto = "";
+        return Task.CompletedTask;
+    }
+
+    async Task EnviarComentarioChamado(string texto)
+    {
+        if (ChamadoSelecionado == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            return;
+        }
+
+        IsSavingComentarioChamado = true;
+
+        try
+        {
+            var payload = new { texto };
+            var res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/comentar", JsonContent.Create(payload));
+
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadChamados();
+                await FecharModalComentarChamado();
+            }
+            else
+            {
+                var txt = await res.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+        }
+        finally
+        {
+            IsSavingComentarioChamado = false;
+        }
+    }
+
 
     int AbaSelecionada = 0;
 
@@ -522,82 +729,20 @@
         }
     }
 
-    // ============================== AÇÕES CHAMADOS ==============================
-    async Task AbrirComentarChamado(ChamadoDTO c)
-    {
-        try
-        {
-            var comentario = await JS.InvokeAsync<string>("prompt", "Digite seu comentário:");
-            if (!string.IsNullOrWhiteSpace(comentario))
-            {
-                var patchData = new { texto = comentario };
-                var res = await Http.PatchAsync($"Chamados/{c.Id}/comentar", JsonContent.Create(patchData));
-                if (res.IsSuccessStatusCode) await LoadChamados();
-                else await JS.InvokeVoidAsync("alert", $"Erro ao comentar: {res.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao comentar: {ex.Message}");
-        }
-    }
-
-    async Task FecharChamado(string id)
-    {
-        try
-        {
-            var res = await Http.PatchAsync($"Chamados/{id}/fechar-chamado", null);
-            if (res.IsSuccessStatusCode) await LoadChamados();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao fechar chamado: {res.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao fechar chamado: {ex.Message}");
-        }
-    }
-
-    async Task CancelarChamado(string id)
-    {
-        try
-        {
-            var res = await Http.PatchAsync($"Chamados/{id}/cancelar", null);
-            if (res.IsSuccessStatusCode) await LoadChamados();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {res.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {ex.Message}");
-        }
-    }
-
-    async Task ConfirmRemoverChamado(string id)
-    {
-        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este chamado? Esta ação é irreversível.");
-        if (ok) await RemoverChamado(id);
-    }
-
-    async Task RemoverChamado(string id)
-    {
-        try
-        {
-            var res = await Http.DeleteAsync($"Chamados/{id}");
-            if (res.IsSuccessStatusCode) await LoadChamados();
-            else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                await JS.InvokeVoidAsync("alert", "Você não tem permissão para remover este chamado.");
-            else
-                await JS.InvokeVoidAsync("alert", $"Erro ao remover chamado: {res.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao remover chamado: {ex.Message}");
-        }
-    }
-
     // ============================== CRUD GENÉRICOS ==============================
-    async Task ConfirmRemoverUsuario(string id)
+
+    // ==== EXCLUSÃO DE USUÁRIO COM MODAL ====
+    void ConfirmRemoverUsuario(string id, string nome)
     {
-        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este usuário?");
-        if (ok) await RemoverUsuario(id);
+        UsuarioIdParaExcluir = id;
+        UsuarioNomeParaExcluir = nome;
+        ModalConfirmacaoUsuarioAtivo = true;
+    }
+
+    async Task RemoverUsuarioConfirmado()
+    {
+        ModalConfirmacaoUsuarioAtivo = false;
+        await RemoverUsuario(UsuarioIdParaExcluir);
     }
 
     async Task RemoverUsuario(string id)
@@ -605,11 +750,18 @@
         try
         {
             var res = await Http.DeleteAsync($"Usuario/{id}");
-            if (res.IsSuccessStatusCode) await LoadUsuarios();
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadUsuarios();
+            }
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-                await JS.InvokeVoidAsync("alert", "Não é possível remover o usuário devido a integridade referencial.");
+            {
+                await JS.InvokeVoidAsync("alert", "Não é possível remover o usuário devido à integridade referencial (409).");
+            }
             else
+            {
                 await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {res.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
@@ -617,6 +769,7 @@
         }
     }
 
+    // Categoria continua usando confirm nativo (se quiser pode trocar pra modal depois)
     async Task ConfirmRemoverCategoria(string id)
     {
         var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta categoria?");
@@ -628,7 +781,8 @@
         try
         {
             var res = await Http.DeleteAsync($"Categoria/{id}");
-            if (res.IsSuccessStatusCode) await LoadCategorias();
+            if (res.IsSuccessStatusCode)
+                await LoadCategorias();
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 await JS.InvokeVoidAsync("alert", "Não é possível remover a categoria (integridade - 409).");
             else
@@ -640,10 +794,18 @@
         }
     }
 
-    async Task ConfirmRemoverDepartamento(string id)
+    // ==== EXCLUSÃO DE DEPARTAMENTO COM MODAL ====
+    void ConfirmRemoverDepartamento(string id, string nome)
     {
-        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este departamento?");
-        if (ok) await RemoverDepartamento(id);
+        DepartamentoIdParaExcluir = id;
+        DepartamentoNomeParaExcluir = nome;
+        ModalConfirmacaoDepartamentoAtivo = true;
+    }
+
+    async Task RemoverDepartamentoConfirmado()
+    {
+        ModalConfirmacaoDepartamentoAtivo = false;
+        await RemoverDepartamento(DepartamentoIdParaExcluir);
     }
 
     async Task RemoverDepartamento(string id)
@@ -651,11 +813,18 @@
         try
         {
             var res = await Http.DeleteAsync($"Departamento/{id}");
-            if (res.IsSuccessStatusCode) await LoadDepartamentos();
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadDepartamentos();
+            }
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-                await JS.InvokeVoidAsync("alert", "Não é possível remover o departamento (integridade - 409).");
+            {
+                await JS.InvokeVoidAsync("alert", "Não é possível remover o departamento (integridade referencial - 409).");
+            }
             else
+            {
                 await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {res.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
@@ -674,7 +843,8 @@
         try
         {
             var res = await Http.DeleteAsync($"Role/{id}");
-            if (res.IsSuccessStatusCode) await LoadRoles();
+            if (res.IsSuccessStatusCode)
+                await LoadRoles();
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 await JS.InvokeVoidAsync("alert", "Não é possível remover a role (integridade - 409).");
             else
@@ -691,13 +861,13 @@
     {
         IsCreatingUsuario = false;
         UsuarioModal = new UsuarioModalModel
-        {
-            Id = u.Id,
-            Nome = u.Nome,
-            Email = u.Email,
-            Tipo = u.Tipo,
-            Ativo = u.Ativo
-        };
+            {
+                Id = u.Id,
+                Nome = u.Nome,
+                Email = u.Email,
+                Tipo = u.Tipo,
+                Ativo = u.Ativo
+            };
         ModalUsuarioAtivo = true;
     }
 

@@ -16,7 +16,7 @@ namespace Front
             builder.Services.AddSingleton<WeatherForecastService>();
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/") 
+                BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/")
             });
 
             var app = builder.Build();

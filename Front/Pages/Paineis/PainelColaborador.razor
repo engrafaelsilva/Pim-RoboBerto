@@ -30,7 +30,7 @@
         @if (AbaSelecionada == 0)
         {
             <section class="card">
-                <h1>Seja bem-vindo(a)!</h1>
+                <h1>Seja bem-vindo(a), @UsuarioNome!</h1>
                 <p>Aqui você poderá abrir um chamado, acompanhar o status do chamado e conversar com um técnico.</p>
             </section>
         }
@@ -120,24 +120,25 @@
                                 
                                 
                                 <div class="ticket-info">
+                                    <p class="descricao-label">Título do chamado:</p>
                                     <h4 class="ticket-title">@c.Titulo</h4>
-                                    <p class="descricao-label">Descrição:</p>
+                                    <p class="descricao-label">Descrição do chamado:</p>
                                     <p class="ticket-description">@c.Descricao</p>
-                                    <p class="ia-suggestion-label">Sugestão da IA:</p>
-                                    <p class="ticket-ai-suggestion">Aqui vai a sugestão da IA para resolver o chamado...</p>
+                                    <p class="ia-suggestion-label">Comentário:</p>
+                                    <p class="ticket-ai-suggestion">Aqui vai o comentário do chamado...</p>
                                 </div>
                                 
                                 <div class="ticket-meta">
-                                    <span class="meta-item-data">Aberto: <strong>@c.DataAbertura.ToString("g")</strong></span>
-                                    <span class="meta-item-data">Prioridade: <strong>@c.Prioridade</strong></span>
-                                    <span class="status-indicator">@c.Status</span>
+                                    <span class="meta-item-data">Data de abertura: <br /> <strong>@c.DataAbertura.ToString("g")</strong></span>
+                                    <span class="meta-item-data">Prioridade: <br /> <strong>@c.Prioridade</strong></span>
+                                    <span class="meta-item-data">Status do chamado: <br/> <strong>@c.Status</strong></span>
                                 </div>
 
                                 <div class="ticket-actions">
                                     <button class="btn btn-details" @onclick="() => VerDetalhes(c.Id)">
                                         <i class="fas fa-eye"></i> Detalhes
                                     </button>
-                                    <button class="btn btn-comment" @onclick="() => AbrirChatBootPara(c.Id)">
+                                    <button class="btn btn-comment" @onclick="() => AbrirModalComentario(c.Id)">
                                         <i class="fas fa-comment"></i> Comentar
                                     </button>
 
@@ -229,10 +230,77 @@
         }
 
         <ModalConfirmacaoIA @ref="ModalConfirmacao" OnConfirmacao="ProcessarConfirmacaoIA" OnIrParaChat="IrParaChatDoModal" />
+        <ModalComentar @ref="ModalComentarRef"
+                       OnEnviar="EnviarComentarioModal"
+                       OnFechar="FecharModalComentario" />
     </main>
 </div>
 
 @code {
+
+    // Saldações ao usuário novo 
+    string UsuarioNome = "";
+
+    // Modal para comentar no chamado
+    ModalComentar? ModalComentarRef;
+    Guid ChamadoIdSelecionadoParaComentario;
+
+    void AbrirModalComentario(Guid id)
+    {
+        ChamadoIdSelecionadoParaComentario = id;
+        ModalComentarRef?.Show();
+    }
+
+    void FecharModalComentario()
+    {
+        ChamadoIdSelecionadoParaComentario = Guid.Empty;
+    }
+
+    async Task EnviarComentarioModal(string texto)
+    {
+        if (ChamadoIdSelecionadoParaComentario == Guid.Empty)
+        {
+            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado para comentar.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(texto) || texto.Trim().Length < 3)
+        {
+            await JS.InvokeVoidAsync("alert", "Digite um comentário com pelo menos 3 caracteres.");
+            return;
+        }
+
+        if (!await InjetarToken()) return;
+
+        try
+        {
+            var payload = new { texto };
+            var resp = await Http.PatchAsJsonAsync($"Chamados/{ChamadoIdSelecionadoParaComentario}/comentar", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Comentário enviado com sucesso.");
+                ModalComentarRef?.Hide();
+
+                // Se os detalhes desse chamado estiverem abertos, recarrega as mensagens
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == ChamadoIdSelecionadoParaComentario)
+                {
+                    await VerDetalhes(ChamadoIdSelecionadoParaComentario);
+                }
+
+                // (Opcional) Recarregar lista de chamados
+                // await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {resp.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+        }
+    }
 
     // ======================= MÉTODO NOVO — ESSENCIAL =======================
     async Task<bool> InjetarToken()
@@ -315,7 +383,46 @@
 
     ModalConfirmacaoIA? ModalConfirmacao;
 
-    protected override async Task OnInitializedAsync() { }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // pega o valor salvo
+            var nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "usuarioNome") ?? "";
+
+            // se vier vazio, tenta pegar o e-mail
+            if (string.IsNullOrWhiteSpace(nomeBruto))
+                nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "email") ?? "";
+
+            // processa para transformar em "Ricardo"
+            UsuarioNome = ExtrairPrimeiroNome(nomeBruto);
+        }
+        catch
+        {
+            UsuarioNome = "";
+        }
+    }
+
+    private string ExtrairPrimeiroNome(string valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+            return "";
+
+        // Caso seja e-mail → pega parte antes do @
+        if (valor.Contains("@"))
+            valor = valor.Split('@')[0];
+
+        // Caso seja nome completo → pega primeira palavra
+        var partes = valor.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var primeiro = partes[0];
+
+        // Capitaliza (ricardo → Ricardo)
+        if (primeiro.Length == 1)
+            return primeiro.ToUpper();
+
+        return char.ToUpper(primeiro[0]) + primeiro.Substring(1).ToLower();
+    }
     
     // Método auxiliar para Abrir Novo Chamado (usado no botão da lista vazia)
     void AbrirNovoChamado()

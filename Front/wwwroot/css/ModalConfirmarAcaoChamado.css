@@ -1,0 +1,81 @@
+﻿.adm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.adm-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: adm-modal-fade-in 0.2s ease-out;
+}
+
+.adm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+    .adm-modal-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+.adm-modal-close {
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.adm-modal-body {
+    margin: 12px 0;
+}
+
+.adm-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.adm-btn-primary {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    background: #dc3545;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.adm-btn-secondary {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #f8f9fa;
+    color: #333;
+    cursor: pointer;
+}
+
+@keyframes adm-modal-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

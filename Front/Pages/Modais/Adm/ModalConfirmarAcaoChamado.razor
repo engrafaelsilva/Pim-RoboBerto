@@ -1,0 +1,46 @@
+﻿@namespace Front.Pages.Modais.Admin
+
+@if (Mostrar)
+{
+    <div class="adm-modal-backdrop">
+        <div class="adm-modal confirm-modal">
+            <h5 class="adm-modal-title">@Titulo</h5>
+
+            <div class="adm-modal-body">
+                <p>@Mensagem</p>
+            </div>
+
+            <div class="adm-modal-footer">
+                <button class="btn btn-secondary" @onclick="HandleCancelar">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-danger" @onclick="HandleConfirmar">
+                    @TextoBotaoConfirmar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Mostrar { get; set; }
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string Mensagem { get; set; } = "";
+    [Parameter] public string TextoBotaoConfirmar { get; set; } = "Confirmar";
+
+    [Parameter] public EventCallback OnConfirmar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private async Task HandleConfirmar()
+    {
+        if (OnConfirmar.HasDelegate)
+            await OnConfirmar.InvokeAsync();
+    }
+
+    private async Task HandleCancelar()
+    {
+        if (OnCancelar.HasDelegate)
+            await OnCancelar.InvokeAsync();
+    }
+}

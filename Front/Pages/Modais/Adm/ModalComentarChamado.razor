@@ -1,0 +1,65 @@
+﻿@namespace Front.Pages.Modais.Admin
+
+@if (Mostrar)
+{
+    <div class="adm-modal-backdrop">
+        <div class="adm-modal comentario-modal">
+            <h5 class="adm-modal-title">@Titulo</h5>
+
+            <div class="adm-modal-body">
+                <label class="form-label">Comentário</label>
+                <textarea class="form-control"
+                          rows="4"
+                          @bind="ComentarioLocal">
+                    </textarea>
+            </div>
+
+            <div class="adm-modal-footer">
+                <button class="btn btn-secondary"
+                        @onclick="HandleCancelar"
+                        disabled="@IsSaving">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-primary"
+                        @onclick="HandleEnviar"
+                        disabled="@IsSaving || string.IsNullOrWhiteSpace(ComentarioLocal)">
+                    @(IsSaving ? "Enviando..." : "Enviar")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Mostrar { get; set; }
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string TextoComentario { get; set; } = "";
+    [Parameter] public bool IsSaving { get; set; }
+
+    [Parameter] public EventCallback<string> OnEnviar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    // Estado interno do textarea
+    private string ComentarioLocal { get; set; } = "";
+
+    protected override void OnParametersSet()
+    {
+        // Sempre que o modal abrir, sincroniza texto inicial
+        if (Mostrar && string.IsNullOrEmpty(ComentarioLocal))
+            ComentarioLocal = TextoComentario ?? "";
+    }
+
+    private async Task HandleEnviar()
+    {
+        if (OnEnviar.HasDelegate)
+            await OnEnviar.InvokeAsync(ComentarioLocal);
+    }
+
+    private async Task HandleCancelar()
+    {
+        ComentarioLocal = "";
+        if (OnCancelar.HasDelegate)
+            await OnCancelar.InvokeAsync();
+    }
+}
