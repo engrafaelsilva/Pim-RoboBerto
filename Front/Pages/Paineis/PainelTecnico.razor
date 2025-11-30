@@ -2,78 +2,258 @@
 
 @using System.Net.Http.Json
 @using System.Text.Json
+@using System.Threading
+@using IA_RoboBerto.Models.Enums
+@using Front.Pages.Modais.Tecnico
 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject HttpClient Http
 
+@implements IDisposable
+
 <PageTitle>Painel do Técnico</PageTitle>
 
 <link rel="stylesheet" href="css/PainelTecnico.css" />
+<link rel="stylesheet" href="css/ModalTecnico.css" />
 
 <div class="layout">
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <h2 class="logo">Painel do Técnico</h2>
+        <div class="logo-area">
+            <div class="logo-icon">🛠️</div>
+            <div class="logo-text">
+                <span class="logo-title">Painel do Técnico</span>
+                <span class="logo-sub">@UsuarioAtual?.Nome</span>
+            </div>
+        </div>
 
         <nav class="menu">
-            <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
-            <button class="menu-item" @onclick="() => AbaSelecionada = 1">Chamados</button>
-            <button class="menu-item" @onclick="() => AbaSelecionada = 2">Chat com Colaborador</button>
-            <button class="menu-item logout" @onclick="Sair">Sair</button>
+            <button class="menu-item @(AbaSelecionada == 0 ? "active" : "")"
+                    @onclick="() => AbaSelecionada = 0">
+                <span>Home</span>
+            </button>
+
+            <button class="menu-item @(AbaSelecionada == 1 ? "active" : "")"
+                    @onclick="() => AbaSelecionada = 1">
+                <span>Chamados</span>
+                @if (CountPendentes > 0)
+                {
+                    <span class="menu-pill">@CountPendentes</span>
+                }
+            </button>
+
+            <button class="menu-item @(AbaSelecionada == 2 ? "active" : "")"
+                    @onclick="() => AbaSelecionada = 2">
+                <span>Chat com Colaborador</span>
+            </button>
+
+            <button class="menu-item logout" @onclick="Sair">
+                <span>Sair</span>
+            </button>
         </nav>
     </aside>
 
     <!-- Conteúdo -->
     <main class="conteudo">
+
+        @* ================== HOME ================== *@
         @if (AbaSelecionada == 0)
         {
-            <section class="card">
-                <h1>Seja bem-vindo(a)!</h1>
-                <p>Aqui você poderá gerenciar chamados, assumir, comentar, fechar e conversar com colaboradores.</p>
+            <section class="card home-card">
+                <div class="home-header">
+                    <div>
+                        <h1>👨‍🔧 Olá, @UsuarioAtual?.Nome!</h1>
+                        <p class="home-subtitle">
+                            Aqui você acompanha seus chamados, assume pendências, comenta, fecha e interage com os colaboradores.
+                        </p>
+                    </div>
+
+                    <button class="btn-refresh" @onclick="LoadChamados">
+                        🔄 Atualizar dados
+                    </button>
+                </div>
+
+                <div class="home-metrics">
+                    <div class="metric-card metric-pendentes">
+                        <div class="metric-top">
+                            <span class="metric-icon">⏳</span>
+                            <span class="metric-label">Pendentes</span>
+                        </div>
+                        <span class="metric-value">@CountPendentes</span>
+                        <span class="metric-hint">Chamados aguardando técnico responsável.</span>
+                    </div>
+
+                    <div class="metric-card metric-atendimento">
+                        <div class="metric-top">
+                            <span class="metric-icon">🧑‍🔧</span>
+                            <span class="metric-label">Meus chamados</span>
+                        </div>
+                        <span class="metric-value">@CountMeus</span>
+                        <span class="metric-hint">Chamados em atendimento sob sua responsabilidade.</span>
+                    </div>
+
+                    <div class="metric-card metric-expirados">
+                        <div class="metric-top">
+                            <span class="metric-icon">⚠️</span>
+                            <span class="metric-label">Expirados</span>
+                        </div>
+                        <span class="metric-value">@CountExpirados</span>
+                        <span class="metric-hint">Chamados com SLA vencido.</span>
+                    </div>
+                </div>
+
+                <div class="home-bottom">
+                    <div class="home-tip">
+                        <span class="tip-icon">💡</span>
+                        <div>
+                            <strong>Dica rápida:</strong>
+                            <p>Use a aba <b>Chamados</b> para assumir novas demandas e registrar comentários diretamente na linha do tempo do chamado.</p>
+                        </div>
+                    </div>
+                </div>
             </section>
         }
 
+        @* ================== CHAMADOS ================== *@
         @if (AbaSelecionada == 1)
         {
-            <section class="card">
-                <h3>Chamados</h3>
+            <section class="card chamados-card">
+                <div class="chamados-header">
+                    <div>
+                        <h3>Chamados</h3>
+                        <p class="subtitle">
+                            Filtre pelos status nas abas abaixo e interaja com os chamados: assumir, comentar, fechar, cancelar ou marcar sugestão resolvida.
+                        </p>
+                    </div>
+
+                    <button class="btn-refresh" @onclick="LoadChamados">
+                        🔄 Recarregar
+                    </button>
+                </div>
 
                 <div class="tabs">
-                    <button class="tab @(ActiveTab==Tab.Novo?"active":"")" @onclick="() => SelectTab(Tab.Novo)">Novo (@CountNovo)</button>
-                    <button class="tab @(ActiveTab==Tab.Pendentes?"active":"")" @onclick="() => SelectTab(Tab.Pendentes)">Pendentes (@CountPendentes)</button>
-                    <button class="tab @(ActiveTab==Tab.EmAtendimento?"active":"")" @onclick="() => SelectTab(Tab.EmAtendimento)">Em Atendimento (@CountEmAtendimento)</button>
-                    <button class="tab @(ActiveTab==Tab.Expirados?"active":"")" @onclick="() => SelectTab(Tab.Expirados)">Expirados (@CountExpirados)</button>
+                    <button class="tab @(ActiveTab == Tab.Pendentes ? "active" : "")"
+                            @onclick="() => SelectTab(Tab.Pendentes)">
+                        Pendentes (@CountPendentes)
+                    </button>
+
+                    <button class="tab @(ActiveTab == Tab.Meus ? "active" : "")"
+                            @onclick="() => SelectTab(Tab.Meus)">
+                        Meus chamados (@CountMeus)
+                    </button>
+
+                    <button class="tab @(ActiveTab == Tab.Expirados ? "active" : "")"
+                            @onclick="() => SelectTab(Tab.Expirados)">
+                        Expirados (@CountExpirados)
+                    </button>
                 </div>
 
                 <div class="content">
                     @if (ListaCarregando)
                     {
-                        <p>Carregando chamados...</p>
+                        <div class="loading">
+                            <span class="spinner"></span>
+                            <span>Carregando chamados...</span>
+                        </div>
                     }
                     else
                     {
                         var toShow = ChamadosToShow();
                         if (!toShow.Any())
                         {
-                            <p>Nenhum chamado nesta aba.</p>
+                            <p class="empty-state">
+                                Nenhum chamado encontrado nesta aba.
+                            </p>
                         }
                         else
                         {
-                            <div class="lista-chamados">
+                            <div class="lista-chamados-grid">
                                 @foreach (var c in toShow)
                                 {
-                                    <div class="chamado-item">
-                                        <h4>@c.Titulo</h4>
-                                        <p>@c.Pergunta</p>
-                                        <p class="meta">Técnico: @(string.IsNullOrEmpty(c.Tecnico) ? "Sem técnico" : c.Tecnico)</p>
+                                    var ultimaMensagem = c.Mensagens?
+                                    .OrderByDescending(m => m.DataHoraMensagem)
+                                    .FirstOrDefault();
+
+                                    <div class="chamado-card @(EhExpirado(c) ? "chamado-expirado" : "")">
+                                        <div class="chamado-card-header">
+                                            <div class="chamado-card-header-left">
+                                                <span class="chamado-id">#@c.Id</span>
+                                                @if (!string.IsNullOrWhiteSpace(c.Categoria?.Nome))
+                                                {
+                                                    <span class="tag-categoria">@c.Categoria.Nome</span>
+                                                }
+                                            </div>
+
+                                            <div class="chamado-card-header-right">
+                                                <span class="badge-prioridade @GetPrioridadeCssClass(c.Prioridade)">
+                                                    @GetPrioridadeTexto(c.Prioridade)
+                                                </span>
+
+                                                <span class="badge-status @GetStatusCssClass(c)">
+                                                    @GetStatusVisual(c)
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <h4 class="chamado-titulo">@c.Titulo</h4>
+
+                                        <p class="chamado-descricao">
+                                            @(!string.IsNullOrWhiteSpace(c.Descricao) ? c.Descricao : "(Sem descrição)")
+                                        </p>
+
+                                        <div class="chamado-meta">
+                                            <span>
+                                                Última interação:
+                                                @(ultimaMensagem != null
+                                                    ? ultimaMensagem.DataHoraMensagem.ToString("dd/MM/yyyy HH:mm")
+                                                    : "-")
+                                            </span>
+                                            <span>
+                                                Técnico:
+                                                @(string.IsNullOrWhiteSpace(c.Tecnico?.Nome)
+                                                    ? "Sem técnico"
+                                                    : c.Tecnico.Nome)
+                                            </span>
+                                        </div>
+
                                         <div class="card-actions">
-                                            @if (string.IsNullOrEmpty(c.Tecnico))
+                                            @* Assumir: só se não tiver técnico e não estiver fechado/cancelado *@
+                                            @if ((c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id)) &&
+                                           c.Status != (int)EStatusChamado.FECHADO &&
+                                           c.Status != (int)EStatusChamado.CANCELADO)
                                             {
-                                                <button class="btn-primary" @onclick="() => AssumirChamado(c)">Assumir</button>
+                                                <button class="btn-primary"
+                                                        @onclick='() => AbrirModalAcaoChamado(c, "assumir")'>
+                                                    Assumir
+                                                </button>
                                             }
-                                            <button class="btn-outline" @onclick="() => AbrirDetalhe(c)">Abrir</button>
+
+                                            <button class="btn-outline"
+                                                    @onclick="() => AbrirModalComentarChamado(c)">
+                                                Comentar
+                                            </button>
+
+                                            @* Fechar / Cancelar apenas se não estiver fechado/cancelado *@
+                                            @if (c.Status != (int)EStatusChamado.FECHADO &&
+                                           c.Status != (int)EStatusChamado.CANCELADO)
+                                            {
+                                                <button class="btn-warning"
+                                                        @onclick='() => AbrirModalAcaoChamado(c, "fechar")'>
+                                                    Fechar
+                                                </button>
+
+                                                <button class="btn-secondary"
+                                                        @onclick='() => AbrirModalAcaoChamado(c, "cancelar")'>
+                                                    Cancelar
+                                                </button>
+                                            }
+
+                                            <button class="btn-outline btn-outline-soft"
+                                                    @onclick='() => AbrirModalAcaoChamado(c, "sugestao")'>
+                                                Sugestão resolvida
+                                            </button>
                                         </div>
                                     </div>
                                 }
@@ -84,10 +264,18 @@
             </section>
         }
 
+        @* ================== CHAT ================== *@
         @if (AbaSelecionada == 2)
         {
-            <section class="card">
-                <h3>Chat com Colaborador</h3>
+            <section class="card chat-card">
+                <div class="chat-header">
+                    <div>
+                        <h3>Chat com Colaborador</h3>
+                        <p class="subtitle">
+                            Canal rápido para alinhamento com o colaborador sobre o chamado em atendimento.
+                        </p>
+                    </div>
+                </div>
 
                 <div class="chat-window" id="chatWindow">
                     @foreach (var msg in Mensagens)
@@ -99,88 +287,175 @@
                     }
                 </div>
 
-                <div class="chat-input mt-3 d-flex gap-2">
-                    <input class="form-control" @bind="NovaMensagem" placeholder="Digite sua mensagem..." />
-                    <button class="btn btn-primary" @onclick="EnviarMensagem">Enviar</button>
+                <div class="chat-input-row">
+                    <input class="chat-input" @bind="NovaMensagem" placeholder="Digite sua mensagem..." />
+                    <button class="chat-send-btn" @onclick="EnviarMensagem">Enviar</button>
                 </div>
             </section>
         }
     </main>
 </div>
 
+<!-- MODAIS (componentes separados) -->
+<ModalConfirmarAcaoChamadoTecnico Mostrar="@MostrarModalConfirmacaoChamado"
+                                  Titulo="@TituloModalConfirmacaoChamado"
+                                  Mensagem="@MensagemModalConfirmacaoChamado"
+                                  TextoBotaoConfirmar="@TextoBotaoConfirmacaoChamado"
+                                  OnConfirmar="ConfirmarAcaoChamado"
+                                  OnCancelar="FecharModalConfirmacaoChamado" />
+
+<ModalComentarChamadoTecnico Mostrar="@MostrarModalComentarChamado"
+                             Titulo="Comentar Chamado"
+                             Comentario="@ComentarioChamadoTexto"
+                             IsSaving="@IsSavingComentarioChamado"
+                             OnEnviar="EnviarComentarioChamado"
+                             OnCancelar="FecharModalComentarChamado" />
+
 @code {
 
-    // =================== ESTADOS ===================
+    // =================== ESTADOS GERAIS ===================
     int AbaSelecionada = 0;
 
-    List<ChamadoDTO> Chamados = new();
+    enum Tab { Pendentes, Meus, Expirados }
+    Tab ActiveTab = Tab.Pendentes;
+
     bool ListaCarregando = false;
 
-    enum Tab { Novo, Pendentes, EmAtendimento, Expirados }
-    Tab ActiveTab = Tab.Novo;
+    // Chamados vindos da API
+    List<ChamadoDTO> ChamadosPendentes { get; set; } = new();
+    List<ChamadoDTO> ChamadosGerais { get; set; } = new();
+    List<ChamadoDTO> ChamadosExpirados { get; set; } = new();
 
-    int CountNovo => Chamados.Count(x => x.Novo && !x.Fechado && !x.Cancelado);
-    int CountPendentes => Chamados.Count(x => string.IsNullOrEmpty(x.Tecnico) && !x.Cancelado && !x.Fechado);
-    int CountEmAtendimento => Chamados.Count(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado);
-    int CountExpirados => Chamados.Count(x => x.Expirado && !x.Fechado && !x.Cancelado);
+    // Usuário atual (técnico logado)
+    UsuarioAtualDTO? UsuarioAtual { get; set; }
 
-    bool MenuAberto = false;
+    // Meus chamados (derivado da lista geral)
+    List<ChamadoDTO> ChamadosMeus =>
+        UsuarioAtual is null
+            ? new List<ChamadoDTO>()
+            : ChamadosGerais
+                .Where(c => c.Tecnico != null &&
+                            c.Tecnico.Id == UsuarioAtual.Id &&
+                            c.Status != (int)EStatusChamado.FECHADO &&
+                            c.Status != (int)EStatusChamado.CANCELADO)
+                .ToList();
 
-    // =================== MODELOS ===================
+    int CountPendentes => ChamadosPendentes.Count;
+    int CountMeus => ChamadosMeus.Count;
+    int CountExpirados => ChamadosExpirados.Count;
+
+    // =================== MODAIS DE CHAMADOS ===================
+    ChamadoDTO? ChamadoSelecionado { get; set; }
+
+    bool MostrarModalConfirmacaoChamado = false;
+    string TipoAcaoChamado = ""; // "assumir" | "fechar" | "cancelar" | "sugestao"
+    string TituloModalConfirmacaoChamado = "";
+    string MensagemModalConfirmacaoChamado = "";
+    string TextoBotaoConfirmacaoChamado = "";
+
+    bool MostrarModalComentarChamado = false;
+    string ComentarioChamadoTexto = "";
+    bool IsSavingComentarioChamado = false;
+
+    // =================== MODELOS DTO ===================
     public class ChamadoDTO
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; } = "";
         public string Titulo { get; set; } = "";
-        public string Pergunta { get; set; } = "";
-        public string Resposta { get; set; } = "";
-        public DateTime Data { get; set; } = DateTime.Now;
-        public string Tecnico { get; set; } = "";
-        public bool Fechado { get; set; } = false;
-        public bool Cancelado { get; set; } = false;
-        public bool Expirado { get; set; } = false;
-        public bool Novo { get; set; } = true;
-        public List<CommentDTO> Comments { get; set; } = new();
+        public string Descricao { get; set; } = "";
+        public int Prioridade { get; set; }
+        public int Status { get; set; }
+        public Autor Autor { get; set; } = new();
+        public TecnicoDTO Tecnico { get; set; } = new();
+        public CategoriaMini Categoria { get; set; } = new();
+        public List<MensagemDTO> Mensagens { get; set; } = new();
     }
 
-    public class CommentDTO
+    public class Autor { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+    public class TecnicoDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+    public class CategoriaMini { public string Nome { get; set; } = ""; }
+
+    public class MensagemDTO
     {
-        public string Author { get; set; } = "Técnico";
-        public string Text { get; set; } = "";
-        public DateTime When { get; set; } = DateTime.Now;
+        public string Id { get; set; } = "";
+        public Autor Autor { get; set; } = new();
+        public DateTime DataHoraMensagem { get; set; }
+        public string Texto { get; set; } = "";
+    }
+
+    public class UsuarioAtualDTO
+    {
+        public string Id { get; set; } = "";
+        public string Nome { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Tipo { get; set; } = "";
     }
 
     // =================== CHAT ===================
-    public class Mensagem
+    public class MensagemChat
     {
         public string Remetente { get; set; } = "usuario"; // "tecnico" ou "colaborador"
         public string Texto { get; set; } = "";
     }
 
-    List<Mensagem> Mensagens = new();
+    List<MensagemChat> Mensagens = new();
     string NovaMensagem = "";
-    PeriodicTimer timer;
+    PeriodicTimer? timer;
 
-    // =================== CICLO ===================
+    // =================== CICLO DE VIDA ===================
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            await InjetarToken();
+            await LoadUsuarioAtual();
             await LoadChamados();
             await InicializarChat();
             StartTimer();
         }
     }
 
-    // =================== MÉTODOS ===================
-    void SelectTab(Tab t) => ActiveTab = t;
-    IEnumerable<ChamadoDTO> ChamadosToShow() => ActiveTab switch
+    async Task InjetarToken()
     {
-        Tab.Novo => Chamados.Where(x => x.Novo && !x.Fechado && !x.Cancelado).OrderByDescending(x => x.Data),
-        Tab.Pendentes => Chamados.Where(x => string.IsNullOrEmpty(x.Tecnico) && !x.Cancelado && !x.Fechado).OrderByDescending(x => x.Data),
-        Tab.EmAtendimento => Chamados.Where(x => !string.IsNullOrEmpty(x.Tecnico) && !x.Fechado && !x.Cancelado).OrderByDescending(x => x.Data),
-        Tab.Expirados => Chamados.Where(x => x.Expirado && !x.Fechado && !x.Cancelado).OrderByDescending(x => x.Data),
-        _ => Chamados
-    };
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                Nav.NavigateTo("/login", true);
+                return;
+            }
+
+            if (!Http.DefaultRequestHeaders.Contains("Authorization"))
+                Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        }
+        catch
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
+
+    async Task LoadUsuarioAtual()
+    {
+        try
+        {
+            // GET /Usuario/eu
+            var res = await Http.GetAsync("Usuario/eu");
+            if (res.IsSuccessStatusCode)
+            {
+                UsuarioAtual = await res.Content.ReadFromJsonAsync<UsuarioAtualDTO>();
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Nav.NavigateTo("/login", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao carregar usuário atual: {ex.Message}");
+        }
+    }
 
     async Task LoadChamados()
     {
@@ -189,14 +464,31 @@
 
         try
         {
-            var res = await Http.GetAsync("Chamados/pendentes-tecnico");
-            if (res.IsSuccessStatusCode)
+            // LISTA GERAL: GET /Chamados
+            var resGeral = await Http.GetAsync("Chamados?paginaAtual=0&tamanho=900");
+            if (resGeral.IsSuccessStatusCode)
             {
-                var list = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>();
-                if (list != null) Chamados = list;
+                ChamadosGerais = await resGeral.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+            }
+
+            // PENDENTES TÉCNICO: GET /Chamados/pendentes-tecnico
+            var resPend = await Http.GetAsync("Chamados/pendentes-tecnico");
+            if (resPend.IsSuccessStatusCode)
+            {
+                ChamadosPendentes = await resPend.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+            }
+
+            // EXPIRADOS: GET /Chamados/expirados
+            var resExp = await Http.GetAsync("Chamados/expirados");
+            if (resExp.IsSuccessStatusCode)
+            {
+                ChamadosExpirados = await resExp.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao carregar chamados: {ex.Message}");
+        }
         finally
         {
             ListaCarregando = false;
@@ -204,28 +496,189 @@
         }
     }
 
-    async Task AssumirChamado(ChamadoDTO c)
+    // =================== TABS ===================
+    void SelectTab(Tab t) => ActiveTab = t;
+
+    IEnumerable<ChamadoDTO> ChamadosToShow() => ActiveTab switch
+    {
+        Tab.Pendentes => ChamadosPendentes.OrderByDescending(x => x.Prioridade),
+        Tab.Meus => ChamadosMeus.OrderByDescending(x => x.Prioridade),
+        Tab.Expirados => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
+        _ => Enumerable.Empty<ChamadoDTO>()
+    };
+
+    // =================== AÇÕES CHAMADOS (MODAIS) ===================
+    void AbrirModalAcaoChamado(ChamadoDTO chamado, string tipoAcao)
+    {
+        ChamadoSelecionado = chamado;
+        TipoAcaoChamado = tipoAcao;
+
+        switch (tipoAcao)
+        {
+            case "assumir":
+                TituloModalConfirmacaoChamado = "Assumir chamado";
+                MensagemModalConfirmacaoChamado =
+                    $"Deseja assumir o chamado \"{chamado.Titulo}\"?";
+                TextoBotaoConfirmacaoChamado = "Assumir";
+                break;
+
+            case "fechar":
+                TituloModalConfirmacaoChamado = "Fechar chamado";
+                MensagemModalConfirmacaoChamado =
+                    $"Deseja marcar o chamado \"{chamado.Titulo}\" como FECHADO?";
+                TextoBotaoConfirmacaoChamado = "Fechar";
+                break;
+
+            case "cancelar":
+                TituloModalConfirmacaoChamado = "Cancelar chamado";
+                MensagemModalConfirmacaoChamado =
+                    $"Deseja cancelar o chamado \"{chamado.Titulo}\"?";
+                TextoBotaoConfirmacaoChamado = "Cancelar";
+                break;
+
+            case "sugestao":
+                TituloModalConfirmacaoChamado = "Marcar sugestão resolvida";
+                MensagemModalConfirmacaoChamado =
+                    $"Deseja alterar o status de 'resolveu sugestão' do chamado \"{chamado.Titulo}\"?";
+                TextoBotaoConfirmacaoChamado = "Confirmar";
+                break;
+        }
+
+        MostrarModalConfirmacaoChamado = true;
+    }
+
+    void FecharModalConfirmacaoChamado()
+    {
+        MostrarModalConfirmacaoChamado = false;
+        TipoAcaoChamado = "";
+    }
+
+    async Task ConfirmarAcaoChamado()
+    {
+        if (ChamadoSelecionado == null || string.IsNullOrEmpty(TipoAcaoChamado))
+        {
+            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            return;
+        }
+
+        try
+        {
+            HttpResponseMessage res;
+
+            switch (TipoAcaoChamado)
+            {
+                case "assumir":
+                    // PATCH /Chamados/{id}/acatar-chamado
+                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/acatar-chamado", null);
+                    break;
+
+                case "fechar":
+                    // PATCH /Chamados/{id}/fechar-chamado
+                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/fechar-chamado", null);
+                    break;
+
+                case "cancelar":
+                    // PATCH /Chamados/{id}/cancelar
+                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/cancelar", null);
+                    break;
+
+                case "sugestao":
+                    // PATCH /Chamados/{id}/alterar-resolveu-sugestao
+                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/alterar-resolveu-sugestao", null);
+                    break;
+
+                default:
+                    await JS.InvokeVoidAsync("alert", "Ação inválida.");
+                    return;
+            }
+
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadChamados();
+            }
+            else
+            {
+                var txt = await res.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {res.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {ex.Message}");
+        }
+        finally
+        {
+            FecharModalConfirmacaoChamado();
+        }
+    }
+
+    void AbrirModalComentarChamado(ChamadoDTO chamado)
+    {
+        ChamadoSelecionado = chamado;
+        ComentarioChamadoTexto = "";
+        MostrarModalComentarChamado = true;
+    }
+
+    void FecharModalComentarChamado()
+    {
+        MostrarModalComentarChamado = false;
+        ComentarioChamadoTexto = "";
+    }
+
+    async Task EnviarComentarioChamado(string texto)
+    {
+        if (ChamadoSelecionado == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            await JS.InvokeVoidAsync("alert", "Digite um comentário antes de enviar.");
+            return;
+        }
+
+        IsSavingComentarioChamado = true;
+
+        try
+        {
+            // PATCH /Chamados/{id}/comentar
+            var payload = new { texto };
+            var res = await Http.PatchAsync(
+                $"Chamados/{ChamadoSelecionado.Id}/comentar",
+                JsonContent.Create(payload));
+
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadChamados();
+                FecharModalComentarChamado();
+            }
+            else
+            {
+                var txt = await res.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+        }
+        finally
+        {
+            IsSavingComentarioChamado = false;
+        }
+    }
+
+    // =================== SAIR ===================
+    async Task Sair()
     {
         try
         {
-            var res = await Http.PatchAsync($"Chamados/{c.Id}/acatar-chamado", null);
-            if (res.IsSuccessStatusCode)
-            {
-                c.Tecnico = "Você";
-                StateHasChanged();
-            }
+            await JS.InvokeVoidAsync("localStorage.removeItem", "token");
         }
         catch { }
-    }
 
-    void AbrirDetalhe(ChamadoDTO c)
-    {
-        // Aqui você pode implementar modal ou seção expandida de detalhes
-    }
-
-    async Task Sair()
-    {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "chamados_tecnico");
         Nav.NavigateTo("/login", true);
     }
 
@@ -238,7 +691,7 @@
         try
         {
             if (!string.IsNullOrEmpty(json))
-                Mensagens = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+                Mensagens = JsonSerializer.Deserialize<List<MensagemChat>>(json) ?? new();
         }
         catch
         {
@@ -248,7 +701,7 @@
 
         if (Mensagens.Count == 0 && !string.IsNullOrEmpty(pergunta))
         {
-            Mensagens.Add(new Mensagem
+            Mensagens.Add(new MensagemChat
                 {
                     Remetente = "colaborador",
                     Texto = pergunta
@@ -261,7 +714,7 @@
     {
         if (string.IsNullOrWhiteSpace(NovaMensagem)) return;
 
-        Mensagens.Add(new Mensagem
+        Mensagens.Add(new MensagemChat
             {
                 Remetente = "tecnico",
                 Texto = NovaMensagem
@@ -283,7 +736,7 @@
         timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         _ = Task.Run(async () =>
         {
-            while (await timer.WaitForNextTickAsync())
+            while (timer != null && await timer.WaitForNextTickAsync())
             {
                 await AtualizarMensagens();
             }
@@ -297,7 +750,7 @@
 
         try
         {
-            var msgs = JsonSerializer.Deserialize<List<Mensagem>>(json) ?? new();
+            var msgs = JsonSerializer.Deserialize<List<MensagemChat>>(json) ?? new();
             if (msgs.Count != Mensagens.Count)
             {
                 Mensagens = msgs;
@@ -308,4 +761,58 @@
     }
 
     public void Dispose() => timer?.Dispose();
+
+    // =================== HELPERS ===================
+    string GetStatusTexto(int status) => status switch
+    {
+        (int)EStatusChamado.ABERTO => "Aberto",
+        (int)EStatusChamado.SUGESTAO_GERADA => "Sugestão Gerada",
+        (int)EStatusChamado.FECHADO => "Fechado",
+        (int)EStatusChamado.CANCELADO => "Cancelado",
+        _ => "Desconhecido"
+    };
+
+    bool EhExpirado(ChamadoDTO c) =>
+        ChamadosExpirados.Any(x => x.Id == c.Id) &&
+        c.Status == (int)EStatusChamado.ABERTO;
+
+    string GetStatusVisual(ChamadoDTO c)
+    {
+        if (EhExpirado(c)) return "Expirado";
+        return GetStatusTexto(c.Status);
+    }
+
+    string GetStatusCssClass(ChamadoDTO c)
+    {
+        if (EhExpirado(c)) return "status-expirado";
+
+        return c.Status switch
+        {
+            (int)EStatusChamado.FECHADO => "status-fechado",
+            (int)EStatusChamado.CANCELADO => "status-cancelado",
+            (int)EStatusChamado.ABERTO => (c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id))
+                ? "status-pendente"
+                : "status-atendimento",
+            (int)EStatusChamado.SUGESTAO_GERADA => "status-atendimento",
+            _ => "status-pendente"
+        };
+    }
+
+    string GetPrioridadeTexto(int p) => p switch
+    {
+        0 => "Baixa",
+        1 => "Média",
+        2 => "Alta",
+        3 => "Crítica",
+        _ => "N/D"
+    };
+
+    string GetPrioridadeCssClass(int p) => p switch
+    {
+        0 => "prio-baixa",
+        1 => "prio-media",
+        2 => "prio-alta",
+        3 => "prio-critica",
+        _ => "prio-media"
+    };
 }

@@ -1,0 +1,31 @@
+﻿@namespace Front.Pages.Modais.Tecnico
+@using Microsoft.AspNetCore.Components
+
+@if (Mostrar)
+{
+    <div class="modal-backdrop">
+        <div class="modal-container">
+            <h5>@Titulo</h5>
+            <p>@Mensagem</p>
+
+            <div class="modal-actions">
+                <button class="btn btn-danger" @onclick="OnConfirmar">
+                    @TextoBotaoConfirmar
+                </button>
+                <button class="btn btn-secondary" @onclick="OnCancelar">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Mostrar { get; set; }
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string Mensagem { get; set; } = "";
+    [Parameter] public string TextoBotaoConfirmar { get; set; } = "Confirmar";
+
+    [Parameter] public EventCallback OnConfirmar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+}

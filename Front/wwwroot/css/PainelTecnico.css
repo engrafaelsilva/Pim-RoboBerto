@@ -1,254 +1,676 @@
-﻿/* Layout principal */
+﻿/* ===== Layout principal ===== */
 .layout {
     display: flex;
     height: 100vh;
-    background: #f4f6f9;
+    background: radial-gradient(circle at top left, #e3f2fd 0, #f4f6f9 45%, #f4f6f9 100%);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Sidebar */
+/* ===== Sidebar ===== */
 .sidebar {
-    width: 260px;
-    background: #1e1f26;
+    width: 270px;
+    background: linear-gradient(180deg, #111827 0%, #020617 100%);
     color: white;
-    padding: 20px;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 16px rgba(15, 23, 42, 0.6);
+    z-index: 5;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 28px;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: radial-gradient(circle at 30% 0, #3b82f6, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3);
+}
+
+.logo-text {
     display: flex;
     flex-direction: column;
 }
 
-.logo {
-    font-size: 26px;
-    margin-bottom: 30px;
+.logo-title {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.logo-sub {
+    font-size: 12px;
+    color: #9ca3af;
 }
 
 .menu {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .menu-item {
-    background: #2a2b33;
-    color: #fff;
+    background: transparent;
+    color: #e5e7eb;
     border: none;
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
     text-align: left;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    transition: background 0.18s ease, transform 0.1s ease, color 0.18s ease;
 }
 
     .menu-item:hover {
-        background: #3b3d47;
+        background: rgba(148, 163, 184, 0.15);
+        transform: translateX(2px);
     }
+
+    .menu-item.active {
+        background: linear-gradient(90deg, #2563eb, #1d4ed8);
+        color: #f9fafb;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
+    }
+
+.menu-icon {
+    font-size: 18px;
+}
+
+.menu-pill {
+    position: absolute;
+    right: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    font-size: 11px;
+}
 
 .logout {
     margin-top: auto;
-    background: #b52b2b !important;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.5);
 }
 
     .logout:hover {
-        background: #d33c3c !important;
+        background: rgba(248, 113, 113, 0.16);
     }
 
-/* Área de conteúdo */
+/* ===== Área de conteúdo ===== */
 .conteudo {
     flex: 1;
-    padding: 30px;
+    padding: 26px 32px;
     overflow-y: auto;
+    color: #0f172a;
 }
 
+/* Card base */
 .card {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    background: #ffffff;
+    padding: 24px 22px;
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-h3 {
-    margin-bottom: 20px;
+h1, h3 {
+    margin: 0;
 }
 
-/* --- ABA DE CHAMADOS DO PAINEL DO TÉCNICO --- */
-.lista-chamados {
+/* ===== HOME ===== */
+
+.home-card {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 1.5rem;
 }
 
-.chamado-item {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-left: 6px solid #0054d8;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    padding: 18px 24px;
-    display: grid;
-    grid-template-columns: 4fr 2fr 2fr;
-    gap: 18px;
+.home-header {
+    display: flex;
     align-items: center;
-    transition: box-shadow 0.2s;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
-    .chamado-item:hover {
-        box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+.home-subtitle {
+    margin-top: 0.4rem;
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.btn-refresh {
+    border: none;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    background: #1d4ed8;
+    color: #fff;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
+}
+
+    .btn-refresh:hover {
+        filter: brightness(0.93);
     }
 
-.chamado-info {
+.home-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+}
+
+.metric-card {
+    border-radius: 14px;
+    padding: 0.95rem 1.15rem;
+    background: #f9fafb;
+    border: 1px solid rgba(148, 163, 184, 0.45);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.35rem;
 }
 
-.chamado-title {
-    font-size: 1.15rem;
+.metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.metric-icon {
+    font-size: 18px;
+}
+
+.metric-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+}
+
+.metric-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+}
+
+.metric-hint {
+    font-size: 0.78rem;
+    color: #6b7280;
+}
+
+/* cores de destaque */
+.metric-pendentes {
+    border-left: 4px solid #facc15;
+}
+
+.metric-atendimento {
+    border-left: 4px solid #22c55e;
+}
+
+.metric-expirados {
+    border-left: 4px solid #ef4444;
+}
+
+.home-bottom {
+    margin-top: 0.5rem;
+}
+
+.home-tip {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    background: #eff6ff;
+    border: 1px dashed #93c5fd;
+    font-size: 0.86rem;
+}
+
+.tip-icon {
+    font-size: 18px;
+}
+
+/* ===== CHAMADOS ===== */
+
+.chamados-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chamados-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+    .chamados-header .subtitle {
+        margin-top: 0.35rem;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+.tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.2rem;
+    background: #f9fafb;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.tab {
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: #4b5563;
+}
+
+    .tab.active {
+        background: #1d4ed8;
+        color: #f9fafb;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
+    }
+
+/* grid de chamados */
+.lista-chamados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 1rem;
+    margin-top: 0.6rem;
+}
+
+.chamado-card {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    padding: 0.9rem 1rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    transition: box-shadow 0.18s ease, transform 0.1s ease, border-color 0.18s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+    .chamado-card::before {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        top: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #6366f1, #22c55e);
+        opacity: 0.7;
+    }
+
+    .chamado-card:hover {
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+        transform: translateY(-1px);
+        border-color: rgba(129, 140, 248, 0.7);
+    }
+
+.chamado-expirado::before {
+    background: linear-gradient(90deg, #f97316, #ef4444);
+}
+
+.chamado-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+    gap: 0.5rem;
+}
+
+.chamado-card-header-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.chamado-card-header-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.chamado-id {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.tag-categoria {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.72rem;
+    border: 1px solid #bfdbfe;
+}
+
+/* prioridade */
+.badge-prioridade {
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 2px;
 }
 
-.chamado-pergunta {
-    font-size: 0.98rem;
+/* por prioridade */
+.prio-baixa {
+    background: #ecfdf5;
+    color: #16a34a;
+}
+
+.prio-media {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.prio-alta {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.prio-critica {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* status */
+.badge-status {
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* Estilos por status */
+.status-pendente {
+    background: #fff7ed;
+    color: #c05621;
+}
+
+.status-atendimento {
+    background: #ecfdf3;
+    color: #15803d;
+}
+
+.status-expirado {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.status-fechado {
+    background: #e5e7eb;
     color: #374151;
-    margin-bottom: 2px;
-    line-height: 1.4;
+}
+
+.status-cancelado {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.chamado-titulo {
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0.05rem;
+    color: #111827;
+}
+
+.chamado-descricao {
+    font-size: 0.88rem;
+    color: #4b5563;
+    margin: 0.1rem 0 0.35rem;
 }
 
 .chamado-meta {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.92rem;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    font-size: 0.78rem;
     color: #6b7280;
-}
-
-.chamado-status {
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 6px;
-    display: inline-block;
-    margin-top: 4px;
-    background: #fffbe6;
-    color: #b59f00;
-    border: 1px solid #ffe58f;
-}
-
-    .chamado-status.fechado {
-        background: #e6ffed;
-        color: #389e0d;
-        border: 1px solid #b7eb8f;
-    }
-
-    .chamado-status.cancelado {
-        background: #ffeaea;
-        color: #d93025;
-        border: 1px solid #ffbaba;
-    }
-
-    .chamado-status.expirado {
-        background: #fff1f0;
-        color: #d46b08;
-        border: 1px solid #ffd8bf;
-    }
-
-.chamado-tecnico {
-    font-size: 0.95rem;
-    color: #0054d8;
-    font-weight: 500;
+    margin-bottom: 0.4rem;
 }
 
 .card-actions {
+    margin-top: auto;
     display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.4rem;
 }
 
-.btn-primary, .btn-outline {
-    padding: 8px 18px;
-    border-radius: 7px;
-    font-size: 0.98rem;
+/* Buttons usados nos cards (caso não tenha bootstrap) */
+.btn-primary,
+.btn-outline,
+.btn-warning,
+.btn-secondary {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
     font-weight: 500;
     border: none;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-primary {
-    background: #0054d8;
+    background: #1d4ed8;
     color: #fff;
 }
 
     .btn-primary:hover {
-        background: #003f9e;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
     }
 
 .btn-outline {
     background: #f3f4f6;
-    color: #0054d8;
-    border: 1px solid #e0e0e0;
+    color: #1d4ed8;
+    border: 1px solid #e5e7eb;
 }
 
     .btn-outline:hover {
         background: #e0e7ff;
-        color: #003f9e;
+        color: #1d4ed8;
     }
 
-/* Chat */
-.chat-container {
-    max-width: 100%;
-    background-color: #f8f9fa;
+.btn-outline-soft {
+    background: #f9fafb;
+    color: #6b7280;
+}
+
+.btn-warning {
+    background: #facc15;
+    color: #1f2937;
+}
+
+    .btn-warning:hover {
+        filter: brightness(0.95);
+    }
+
+.btn-secondary {
+    background: #6b7280;
+    color: #fff;
+}
+
+    .btn-secondary:hover {
+        filter: brightness(0.95);
+    }
+
+/* loading e empty state */
+.loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #1d4ed8;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.empty-state {
+    margin-top: 0.5rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+/* ===== CHAT ===== */
+
+.chat-card {
     display: flex;
     flex-direction: column;
-    height: 400px;
+    gap: 0.9rem;
+}
+
+.chat-header .subtitle {
+    margin-top: 0.25rem;
+    color: #6b7280;
+    font-size: 0.9rem;
 }
 
 .chat-window {
+    max-height: 420px;
     flex: 1;
     overflow-y: auto;
     padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #f9fafb;
 }
 
-.message {
+.msg {
     display: flex;
     align-items: flex-start;
     gap: 10px;
 }
 
-    .message.user {
+    .msg.user {
         flex-direction: row-reverse;
     }
 
 .avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #e0e0e0;
-    border-radius: 50%;
-    font-size: 20px;
+    background-color: #e5e7eb;
+    border-radius: 999px;
+    font-size: 18px;
 }
 
 .bubble {
     max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 20px;
+    padding: 9px 13px;
+    border-radius: 16px;
     line-height: 1.4;
     word-wrap: break-word;
-    font-size: 15px;
+    font-size: 0.88rem;
 }
 
-.message.bot .bubble {
+.msg.bot .bubble {
     background-color: #ffffff;
-    border: 1px solid #ddd;
+    border: 1px solid #e5e7eb;
 }
 
-.message.user .bubble {
-    background-color: #007bff;
+.msg.user .bubble {
+    background-color: #1d4ed8;
     color: white;
+}
+
+.chat-input-row {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 0.6rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    font-size: 0.9rem;
+}
+
+    .chat-input:focus {
+        outline: none;
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 1px #1d4ed8;
+    }
+
+.chat-send-btn {
+    border-radius: 999px;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    background: #22c55e;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+}
+
+    .chat-send-btn:hover {
+        filter: brightness(0.95);
+    }
+
+/* ===== Responsividade ===== */
+@media (max-width: 960px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding-inline: 18px;
+    }
+
+    .menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .conteudo {
+        padding: 16px;
+    }
 }
