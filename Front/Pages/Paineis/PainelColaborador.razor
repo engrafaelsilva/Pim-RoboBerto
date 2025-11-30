@@ -460,7 +460,6 @@
     // =================== ENVIAR CHAMADO ====================
     async Task EnviarChamado()
     {
-        // Validações obrigatórias: título, descrição, prioridade, categoria
         if (string.IsNullOrWhiteSpace(NovoChamado.Titulo) ||
             string.IsNullOrWhiteSpace(NovoChamado.Descricao) ||
             string.IsNullOrWhiteSpace(NovoChamado.Prioridade) ||
@@ -470,7 +469,6 @@
             return;
         }
 
-        // 🔥 GARANTE QUE O TOKEN FOI INJETADO 🔥
         if (!await InjetarToken()) return;
 
         isSending = true;
@@ -503,52 +501,21 @@
                 Guid criadoId = Guid.Empty;
                 string sugestaoGemini = "";
 
-                try
-                {
-                    using var doc = JsonDocument.Parse(respostaJson);
-                    var root = doc.RootElement;
+                using var doc = JsonDocument.Parse(respostaJson);
+                var r = doc.RootElement;
 
-                    if (root.TryGetProperty("id", out var idProp) &&
-                        idProp.ValueKind == JsonValueKind.String)
-                    {
-                        Guid.TryParse(idProp.GetString(), out criadoId);
-                    }
+                Guid.TryParse(r.GetProperty("id").GetString(), out criadoId);
+                sugestaoGemini = r.GetProperty("sugestaoGemini").GetString() ?? "";
 
-                    if (root.TryGetProperty("sugestaoGemini", out var sgProp) &&
-                        sgProp.ValueKind == JsonValueKind.String)
-                    {
-                        sugestaoGemini = sgProp.GetString() ?? "";
-                    }
-                }
-                catch { }
-
-                // 🔥 Salva dados necessário para o ChatBoot
-                await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", NovoChamado.Descricao ?? "");
-                await JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugestaoGemini);
+                // 🔥 Salva dados necessários para o ChatBoot
+                await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", NovoChamado.Descricao);
+                await JS.InvokeVoidAsync("localStorage.setItem", "sugestaoGemini", sugestaoGemini);
                 await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", criadoId.ToString());
 
-                // Limpa formulário
                 LimparFormulario();
 
-                // Mostra sugestão gerada em modal (usuário pode confirmar ou abrir chat)
-                if (ModalConfirmacao != null)
-                {
-                    ModalConfirmacao.Show(sugestaoGemini, criadoId);
-                }
-                else
-                {
-                     await JS.InvokeVoidAsync("alert", "Chamado enviado com sucesso! Sugestão gerada: " + sugestaoGemini);
-                }
-
-                // Redireciona para Meus Chamados
-                await CarregarMeusChamados();
-                AbaSelecionada = 2;
-                
-
-            }
-            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                await JS.InvokeVoidAsync("alert", "Não autorizado (401). Faça login e tente novamente.");
+                // 🔥 Vai para o chatboot direto
+                Navigation.NavigateTo("/chatboot");
             }
             else
             {

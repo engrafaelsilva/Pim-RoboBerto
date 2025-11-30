@@ -1,12 +1,14 @@
 ﻿@page "/login"
+
 @inject NavigationManager Navigation
 @inject HttpClient Http
 @inject IJSRuntime JS
 
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
-
-<PageTitle>Login</PageTitle>
+@using System.Text.Json
+@using System.Text
+@using System.Text.Json.Serialization;
 
 <div class="d-flex justify-content-center align-items-center vh-100">
     <div class="card shadow-lg p-4 rounded-4" style="width: 380px;">
@@ -50,7 +52,6 @@
 </div>
 
 @code {
-
     private LoginModel login = new();
     private string mensagem = string.Empty;
     private bool isSuccess = false;
@@ -66,38 +67,64 @@
         {
             var response = await Http.PostAsJsonAsync("Autenticacao/login", login);
 
-            if (!response.IsSuccessStatusCode)
+            // 🔥 Tratamento correto de login inválido
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 mensagem = "❌ E-mail ou senha incorretos.";
                 return;
             }
 
-            var usuarioRetorno = await response.Content.ReadFromJsonAsync<UsuarioRetorno>();
+            if (!response.IsSuccessStatusCode)
+            {
+                mensagem = "❌ Erro no servidor ao fazer login.";
+                return;
+            }
 
-            if (usuarioRetorno == null || string.IsNullOrEmpty(usuarioRetorno.Token))
+            var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (loginResponse == null || string.IsNullOrEmpty(loginResponse.Token))
             {
                 mensagem = "❌ Resposta inválida do servidor (token não encontrado).";
                 return;
             }
 
-            await JS.InvokeVoidAsync("localStorage.setItem", "username", usuarioRetorno.Nome);
-            await JS.InvokeVoidAsync("localStorage.setItem", "token", usuarioRetorno.Token);
+            // Salvar token
+            await JS.InvokeVoidAsync("localStorage.setItem", "token", loginResponse.Token);
+
+            // Decodificar o JWT
+            var payload = loginResponse.Token.Split('.')[1];
+            var decodedPayload = Base64UrlDecode(payload);
+            var tokenData = JsonSerializer.Deserialize<JwtPayload>(decodedPayload);
+
+            string role = tokenData.role ?? tokenData.rol ?? tokenData.roleSchema;
+
+            if (string.IsNullOrEmpty(role))
+            {
+                mensagem = "❌ Token inválido (role não encontrado).";
+                return;
+            }
+
+            // 🔥 Ajuste: salvar com o nome correto
+            await JS.InvokeVoidAsync("localStorage.setItem", "email", tokenData.email);
+            await JS.InvokeVoidAsync("localStorage.setItem", "role", tokenData.role);
 
             isSuccess = true;
             mensagem = "Login realizado com sucesso!";
             await Task.Delay(700);
 
-            if (login.Email.ToLower() == "bob@empresa.com" && login.Senha == "senha123")
+            // Redirecionamento baseado no role
+            switch (role.ToUpper())
             {
-                Navigation.NavigateTo("/paineltecnico", forceLoad: true);
-            }
-            else if (login.Email.ToLower() == "alice@empresa.com" && login.Senha == "senha123")
-            {
-                Navigation.NavigateTo("/paineladm", forceLoad: true);
-            }
-            else
-            {
-                Navigation.NavigateTo("/painelcolaborador", forceLoad: true);
+                case "ADM":
+                    Navigation.NavigateTo("/paineladm", true);
+                    break;
+
+                case "TECNICO":
+                    Navigation.NavigateTo("/paineltecnico", true);
+                    break;
+
+                default:
+                    Navigation.NavigateTo("/painelcolaborador", true);
+                    break;
             }
         }
         catch
@@ -110,21 +137,53 @@
         }
     }
 
+    private static string Base64UrlDecode(string input)
+    {
+        string output = input.Replace('-', '+').Replace('_', '/');
+        switch (output.Length % 4)
+        {
+            case 2: output += "=="; break;
+            case 3: output += "="; break;
+        }
+        var bytes = Convert.FromBase64String(output);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
     public class LoginModel
     {
         [Required]
         [EmailAddress]
         public string Email { get; set; } = "";
-        
+
         [Required]
         public string Senha { get; set; } = "";
     }
 
-    public class UsuarioRetorno
+    public class LoginResponse
     {
-        public string Email { get; set; } = "";
-        public string Tipo { get; set; } = "";
-        public string Nome { get; set; } = "";
+        [JsonPropertyName("token")]
         public string Token { get; set; } = "";
+    }
+
+    public class JwtPayload
+    {
+        public string nameid { get; set; }
+
+        [JsonPropertyName("email")]
+        public string email { get; set; } = "";
+
+        // tente todos os nomes possíveis
+        [JsonPropertyName("role")]
+        public string role { get; set; }
+
+        [JsonPropertyName("rol")]
+        public string rol { get; set; }
+
+        [JsonPropertyName("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")]
+        public string roleSchema { get; set; }
+
+        public long nbf { get; set; }
+        public long exp { get; set; }
+        public long iat { get; set; }
     }
 }

@@ -16,7 +16,7 @@ namespace Front
             builder.Services.AddSingleton<WeatherForecastService>();
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/") // URL da sua API
+                BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/") 
             });
 
             var app = builder.Build();
@@ -26,15 +26,6 @@ namespace Front
             {
                 app.UseExceptionHandler("/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-
-        
-            // Pipeline
-            if (!app.Environment.IsDevelopment())
-            {
-                app.UseExceptionHandler("/Error");
                 app.UseHsts();
             }
 

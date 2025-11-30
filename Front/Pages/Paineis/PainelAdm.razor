@@ -77,7 +77,9 @@
         @if (AbaSelecionada == 1)
         {
             <div class="card p-4">
-                <h5 class="fw-bold mb-3">📋 Chamados</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold">📋 Chamados</h5>
+                </div>
 
                 <table class="table table-hover text-center">
                     <thead class="table-primary">
@@ -102,7 +104,7 @@
                                 <td>@GetPrioridadeTexto(c.Prioridade)</td>
                                 <td>@(c.Tecnico?.Nome ?? "-")</td>
                                 <td>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverChamado(c.Id)">Excluir</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverChamado(c.Id)">Excluir</button>
                                     <button class="btn btn-primary btn-sm" @onclick="() => AbrirComentarChamado(c)">Comentar</button>
                                     <button class="btn btn-warning btn-sm" @onclick="() => FecharChamado(c.Id)">Fechar</button>
                                     <button class="btn btn-secondary btn-sm" @onclick="() => CancelarChamado(c.Id)">Cancelar</button>
@@ -117,7 +119,11 @@
         @if (AbaSelecionada == 2)
         {
             <div class="card p-4">
-                <h5 class="fw-bold mb-3">👥 Usuários</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold">👥 Usuários</h5>
+                    <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarUsuario">Criar Usuário</button>
+                </div>
+
                 <table class="table table-striped text-center">
                     <thead class="table-secondary">
                         <tr>
@@ -138,7 +144,7 @@
                                 <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
                                 <td>
                                     <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalUsuario(u)">Editar</button>
-                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverUsuario(u.Id)">Excluir</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverUsuario(u.Id)">Excluir</button>
                                 </td>
                             </tr>
                         }
@@ -150,14 +156,18 @@
         @if (AbaSelecionada == 3)
         {
             <div class="card p-4">
-                <h5 class="fw-bold mb-3">🏷️ Categorias</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold">🏷️ Categorias</h5>
+                    <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarCategoria">Criar Categoria</button>
+                </div>
+
                 @foreach (var c in Categorias)
                 {
                     <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
                         @c.Nome
                         <div>
                             <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalCategoria(c)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverCategoria(c.Id)">Excluir</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverCategoria(c.Id)">Excluir</button>
                         </div>
                     </div>
                 }
@@ -167,7 +177,11 @@
         @if (AbaSelecionada == 4)
         {
             <div class="card p-4">
-                <h5 class="fw-bold mb-3">🏢 Departamentos</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold">🏢 Departamentos</h5>
+                    <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarDepartamento">Criar Departamento</button>
+                </div>
+
                 @foreach (var d in Departamentos)
                 {
                     <div class="border p-2 rounded mb-2">
@@ -180,7 +194,7 @@
                         </ul>
                         <div>
                             <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalDepartamento(d)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverDepartamento(d.Id)">Excluir</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverDepartamento(d.Id)">Excluir</button>
                         </div>
                     </div>
                 }
@@ -191,13 +205,14 @@
         {
             <div class="card p-4">
                 <h5 class="fw-bold mb-3">🛡️ Roles</h5>
+                <p class="text-muted">Roles são somente leitura via API (só GET está exposto).</p>
                 @foreach (var r in Roles)
                 {
                     <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
                         @r.Nome
                         <div>
-                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverRole(r.Id)">Excluir</button>
+                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar (se suportado)</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverRole(r.Id)">Excluir (se suportado)</button>
                         </div>
                     </div>
                 }
@@ -215,19 +230,26 @@
     </main>
 </div>
 
-<!-- ===========================================================
-    =================== MODAIS ==================================
-     =========================================================== -->
+<!-- MODAIS -->
 @if (ModalUsuarioAtivo)
 {
     <div class="modal-backdrop">
         <div class="modal">
-            <h5>Editar Usuário</h5>
+            <h5>@(IsCreatingUsuario ? "Criar Usuário" : "Editar Usuário")</h5>
+
             <input class="form-control mb-2" placeholder="Nome" @bind="UsuarioModal.Nome" />
             <input class="form-control mb-2" placeholder="Email" @bind="UsuarioModal.Email" />
+            @if (IsCreatingUsuario)
+            {
+                <input class="form-control mb-2" placeholder="Senha" type="password" @bind="UsuarioModal.Senha" />
+            }
             <select class="form-select mb-2" @bind="UsuarioModal.Tipo">
-                <option value="Usuario">Usuario</option>
-                <option value="ADM">ADM</option>
+                @foreach (var r in Roles) { <option value="@r.Nome">@r.Nome</option> }
+            </select>
+
+            <select class="form-select mb-2" @bind="UsuarioModal.DepartamentoId">
+                <option value="">-- Departamento --</option>
+                @foreach (var d in Departamentos) { <option value="@d.Id">@d.Nome</option> }
             </select>
 
             <div class="form-check mb-2">
@@ -235,8 +257,10 @@
                 <label class="form-check-label">Ativo</label>
             </div>
 
-            <button class="btn btn-success" @onclick="SalvarUsuario">Salvar</button>
-            <button class="btn btn-secondary" @onclick="() => ModalUsuarioAtivo=false">Cancelar</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" @onclick="SalvarUsuario">Salvar</button>
+                <button class="btn btn-secondary" @onclick="() => ModalUsuarioAtivo = false">Cancelar</button>
+            </div>
         </div>
     </div>
 }
@@ -245,10 +269,12 @@
 {
     <div class="modal-backdrop">
         <div class="modal">
-            <h5>Editar Categoria</h5>
+            <h5>@(IsCreatingCategoria ? "Criar Categoria" : "Editar Categoria")</h5>
             <input class="form-control mb-2" placeholder="Nome" @bind="CategoriaModal.Nome" />
-            <button class="btn btn-success" @onclick="SalvarCategoria">Salvar</button>
-            <button class="btn btn-secondary" @onclick="() => ModalCategoriaAtivo=false">Cancelar</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" @onclick="SalvarCategoria">Salvar</button>
+                <button class="btn btn-secondary" @onclick="() => ModalCategoriaAtivo=false">Cancelar</button>
+            </div>
         </div>
     </div>
 }
@@ -257,10 +283,12 @@
 {
     <div class="modal-backdrop">
         <div class="modal">
-            <h5>Editar Departamento</h5>
+            <h5>@(IsCreatingDepartamento ? "Criar Departamento" : "Editar Departamento")</h5>
             <input class="form-control mb-2" placeholder="Nome" @bind="DepartamentoModal.Nome" />
-            <button class="btn btn-success" @onclick="SalvarDepartamento">Salvar</button>
-            <button class="btn btn-secondary" @onclick="() => ModalDepartamentoAtivo=false">Cancelar</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" @onclick="SalvarDepartamento">Salvar</button>
+                <button class="btn btn-secondary" @onclick="() => ModalDepartamentoAtivo=false">Cancelar</button>
+            </div>
         </div>
     </div>
 }
@@ -271,8 +299,10 @@
         <div class="modal">
             <h5>Editar Role</h5>
             <input class="form-control mb-2" placeholder="Nome" @bind="RoleModal.Nome" />
-            <button class="btn btn-success" @onclick="SalvarRole">Salvar</button>
-            <button class="btn btn-secondary" @onclick="() => ModalRoleAtivo=false">Cancelar</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" @onclick="SalvarRole">Salvar</button>
+                <button class="btn btn-secondary" @onclick="() => ModalRoleAtivo=false">Cancelar</button>
+            </div>
         </div>
     </div>
 }
@@ -287,73 +317,40 @@
     List<DepartamentoDTO> Departamentos { get; set; } = new();
     List<RoleDTO> Roles { get; set; } = new();
 
-    // ============================== MODELOS AJUSTADOS — compatíveis com seu backend ==============================
+    // MODAIS + flags
+    bool ModalUsuarioAtivo = false;
+    bool IsCreatingUsuario = false;
+    UsuarioModalModel UsuarioModal = new();
+
+    bool ModalCategoriaAtivo = false;
+    bool IsCreatingCategoria = false;
+    CategoriaDTO CategoriaModal = new();
+
+    bool ModalDepartamentoAtivo = false;
+    bool IsCreatingDepartamento = false;
+    DepartamentoDTO DepartamentoModal = new();
+
+    bool ModalRoleAtivo = false;
+    RoleDTO RoleModal = new();
+
+    // DTOs (leves, focados no front)
     public class ChamadoDTO
     {
         public string Id { get; set; } = "";
         public string Titulo { get; set; } = "";
         public string Descricao { get; set; } = "";
-
-        // backend retorna enum numeric — mantive int para desserializar sem problemas
         public int Prioridade { get; set; }
         public int Status { get; set; }
-
         public Autor Autor { get; set; } = new();
         public Tecnico Tecnico { get; set; } = new();
         public CategoriaMini Categoria { get; set; } = new();
-
-        public string SugestaoGemini { get; set; } = "";
-        public DateTime DataAbertura { get; set; }
-        public DateTime SlaVenceEm { get; set; }
-        public DateTime? DataFechamento { get; set; }
-
-        // backend usa "mensagens"
         public List<MensagemDTO> Mensagens { get; set; } = new();
-
-        // propriedades auxiliares para o front (corrigidas para refletir seu enum)
-        public string StatusTexto => Status switch
-        {
-            1 => "Aberto",
-            2 => "Sugestão Gerada",
-            3 => "Fechado",
-            4 => "Cancelado",
-            _ => "Desconhecido"
-        };
-
-        public string PrioridadeTexto => Prioridade switch
-        {
-            0 => "Baixa",
-            1 => "Média",
-            2 => "Alta",
-            3 => "Crítica",
-            _ => "?"
-        };
     }
 
-    public class Autor
-    {
-        public string Id { get; set; } = "";
-        public string Nome { get; set; } = "";
-    }
-
-    public class Tecnico
-    {
-        public string Id { get; set; } = "";
-        public string Nome { get; set; } = "";
-    }
-
-    public class CategoriaMini
-    {
-        public string Nome { get; set; } = "";
-    }
-
-    public class MensagemDTO
-    {
-        public string Id { get; set; } = "";
-        public Autor Autor { get; set; } = new();
-        public DateTime DataHoraMensagem { get; set; }
-        public string Texto { get; set; } = "";
-    }
+    public class Autor { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+    public class Tecnico { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+    public class CategoriaMini { public string Nome { get; set; } = ""; }
+    public class MensagemDTO { public string Id { get; set; } = ""; public Autor Autor { get; set; } = new(); public DateTime DataHoraMensagem { get; set; } public string Texto { get; set; } = ""; }
 
     public class UsuarioDTO
     {
@@ -364,42 +361,22 @@
         public bool Ativo { get; set; } = true;
     }
 
-    public class CategoriaDTO
+    // Modelo usado no modal de criação/edição (inclui senha e ids)
+    public class UsuarioModalModel
     {
         public string Id { get; set; } = "";
         public string Nome { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Senha { get; set; } = "";
+        public string Tipo { get; set; } = "COLABORADOR"; // role name
+        public bool Ativo { get; set; } = true;
+        public string DepartamentoId { get; set; } = "";
+        public string RoleId { get; set; } = "";
     }
 
-    public class DepartamentoDTO
-    {
-        public string Id { get; set; } = "";
-        public string Nome { get; set; } = "";
-        public List<UsuarioDTO> Usuarios { get; set; } = new();
-    }
-
-    public class RoleDTO
-    {
-        public string Id { get; set; } = "";
-        public string Nome { get; set; } = "";
-    }
-
-    // ============================== MODAIS ==============================
-    bool ModalUsuarioAtivo = false;
-    UsuarioDTO UsuarioModal = new();
-
-    bool ModalCategoriaAtivo = false;
-    CategoriaDTO CategoriaModal = new();
-
-    bool ModalDepartamentoAtivo = false;
-    DepartamentoDTO DepartamentoModal = new();
-
-    bool ModalRoleAtivo = false;
-    RoleDTO RoleModal = new();
-
-    void AbrirModalUsuario(UsuarioDTO u) { UsuarioModal = new UsuarioDTO { Id = u.Id, Nome = u.Nome, Email = u.Email, Tipo = u.Tipo, Ativo = u.Ativo }; ModalUsuarioAtivo = true; }
-    void AbrirModalCategoria(CategoriaDTO c) { CategoriaModal = new CategoriaDTO { Id = c.Id, Nome = c.Nome }; ModalCategoriaAtivo = true; }
-    void AbrirModalDepartamento(DepartamentoDTO d) { DepartamentoModal = new DepartamentoDTO { Id = d.Id, Nome = d.Nome, Usuarios = d.Usuarios }; ModalDepartamentoAtivo = true; }
-    void AbrirModalRole(RoleDTO r) { RoleModal = new RoleDTO { Id = r.Id, Nome = r.Nome }; ModalRoleAtivo = true; }
+    public class CategoriaDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
+    public class DepartamentoDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; public List<UsuarioDTO> Usuarios { get; set; } = new(); }
+    public class RoleDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
 
     // ============================== TOKEN ==============================
     async Task InjetarToken()
@@ -473,6 +450,14 @@
             var res = await Http.GetAsync("Usuario");
             if (res.IsSuccessStatusCode)
                 Usuarios = await res.Content.ReadFromJsonAsync<List<UsuarioDTO>>() ?? new();
+            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Nav.NavigateTo("/login", true);
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao carregar usuários: {res.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
@@ -486,7 +471,14 @@
         {
             var res = await Http.GetAsync("Categoria");
             if (res.IsSuccessStatusCode)
+            {
+                // Nota: seu controller retorna resultado.Items — mas aqui pedimos lista direta
                 Categorias = await res.Content.ReadFromJsonAsync<List<CategoriaDTO>>() ?? new();
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Nav.NavigateTo("/login", true);
+            }
         }
         catch (Exception ex)
         {
@@ -501,6 +493,10 @@
             var res = await Http.GetAsync("Departamento");
             if (res.IsSuccessStatusCode)
                 Departamentos = await res.Content.ReadFromJsonAsync<List<DepartamentoDTO>>() ?? new();
+            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Nav.NavigateTo("/login", true);
+            }
         }
         catch (Exception ex)
         {
@@ -515,6 +511,10 @@
             var res = await Http.GetAsync("Role");
             if (res.IsSuccessStatusCode)
                 Roles = await res.Content.ReadFromJsonAsync<List<RoleDTO>>() ?? new();
+            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Nav.NavigateTo("/login", true);
+            }
         }
         catch (Exception ex)
         {
@@ -531,8 +531,9 @@
             if (!string.IsNullOrWhiteSpace(comentario))
             {
                 var patchData = new { texto = comentario };
-                await Http.PatchAsync($"Chamados/{c.Id}/comentar", JsonContent.Create(patchData));
-                await LoadChamados();
+                var res = await Http.PatchAsync($"Chamados/{c.Id}/comentar", JsonContent.Create(patchData));
+                if (res.IsSuccessStatusCode) await LoadChamados();
+                else await JS.InvokeVoidAsync("alert", $"Erro ao comentar: {res.StatusCode}");
             }
         }
         catch (Exception ex)
@@ -545,8 +546,9 @@
     {
         try
         {
-            await Http.PatchAsync($"Chamados/{id}/fechar-chamado", null);
-            await LoadChamados();
+            var res = await Http.PatchAsync($"Chamados/{id}/fechar-chamado", null);
+            if (res.IsSuccessStatusCode) await LoadChamados();
+            else await JS.InvokeVoidAsync("alert", $"Erro ao fechar chamado: {res.StatusCode}");
         }
         catch (Exception ex)
         {
@@ -558,13 +560,20 @@
     {
         try
         {
-            await Http.PatchAsync($"Chamados/{id}/cancelar", null);
-            await LoadChamados();
+            var res = await Http.PatchAsync($"Chamados/{id}/cancelar", null);
+            if (res.IsSuccessStatusCode) await LoadChamados();
+            else await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {res.StatusCode}");
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {ex.Message}");
         }
+    }
+
+    async Task ConfirmRemoverChamado(string id)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este chamado? Esta ação é irreversível.");
+        if (ok) await RemoverChamado(id);
     }
 
     async Task RemoverChamado(string id)
@@ -573,7 +582,10 @@
         {
             var res = await Http.DeleteAsync($"Chamados/{id}");
             if (res.IsSuccessStatusCode) await LoadChamados();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao remover chamado: {res.StatusCode}");
+            else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                await JS.InvokeVoidAsync("alert", "Você não tem permissão para remover este chamado.");
+            else
+                await JS.InvokeVoidAsync("alert", $"Erro ao remover chamado: {res.StatusCode}");
         }
         catch (Exception ex)
         {
@@ -582,18 +594,33 @@
     }
 
     // ============================== CRUD GENÉRICOS ==============================
+    async Task ConfirmRemoverUsuario(string id)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este usuário?");
+        if (ok) await RemoverUsuario(id);
+    }
+
     async Task RemoverUsuario(string id)
     {
         try
         {
             var res = await Http.DeleteAsync($"Usuario/{id}");
             if (res.IsSuccessStatusCode) await LoadUsuarios();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {res.StatusCode}");
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                await JS.InvokeVoidAsync("alert", "Não é possível remover o usuário devido a integridade referencial.");
+            else
+                await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {res.StatusCode}");
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {ex.Message}");
         }
+    }
+
+    async Task ConfirmRemoverCategoria(string id)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta categoria?");
+        if (ok) await RemoverCategoria(id);
     }
 
     async Task RemoverCategoria(string id)
@@ -602,12 +629,21 @@
         {
             var res = await Http.DeleteAsync($"Categoria/{id}");
             if (res.IsSuccessStatusCode) await LoadCategorias();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao remover categoria: {res.StatusCode}");
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                await JS.InvokeVoidAsync("alert", "Não é possível remover a categoria (integridade - 409).");
+            else
+                await JS.InvokeVoidAsync("alert", $"Erro ao remover categoria: {res.StatusCode}");
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao remover categoria: {ex.Message}");
         }
+    }
+
+    async Task ConfirmRemoverDepartamento(string id)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir este departamento?");
+        if (ok) await RemoverDepartamento(id);
     }
 
     async Task RemoverDepartamento(string id)
@@ -616,12 +652,21 @@
         {
             var res = await Http.DeleteAsync($"Departamento/{id}");
             if (res.IsSuccessStatusCode) await LoadDepartamentos();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {res.StatusCode}");
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                await JS.InvokeVoidAsync("alert", "Não é possível remover o departamento (integridade - 409).");
+            else
+                await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {res.StatusCode}");
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {ex.Message}");
         }
+    }
+
+    async Task ConfirmRemoverRole(string id)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta role?");
+        if (ok) await RemoverRole(id);
     }
 
     async Task RemoverRole(string id)
@@ -630,7 +675,10 @@
         {
             var res = await Http.DeleteAsync($"Role/{id}");
             if (res.IsSuccessStatusCode) await LoadRoles();
-            else await JS.InvokeVoidAsync("alert", $"Erro ao remover role: {res.StatusCode}");
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                await JS.InvokeVoidAsync("alert", "Não é possível remover a role (integridade - 409).");
+            else
+                await JS.InvokeVoidAsync("alert", $"Erro ao remover role: {res.StatusCode}");
         }
         catch (Exception ex)
         {
@@ -639,15 +687,81 @@
     }
 
     // ============================== MODAIS SALVAR ==============================
+    void AbrirModalUsuario(UsuarioDTO u)
+    {
+        IsCreatingUsuario = false;
+        UsuarioModal = new UsuarioModalModel
+        {
+            Id = u.Id,
+            Nome = u.Nome,
+            Email = u.Email,
+            Tipo = u.Tipo,
+            Ativo = u.Ativo
+        };
+        ModalUsuarioAtivo = true;
+    }
+
+    void AbrirModalCriarUsuario()
+    {
+        IsCreatingUsuario = true;
+        UsuarioModal = new UsuarioModalModel();
+        ModalUsuarioAtivo = true;
+    }
+
     async Task SalvarUsuario()
     {
         try
         {
-            var res = await Http.PutAsJsonAsync($"Usuario/{UsuarioModal.Id}", UsuarioModal);
-            if (res.IsSuccessStatusCode)
+            if (IsCreatingUsuario)
             {
-                ModalUsuarioAtivo = false;
-                await LoadUsuarios();
+                // Payload para criação — ajuste os nomes caso seu backend precise outros nomes
+                var payload = new
+                {
+                    Nome = UsuarioModal.Nome,
+                    Email = UsuarioModal.Email,
+                    Senha = UsuarioModal.Senha,           // backend espera campo senha
+                    DepartamentoId = string.IsNullOrEmpty(UsuarioModal.DepartamentoId) ? (string?)null : UsuarioModal.DepartamentoId,
+                    RoleId = Roles.FirstOrDefault(r => r.Nome == UsuarioModal.Tipo)?.Id
+                };
+
+                var res = await Http.PostAsJsonAsync("Usuario", payload);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalUsuarioAtivo = false;
+                    await LoadUsuarios();
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    await JS.InvokeVoidAsync("alert", "Email já cadastrado (409).");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao criar usuário: {res.StatusCode}");
+                }
+            }
+            else
+            {
+                // Atualização — tentamos colocar um payload compatível com o que seu serviço usa para atualizar
+                var payload = new
+                {
+                    Id = UsuarioModal.Id,
+                    Nome = UsuarioModal.Nome,
+                    Email = UsuarioModal.Email,
+                    Tipo = UsuarioModal.Tipo,
+                    Ativo = UsuarioModal.Ativo,
+                    Departamento = new { Nome = Departamentos.FirstOrDefault(d => d.Id == UsuarioModal.DepartamentoId)?.Nome ?? "" }
+                };
+
+                var res = await Http.PutAsJsonAsync($"Usuario/{UsuarioModal.Id}", payload);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalUsuarioAtivo = false;
+                    await LoadUsuarios();
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar usuário: {res.StatusCode}");
+                }
             }
         }
         catch (Exception ex)
@@ -656,15 +770,57 @@
         }
     }
 
+    void AbrirModalCategoria(CategoriaDTO c)
+    {
+        CategoriaModal = new CategoriaDTO { Id = c.Id, Nome = c.Nome };
+        IsCreatingCategoria = false;
+        ModalCategoriaAtivo = true;
+    }
+
+    void AbrirModalCriarCategoria()
+    {
+        CategoriaModal = new CategoriaDTO();
+        IsCreatingCategoria = true;
+        ModalCategoriaAtivo = true;
+    }
+
     async Task SalvarCategoria()
     {
         try
         {
-            var res = await Http.PutAsJsonAsync($"Categoria/{CategoriaModal.Id}", CategoriaModal);
-            if (res.IsSuccessStatusCode)
+            if (IsCreatingCategoria)
             {
-                ModalCategoriaAtivo = false;
-                await LoadCategorias();
+                var res = await Http.PostAsJsonAsync("Categoria", CategoriaModal);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalCategoriaAtivo = false;
+                    await LoadCategorias();
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    await JS.InvokeVoidAsync("alert", "Categoria já existe (409).");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao criar categoria: {res.StatusCode}");
+                }
+            }
+            else
+            {
+                var res = await Http.PutAsJsonAsync($"Categoria/{CategoriaModal.Id}", CategoriaModal);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalCategoriaAtivo = false;
+                    await LoadCategorias();
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    await JS.InvokeVoidAsync("alert", "Violação de integridade (409).");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar categoria: {res.StatusCode}");
+                }
             }
         }
         catch (Exception ex)
@@ -673,15 +829,53 @@
         }
     }
 
+    void AbrirModalDepartamento(DepartamentoDTO d)
+    {
+        DepartamentoModal = new DepartamentoDTO { Id = d.Id, Nome = d.Nome, Usuarios = d.Usuarios };
+        IsCreatingDepartamento = false;
+        ModalDepartamentoAtivo = true;
+    }
+
+    void AbrirModalCriarDepartamento()
+    {
+        DepartamentoModal = new DepartamentoDTO();
+        IsCreatingDepartamento = true;
+        ModalDepartamentoAtivo = true;
+    }
+
     async Task SalvarDepartamento()
     {
         try
         {
-            var res = await Http.PutAsJsonAsync($"Departamento/{DepartamentoModal.Id}", DepartamentoModal);
-            if (res.IsSuccessStatusCode)
+            if (IsCreatingDepartamento)
             {
-                ModalDepartamentoAtivo = false;
-                await LoadDepartamentos();
+                var res = await Http.PostAsJsonAsync("Departamento", DepartamentoModal);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalDepartamentoAtivo = false;
+                    await LoadDepartamentos();
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    await JS.InvokeVoidAsync("alert", "Departamento já existe (409).");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao criar departamento: {res.StatusCode}");
+                }
+            }
+            else
+            {
+                var res = await Http.PutAsJsonAsync($"Departamento/{DepartamentoModal.Id}", DepartamentoModal);
+                if (res.IsSuccessStatusCode)
+                {
+                    ModalDepartamentoAtivo = false;
+                    await LoadDepartamentos();
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar departamento: {res.StatusCode}");
+                }
             }
         }
         catch (Exception ex)
@@ -690,15 +884,27 @@
         }
     }
 
+    void AbrirModalRole(RoleDTO r)
+    {
+        RoleModal = new RoleDTO { Id = r.Id, Nome = r.Nome };
+        ModalRoleAtivo = true;
+    }
+
     async Task SalvarRole()
     {
         try
         {
+            // Sua API não possui endpoints para criar/editar roles (apenas GET foi exposto),
+            // mas caso existam, este é o lugar para chamar POST/PUT.
             var res = await Http.PutAsJsonAsync($"Role/{RoleModal.Id}", RoleModal);
             if (res.IsSuccessStatusCode)
             {
                 ModalRoleAtivo = false;
                 await LoadRoles();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Erro ao salvar role: {res.StatusCode}");
             }
         }
         catch (Exception ex)

@@ -1,7 +1,6 @@
 ﻿@page "/chatboot"
 
 @using System.Text.Json
-@using System.Net
 @inject NavigationManager Navigation
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -87,111 +86,49 @@
     bool processingResponse = false;
     bool IsWaitingSuggestion = false;
 
-    Guid ChamadoId;
+    string ChamadoId = "";
     string UserMessage = "";
     string BotMessage = "";
     string UserResolution = "";
 
-    CancellationTokenSource? Polling;
-    const int PollDelay = 3000;
-
     protected override async Task OnInitializedAsync()
     {
-        await InicializarChat();
-    }
-
-    async Task InicializarChat()
-    {
-        // 🔄 Reset de estado
-        UserMessage = "";
-        BotMessage = "";
-        UserResolution = "";
+        SemChamado = false;
         AwaitingResolution = false;
         IsWaitingSuggestion = false;
 
-        // 🔹 Recupera ID do chamado criado
-        string? id = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId");
-
-        if (!Guid.TryParse(id, out ChamadoId))
-        {
-            SemChamado = true;
-            return;
-        }
-
-        // 🔹 Pega a descrição da pergunta
+        // ----------------------------
+        // 1. Carrega dados do localStorage
+        // ----------------------------
+        ChamadoId = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId");
         UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta") ?? "";
+        BotMessage = await JS.InvokeAsync<string>("localStorage.getItem", "sugestaoGemini") ?? "";
 
-        await EnsureAuthAsync();
-
-        var resp = await Http.GetAsync($"Chamados/{ChamadoId}");
-
-        // 🛑 403 — chamado não pertence ao usuário
-        if (resp.StatusCode == HttpStatusCode.Forbidden)
-        {
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
-            await JS.InvokeVoidAsync("alert", "Você não tem permissão para acessar este chamado.");
-            Navigation.NavigateTo("/painel-colaborador");
-            return;
-        }
-
-        if (!resp.IsSuccessStatusCode)
+        // ----------------------------
+        // 2. Se não existir chamado → mensagem inicial
+        // ----------------------------
+        if (string.IsNullOrWhiteSpace(ChamadoId))
         {
             SemChamado = true;
             return;
         }
 
-        var json = await resp.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        // 🔹 Sugestão já disponível?
-        BotMessage = root.GetProperty("sugestaoGemini").GetString() ?? "";
-
+        // ----------------------------
+        // 3. Se a IA JÁ MANDOU sugestão (vem no POST /Chamados)
+        // ----------------------------
         if (!string.IsNullOrWhiteSpace(BotMessage))
         {
+            IsWaitingSuggestion = false;
             AwaitingResolution = true;
             return;
         }
 
-        // 🔄 Caso contrário, inicia polling
-        Polling = new CancellationTokenSource();
-        _ = StartPollingSuggestion(Polling.Token);
-        IsWaitingSuggestion = true;
-    }
-
-    async Task StartPollingSuggestion(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            await Task.Delay(PollDelay, ct);
-            await EnsureAuthAsync();
-
-            var resp = await Http.GetAsync($"Chamados/{ChamadoId}");
-
-            // 🛑 403 dentro do polling
-            if (resp.StatusCode == HttpStatusCode.Forbidden)
-            {
-                await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
-                await JS.InvokeVoidAsync("alert", "Chamado não pertence ao seu usuário.");
-                Navigation.NavigateTo("/painel-colaborador");
-                return;
-            }
-
-            var json = await resp.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            var sugestao = root.GetProperty("sugestaoGemini").GetString();
-
-            if (!string.IsNullOrWhiteSpace(sugestao))
-            {
-                BotMessage = sugestao;
-                IsWaitingSuggestion = false;
-                AwaitingResolution = true;
-                InvokeAsync(StateHasChanged);
-                return;
-            }
-        }
+        // ----------------------------
+        // 4. Se não veio sugestão no localStorage, algo deu errado na criação
+        // ----------------------------
+        BotMessage = "Não foi possível carregar a sugestão da IA. Abra o chamado novamente.";
+        IsWaitingSuggestion = false;
+        AwaitingResolution = false;
     }
 
     async Task EnsureAuthAsync()
@@ -223,11 +160,11 @@
             BotMessage = "Perfeito! Seu chamado foi resolvido!";
 
             await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "sugestaoGemini");
             await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
 
             await Task.Delay(900);
-            Navigation.NavigateTo("/painel-colaborador");
+            Navigation.NavigateTo("/painelcolaborador");
         }
         else
         {
@@ -236,17 +173,11 @@
             await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
 
             await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chatResposta");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "sugestaoGemini");
             await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
 
             await Task.Delay(900);
-            Navigation.NavigateTo("/chat-colaborador");
+            Navigation.NavigateTo("/chatcolaborador");
         }
-    }
-
-    public void Dispose()
-    {
-        Polling?.Cancel();
-        Polling?.Dispose();
     }
 }
