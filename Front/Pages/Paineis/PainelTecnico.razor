@@ -6,6 +6,7 @@
 @using IA_RoboBerto.Models.Enums
 @using Front.Pages.Modais.Tecnico
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components.Web;
 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -17,6 +18,7 @@
 
 <link rel="stylesheet" href="css/PainelTecnico.css" />
 <link rel="stylesheet" href="css/ModalTecnico.css" />
+<link rel="stylesheet" href="css/Chat.css" />
 
 <div class="layout">
 
@@ -173,8 +175,8 @@
                                 @foreach (var c in toShow)
                                 {
                                     var ultimaMensagem = c.Mensagens?
-                                    .OrderByDescending(m => m.DataHoraMensagem)
-                                    .FirstOrDefault();
+                                        .OrderByDescending(m => m.DataHoraMensagem)
+                                        .FirstOrDefault();
 
                                     <div class="chamado-card @(EhExpirado(c) ? "chamado-expirado" : "")">
                                         <div class="chamado-card-header">
@@ -221,8 +223,8 @@
                                         <div class="card-actions">
                                             @* Assumir: só se não tiver técnico e não estiver fechado/cancelado *@
                                             @if ((c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id)) &&
-                                           c.Status != (int)EStatusChamado.FECHADO &&
-                                           c.Status != (int)EStatusChamado.CANCELADO)
+                                                 c.Status != (int)EStatusChamado.FECHADO &&
+                                                 c.Status != (int)EStatusChamado.CANCELADO)
                                             {
                                                 <button class="btn-primary"
                                                         @onclick='() => AbrirModalAcaoChamado(c, "assumir")'>
@@ -237,7 +239,7 @@
 
                                             @* Fechar / Cancelar apenas se não estiver fechado/cancelado *@
                                             @if (c.Status != (int)EStatusChamado.FECHADO &&
-                                           c.Status != (int)EStatusChamado.CANCELADO)
+                                                 c.Status != (int)EStatusChamado.CANCELADO)
                                             {
                                                 <button class="btn-warning"
                                                         @onclick='() => AbrirModalAcaoChamado(c, "fechar")'>
@@ -269,27 +271,45 @@
         {
             <section class="card chat-card">
                 <div class="chat-header">
-                    <div>
-                        <h3>Chat com Colaborador</h3>
-                        <p class="subtitle">
-                            Canal rápido para alinhamento com o colaborador sobre o chamado em atendimento.
-                        </p>
-                    </div>
+                    <h3>@TituloChat</h3>
+                    <p class="subtitle">@SubtituloChat</p>
                 </div>
 
                 <div class="chat-window" id="chatWindow">
-                    @foreach (var msg in Mensagens)
+                    @foreach (var m in ChatMensagens)
                     {
-                        <div class="msg @(msg.Remetente == "tecnico" ? "user" : "bot")">
-                            <div class="avatar">@((msg.Remetente == "tecnico") ? "👨‍🔧" : "🧑")</div>
-                            <div class="bubble">@msg.Texto</div>
+                        var souEu = m.Remetente == "tecnico";
+                        <div class="chat-row @(souEu ? "me" : "other")">
+                            @if (!souEu)
+                            {
+                                <div class="chat-avatar">👤</div>
+                            }
+
+                            <div class="chat-bubble">
+                                <span>@m.Texto</span>
+
+                                @if (souEu)
+                                {
+                                    <span class="check-icon @(m.Lida ? "read" : "")">✓✓</span>
+                                }
+                            </div>
+
+                            @if (souEu)
+                            {
+                                <div class="chat-avatar">🧑</div>
+                            }
                         </div>
                     }
                 </div>
 
                 <div class="chat-input-row">
-                    <input class="chat-input" @bind="NovaMensagem" placeholder="Digite sua mensagem..." />
-                    <button class="chat-send-btn" @onclick="EnviarMensagem">Enviar</button>
+                    <input class="chat-input"
+                           @bind="MensagemChat"
+                           placeholder="Digite sua mensagem..."
+                           @onkeydown="HandleChatKeyDown"
+                           @onkeydown:preventDefault="@(MensagemChat?.Length > 0)" />
+
+                    <button class="chat-send-btn" @onclick="EnviarMensagemChat">Enviar</button>
                 </div>
             </section>
         }
@@ -312,12 +332,42 @@
                              OnCancelar="FecharModalComentarChamado" />
 
 @code {
+    // =================== CHAT MODEL ===================
+    public class ChatMensagem
+    {
+        public string Remetente { get; set; } = "tecnico";
+        public string Texto { get; set; } = "";
+        public bool Lida { get; set; } = false;
+    }
 
-    // =================== INJEÇÕES ===================
-    [Inject] public SignalRChatService ChatService { get; set; } = default!;
+    class MensagemDTO
+    {
+        public string Texto { get; set; } = "";
+        public DateTime DataHoraMensagem { get; set; } = DateTime.Now;
+        public string AutorNome { get; set; } = "";
+    }
+
+    // =================== CAMPOS DE CHAT ===================
+    string TituloChat = "Chat com Colaborador";
+    string SubtituloChat = "Alinhamento rápido com o colaborador.";
+
+    // SignalR
+    HubConnection? _hubConnection;
 
     // Sala geral compartilhada entre colaborador e técnico
     readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
+    List<ChatMensagem> ChatMensagens = new();
+    string MensagemChat = "";
+
+    // =================== Envio com ENTER ===================
+    void HandleChatKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            _ = EnviarMensagemChat();
+        }
+    }
 
     // =================== ESTADOS GERAIS ===================
     int AbaSelecionada = 0;
@@ -398,74 +448,16 @@
         public string Tipo { get; set; } = "";
     }
 
-    // =================== CHAT (UI LOCAL) ===================
-    public class MensagemChat
-    {
-        public string Remetente { get; set; } = "usuario"; // "tecnico" ou "colaborador"
-        public string Texto { get; set; } = "";
-    }
-
-    List<MensagemChat> Mensagens = new();
-    string NovaMensagem = "";
-    PeriodicTimer? timer;
-
-    // (Reservado para futuro, se quiser chat por chamado)
-    Guid? ChamadoAtualId { get; set; }
-
     // =================== CICLO DE VIDA ===================
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
-        // 1) Token + HTTP
         await InjetarToken();
-
-        // 2) Dados iniciais
         await LoadUsuarioAtual();
         await LoadChamados();
         await InicializarChat();
-        StartTimer();
-
-        // 3) SignalR (chat em tempo real)
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
-            Nav.NavigateTo("/login", true);
-            return;
-        }
-
-        // Base da API (usa BaseAddress quando estiver configurado para a API)
-        var baseUrl = Http.BaseAddress?.ToString()?.TrimEnd('/') ?? Nav.BaseUri.TrimEnd('/');
-
-        try
-        {
-            ChatService.OnMensagemRecebida += HandleMensagemRecebida;
-            await ChatService.IniciarAsync(baseUrl, token);
-
-            // entra na sala "geral" compartilhada com o colaborador
-            await ChatService.EntrarNoChamado(ChatChamadoId);
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao conectar no chat em tempo real: {ex.Message}");
-        }
-    }
-
-    // Handler de mensagens recebidas via SignalR
-    // Usa o MensagemDTO global (o mesmo do SignalRChatService)
-    void HandleMensagemRecebida(Guid chamadoId, global::MensagemDTO mensagem)
-    {
-        // só processa a sala geral
-        if (chamadoId != ChatChamadoId)
-            return;
-
-        Mensagens.Add(new MensagemChat
-            {
-                Remetente = "colaborador",
-                Texto = mensagem.Texto
-            });
-        _ = InvokeAsync(StateHasChanged);
+        await GarantirConexaoChat();
     }
 
     // =================== TOKEN ===================
@@ -554,9 +546,9 @@
     IEnumerable<ChamadoDTO> ChamadosToShow() => ActiveTab switch
     {
         Tab.Pendentes => ChamadosPendentes.OrderByDescending(x => x.Prioridade),
-        Tab.Meus       => ChamadosMeus.OrderByDescending(x => x.Prioridade),
-        Tab.Expirados  => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
-        _              => Enumerable.Empty<ChamadoDTO>()
+        Tab.Meus      => ChamadosMeus.OrderByDescending(x => x.Prioridade),
+        Tab.Expirados => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
+        _             => Enumerable.Empty<ChamadoDTO>()
     };
 
     // =================== AÇÕES CHAMADOS (MODAIS) ===================
@@ -722,96 +714,126 @@
         Nav.NavigateTo("/login", true);
     }
 
-    // =================== CHAT (LOCAL + SIGNALR) ===================
+    // =================== CHAT (SignalR) ===================
     async Task InicializarChat()
     {
-        var pergunta = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnicoMensagemInicial");
-        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
-
-        try
+        // Mensagens iniciais opcionais
+        if (!ChatMensagens.Any())
         {
-            if (!string.IsNullOrEmpty(json))
-                Mensagens = JsonSerializer.Deserialize<List<MensagemChat>>(json) ?? new();
-        }
-        catch
-        {
-            Mensagens = new();
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chatTecnico");
-        }
-
-        if (Mensagens.Count == 0 && !string.IsNullOrEmpty(pergunta))
-        {
-            Mensagens.Add(new MensagemChat
-                {
-                    Remetente = "colaborador",
-                    Texto = pergunta
-                });
-            await SalvarChat();
-        }
-    }
-
-    async Task EnviarMensagem()
-    {
-        if (string.IsNullOrWhiteSpace(NovaMensagem)) return;
-
-        Mensagens.Add(new MensagemChat
+            ChatMensagens.Add(new ChatMensagem
             {
                 Remetente = "tecnico",
-                Texto = NovaMensagem
+                Texto = "Olá! Sou o técnico, como posso te ajudar?"
             });
+        }
+    }
 
-        await SalvarChat();
+    async Task GarantirConexaoChat()
+    {
+        if (_hubConnection is { State: HubConnectionState.Connected })
+            return;
 
-        // Envia sempre na sala geral (ChatChamadoId)
-        if (ChatService.Conectado)
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        if (string.IsNullOrWhiteSpace(token))
         {
-            await ChatService.EnviarMensagem(ChatChamadoId, NovaMensagem);
+            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+            Nav.NavigateTo("/login");
+            return;
         }
 
-        NovaMensagem = "";
-    }
-
-    async Task SalvarChat()
-    {
-        var json = JsonSerializer.Serialize(Mensagens);
-        await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnico", json);
-        await InvokeAsync(StateHasChanged);
-    }
-
-    void StartTimer()
-    {
-        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
-        _ = Task.Run(async () =>
+        var apiBase = Http.BaseAddress?.ToString().TrimEnd('/');
+        if (string.IsNullOrEmpty(apiBase))
         {
-            while (timer != null && await timer.WaitForNextTickAsync())
-            {
-                await AtualizarMensagens();
-            }
-        });
-    }
+            await JS.InvokeVoidAsync("alert", "BaseAddress da API não configurada no HttpClient.");
+            return;
+        }
 
-    async Task AtualizarMensagens()
-    {
-        var json = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnico");
-        if (string.IsNullOrEmpty(json)) return;
+        var hubUrl = $"{apiBase}/hubs/chat";
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl, options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<Guid, MensagemDTO>("ReceberMensagem", (chamadoId, msg) =>
+        {
+        if (chamadoId != ChatChamadoId)
+            return;
+
+        // Quando recebo mensagem do colaborador, marco as minhas como lidas
+        foreach (var m in ChatMensagens.Where(x => x.Remetente == "tecnico"))
+            m.Lida = true;
+
+        ChatMensagens.Add(new ChatMensagem
+            {
+                Remetente = "colaborador",
+                Texto = msg.Texto,
+                Lida = false
+            });
+
+        InvokeAsync(StateHasChanged);
+        });
 
         try
         {
-            var msgs = JsonSerializer.Deserialize<List<MensagemChat>>(json) ?? new();
-            if (msgs.Count != Mensagens.Count)
-            {
-                Mensagens = msgs;
-                await InvokeAsync(StateHasChanged);
-            }
+            await _hubConnection.StartAsync();
+            await _hubConnection.InvokeAsync("EntrarNoGrupoDoChamado", ChatChamadoId);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao conectar no chat em tempo real: {ex.Message}");
+        }
     }
 
+    async Task EnviarMensagemChat()
+    {
+        if (string.IsNullOrWhiteSpace(MensagemChat))
+            return;
+
+        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+        {
+            await GarantirConexaoChat();
+
+            if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+            {
+                await JS.InvokeVoidAsync("alert", "Não foi possível conectar ao chat em tempo real.");
+                return;
+            }
+        }
+
+        var texto = MensagemChat.Trim();
+        MensagemChat = "";
+
+        ChatMensagens.Add(new ChatMensagem
+        {
+                Remetente = "tecnico",
+                Texto = texto,
+                Lida = false
+        });
+
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await _hubConnection.InvokeAsync("EnviarMensagemParaGrupo", ChatChamadoId, texto);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar mensagem no chat: {ex.Message}");
+        }
+    }
+
+    // =================== DISPOSE ===================
     public void Dispose()
     {
-        timer?.Dispose();
-        ChatService.OnMensagemRecebida -= HandleMensagemRecebida;
-        _ = ChatService.EncerrarAsync();
+        if (_hubConnection != null)
+        {
+            _ = _hubConnection.StopAsync();
+            _ = _hubConnection.DisposeAsync();
+        }
     }
 
     // =================== HELPERS ===================

@@ -2,8 +2,9 @@
 
 @using System.Text.Json
 @using System.Text.Json.Serialization
-@using Front.Pages.Modais.Colaborador;
+@using Front.Pages.Modais.Colaborador
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components.Web
 
 @inject NavigationManager Navigation
 @inject HttpClient Http
@@ -12,6 +13,7 @@
 <PageTitle>Painel do Colaborador</PageTitle>
 
 <link rel="stylesheet" href="css/PainelColaborador.css" />
+<link rel="stylesheet" href="css/Chat.css" />
 
 <div class="layout">
 
@@ -119,7 +121,6 @@
                         {
                             <div class="chamado-ticket status-@c.Status.Replace(" ", "-").ToLower()">
 
-
                                 <div class="ticket-info">
                                     <p class="descricao-label">Título do chamado:</p>
                                     <h4 class="ticket-title">@c.Titulo</h4>
@@ -166,21 +167,48 @@
 
         @if (AbaSelecionada == 3)
         {
-            <section class="card">
-                <h3>Conversar com Técnico</h3>
+            <section class="card chat-card">
+                <div class="chat-header">
+                    <h3>@TituloChat</h3>
+                    <p class="subtitle">@SubtituloChat</p>
+                </div>
 
-                <div class="chat-window">
+                <div class="chat-window" id="chatWindow">
                     @foreach (var m in ChatMensagens)
                     {
-                        <div class="msg @(m.Remetente)">
-                            <div class="bubble">@m.Texto</div>
+                        var souEu = m.Remetente == "usuario";
+
+                        <div class="chat-row @(souEu ? "me" : "other")">
+                            @if (!souEu)
+                            {
+                                <div class="chat-avatar">👨‍🔧</div>
+                            }
+
+                            <div class="chat-bubble">
+                                <span>@m.Texto</span>
+
+                                @if (souEu)
+                                {
+                                    <span class="check-icon @(m.Lida ? "read" : "")">✓✓</span>
+                                }
+                            </div>
+
+                            @if (souEu)
+                            {
+                                <div class="chat-avatar">🧑</div>
+                            }
                         </div>
                     }
                 </div>
 
-                <div class="chat-input" style="display:flex; gap:8px; margin-top:10px;">
-                    <input class="input" style="flex:1" @bind="MensagemChat" placeholder="Digite sua mensagem..." />
-                    <button class="btn primary" @onclick="EnviarMensagemChat">Enviar</button>
+                <div class="chat-input-row">
+                    <input class="chat-input"
+                           @bind="MensagemChat"
+                           placeholder="Digite sua mensagem..."
+                           @onkeydown="HandleChatKeyDown"
+                           @onkeydown:preventDefault="@(MensagemChat?.Length > 0)" />
+
+                    <button class="chat-send-btn" @onclick="EnviarMensagemChat">Enviar</button>
                 </div>
             </section>
         }
@@ -238,15 +266,23 @@
 </div>
 
 @code {
+    // ======= Modelo de mensagem do chat =======
+    public class Mensagem
+    {
+        public string Remetente { get; set; } = "usuario";
+        public string Texto { get; set; } = "";
+        public bool Lida { get; set; } = false;
+    }
 
-    // Saudações ao usuário novo 
+    // Saudações / cabeçalho
     string UsuarioNome = "";
+    string TituloChat = "Conversar com Técnico";
+    string SubtituloChat = "Canal rápido com o suporte técnico.";
 
     // =============== SIGNALR / CHAT TEMPO REAL ===============
     HubConnection? _hubConnection;
 
     // Sala "geral" compartilhada entre colaborador e técnico
-    // Use o MESMO Guid no painel do técnico
     readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     // Modal para comentar no chamado
@@ -900,7 +936,6 @@
             return;
         }
 
-        // >>> IMPORTANTE: usar a base da API, não do Front
         var apiBase = Http.BaseAddress?.ToString().TrimEnd('/');
         if (string.IsNullOrEmpty(apiBase))
         {
@@ -922,6 +957,10 @@
         {
             if (chamadoId != ChatChamadoId)
                 return;
+
+            // marca minhas mensagens como lidas
+            foreach (var m in ChatMensagens.Where(x => x.Remetente == "usuario"))
+                m.Lida = true;
 
             ChatMensagens.Add(new Mensagem
             {
@@ -965,7 +1004,8 @@
         ChatMensagens.Add(new Mensagem
         {
             Remetente = "usuario",
-            Texto = texto
+            Texto = texto,
+            Lida = false
         });
         await InvokeAsync(StateHasChanged);
 
@@ -976,6 +1016,14 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao enviar mensagem no chat: {ex.Message}");
+        }
+    }
+
+    void HandleChatKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            _ = EnviarMensagemChat();
         }
     }
 
@@ -993,11 +1041,4 @@
     {
         Navigation.NavigateTo("/login");
     }
-
-    public class Mensagem
-    {
-        public string Remetente { get; set; } = "usuario";
-        public string Texto { get; set; } = "";
-    }
-
 }
