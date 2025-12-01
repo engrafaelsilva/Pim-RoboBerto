@@ -29,6 +29,7 @@
         }
         else
         {
+            @* Mensagem original do colaborador (descrição do chamado) *@
             @if (!string.IsNullOrEmpty(UserMessage))
             {
                 <div class="message user">
@@ -37,6 +38,7 @@
                 </div>
             }
 
+            @* Saudação inicial da IA *@
             <div class="message bot">
                 <div class="avatar bot-avatar">🤖</div>
                 <div class="bubble bot-bubble animate">
@@ -44,6 +46,7 @@
                 </div>
             </div>
 
+            @* Estado: carregando sugestão *@
             @if (IsWaitingSuggestion)
             {
                 <div class="message bot">
@@ -54,6 +57,7 @@
                 </div>
             }
 
+            @* Sugestão pronta *@
             @if (!string.IsNullOrEmpty(BotMessage) && !IsWaitingSuggestion)
             {
                 <div class="message bot">
@@ -62,6 +66,7 @@
                 </div>
             }
 
+            @* Pergunta se resolveu + campo de resposta *@
             @if (AwaitingResolution)
             {
                 <div class="message bot">
@@ -72,8 +77,29 @@
                     </div>
                 </div>
 
-                <input class="resolution-input" @bind="UserResolution" @bind:event="oninput" placeholder="Digite Sim ou Não" />
-                <button class="btn-send" @onclick="ProcessarResposta">@((processingResponse) ? "Enviando..." : "Enviar")</button>
+                <div class="resolution-area">
+                    <input class="resolution-input"
+                           @bind="UserResolution"
+                           @bind:event="oninput"
+                           placeholder="Digite Sim ou Não" />
+
+                    <button class="btn-send"
+                            @onclick="ProcessarResposta"
+                            disabled="@processingResponse">
+                        @(processingResponse ? "Enviando..." : "Enviar")
+                    </button>
+                </div>
+            }
+
+            @* Mensagem final após o usuário responder (já está em BotMessage) *@
+            @if (MostrandoMensagemFinal)
+            {
+                <div class="message bot">
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="bubble bot-bubble animate">
+                        @BotMessage
+                    </div>
+                </div>
             }
         }
     </div>
@@ -85,47 +111,54 @@
     bool AwaitingResolution = false;
     bool processingResponse = false;
     bool IsWaitingSuggestion = false;
+    bool MostrandoMensagemFinal = false;
 
     string ChamadoId = "";
     string UserMessage = "";
     string BotMessage = "";
     string UserResolution = "";
+    string SugestaoOriginal = "";
 
     protected override async Task OnInitializedAsync()
     {
         SemChamado = false;
         AwaitingResolution = false;
         IsWaitingSuggestion = false;
+        MostrandoMensagemFinal = false;
 
-        // ----------------------------
         // 1. Carrega dados do localStorage
-        // ----------------------------
         ChamadoId = await JS.InvokeAsync<string>("localStorage.getItem", "chamadoId");
         UserMessage = await JS.InvokeAsync<string>("localStorage.getItem", "chatPergunta") ?? "";
-        BotMessage = await JS.InvokeAsync<string>("localStorage.getItem", "sugestaoGemini") ?? "";
+        SugestaoOriginal = await JS.InvokeAsync<string>("localStorage.getItem", "sugestaoGemini") ?? "";
 
-        // ----------------------------
         // 2. Se não existir chamado → mensagem inicial
-        // ----------------------------
         if (string.IsNullOrWhiteSpace(ChamadoId))
         {
             SemChamado = true;
             return;
         }
 
-        // ----------------------------
         // 3. Se a IA JÁ MANDOU sugestão (vem no POST /Chamados)
-        // ----------------------------
-        if (!string.IsNullOrWhiteSpace(BotMessage))
+        if (!string.IsNullOrWhiteSpace(SugestaoOriginal))
         {
-            IsWaitingSuggestion = false;
-            AwaitingResolution = true;
+            // Mostra primeiro "Gerando sugestão..." e depois a sugestão de fato
+            IsWaitingSuggestion = true;
+            AwaitingResolution = false;
+            BotMessage = string.Empty;
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(1800); // tempo da animação "Gerando sugestão..."
+                BotMessage = SugestaoOriginal;
+                IsWaitingSuggestion = false;
+                AwaitingResolution = true;
+                await InvokeAsync(StateHasChanged);
+            });
+
             return;
         }
 
-        // ----------------------------
         // 4. Se não veio sugestão no localStorage, algo deu errado na criação
-        // ----------------------------
         BotMessage = "Não foi possível carregar a sugestão da IA. Abra o chamado novamente.";
         IsWaitingSuggestion = false;
         AwaitingResolution = false;
@@ -150,34 +183,56 @@
             return;
         }
 
+        processingResponse = true;
+        StateHasChanged();
+
         await EnsureAuthAsync();
 
-        bool resolveu = resp == "sim";
+        bool resolveu = (resp == "sim");
+
+        // PATCH: marcar se resolveu sugestão
         await Http.PatchAsJsonAsync($"Chamados/{ChamadoId}/alterar-resolveu-sugestao", resolveu);
 
+        // Esconde pergunta + input
+        AwaitingResolution = false;
+
+        // Prepara mensagem final
         if (resolveu)
         {
-            BotMessage = "Perfeito! Seu chamado foi resolvido!";
-
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "sugestaoGemini");
-            await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
-
-            await Task.Delay(900);
-            Navigation.NavigateTo("/painelcolaborador");
+            BotMessage = "Perfeito! Sua solicitação foi marcada como resolvida. Obrigado por utilizar o assistente! ✅";
         }
         else
         {
-            BotMessage = "Entendido! Encaminhando para um técnico.";
+            BotMessage = "Entendido! Seu chamado será encaminhado automaticamente para um técnico humano dar continuidade ao atendimento. 👨‍🔧";
+        }
 
+        MostrandoMensagemFinal = true;
+        StateHasChanged();
+
+        // Limpa/reseta localStorage conforme o fluxo original
+        if (resolveu)
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "sugestaoGemini");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
+        }
+        else
+        {
+            // Guarda a pergunta para o técnico ver no painel dele
             await JS.InvokeVoidAsync("localStorage.setItem", "chatTecnicoMensagemInicial", UserMessage);
 
             await JS.InvokeVoidAsync("localStorage.removeItem", "chatPergunta");
             await JS.InvokeVoidAsync("localStorage.removeItem", "sugestaoGemini");
             await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
-
-            await Task.Delay(900);
-            Navigation.NavigateTo("/painelcolaborador");
         }
+
+        // Pequeno delay para o usuário "sentir" a resposta final
+        await Task.Delay(1800);
+
+        processingResponse = false;
+        MostrandoMensagemFinal = false;
+
+        // Volta para o painel do colaborador
+        Navigation.NavigateTo("/painelcolaborador", true);
     }
 }

@@ -308,3 +308,126 @@
         padding: 20px;
     }
 }
+
+/* Deashboard */
+.dashboard-card {
+    padding: 24px;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.btn-refresh {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    background: #f3f4f6;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .btn-refresh:hover {
+        background: #e5e7eb;
+    }
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px;
+}
+
+.dashboard-grid-sec {
+    margin-top: 18px;
+}
+
+.dash-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .dash-card.primary {
+        background: #111827;
+        color: #f9fafb;
+    }
+
+        .dash-card.primary .dash-label {
+            color: #d1d5db;
+        }
+
+.dash-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+}
+
+.dash-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.dash-card.primary .dash-value {
+    color: #f9fafb;
+}
+
+.dash-value-sm {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.dash-footer {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Cabeçalho cards de tabela */
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+/* Relatórios */
+.relatorios-card {
+    padding: 24px;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+}
+
+.relatorio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-top: 8px;
+}
+
+.relatorio-section h6 {
+    font-weight: 600;
+    margin-bottom: 8px;
+}

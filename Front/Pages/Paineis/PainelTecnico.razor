@@ -5,6 +5,7 @@
 @using System.Threading
 @using IA_RoboBerto.Models.Enums
 @using Front.Pages.Modais.Tecnico
+@using Microsoft.AspNetCore.SignalR.Client
 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -25,7 +26,6 @@
             <div class="logo-icon">🛠️</div>
             <div class="logo-text">
                 <span class="logo-title">Painel do Técnico</span>
-                <span class="logo-sub">@UsuarioAtual?.Nome</span>
             </div>
         </div>
 
@@ -46,7 +46,7 @@
 
             <button class="menu-item @(AbaSelecionada == 2 ? "active" : "")"
                     @onclick="() => AbaSelecionada = 2">
-                <span>Chat com Colaborador</span>
+                <span>Conversar com Colaborador</span>
             </button>
 
             <button class="menu-item logout" @onclick="Sair">
@@ -64,7 +64,7 @@
             <section class="card home-card">
                 <div class="home-header">
                     <div>
-                        <h1>👨‍🔧 Olá, @UsuarioAtual?.Nome!</h1>
+                        <h1>👨‍🔧 Olá, Bob!</h1>
                         <p class="home-subtitle">
                             Aqui você acompanha seus chamados, assume pendências, comenta, fecha e interage com os colaboradores.
                         </p>
@@ -313,6 +313,12 @@
 
 @code {
 
+    // =================== INJEÇÕES ===================
+    [Inject] public SignalRChatService ChatService { get; set; } = default!;
+
+    // Sala geral compartilhada entre colaborador e técnico
+    readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
     // =================== ESTADOS GERAIS ===================
     int AbaSelecionada = 0;
 
@@ -368,14 +374,15 @@
         public Autor Autor { get; set; } = new();
         public TecnicoDTO Tecnico { get; set; } = new();
         public CategoriaMini Categoria { get; set; } = new();
-        public List<MensagemDTO> Mensagens { get; set; } = new();
+        public List<MensagemChamadoDTO> Mensagens { get; set; } = new();
     }
 
     public class Autor { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
     public class TecnicoDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
     public class CategoriaMini { public string Nome { get; set; } = ""; }
 
-    public class MensagemDTO
+    // DTO das mensagens de chamado (para lista / timeline)
+    public class MensagemChamadoDTO
     {
         public string Id { get; set; } = "";
         public Autor Autor { get; set; } = new();
@@ -391,7 +398,7 @@
         public string Tipo { get; set; } = "";
     }
 
-    // =================== CHAT ===================
+    // =================== CHAT (UI LOCAL) ===================
     public class MensagemChat
     {
         public string Remetente { get; set; } = "usuario"; // "tecnico" ou "colaborador"
@@ -402,19 +409,66 @@
     string NovaMensagem = "";
     PeriodicTimer? timer;
 
+    // (Reservado para futuro, se quiser chat por chamado)
+    Guid? ChamadoAtualId { get; set; }
+
     // =================== CICLO DE VIDA ===================
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender) return;
+
+        // 1) Token + HTTP
+        await InjetarToken();
+
+        // 2) Dados iniciais
+        await LoadUsuarioAtual();
+        await LoadChamados();
+        await InicializarChat();
+        StartTimer();
+
+        // 3) SignalR (chat em tempo real)
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        if (string.IsNullOrWhiteSpace(token))
         {
-            await InjetarToken();
-            await LoadUsuarioAtual();
-            await LoadChamados();
-            await InicializarChat();
-            StartTimer();
+            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        // Base da API (usa BaseAddress quando estiver configurado para a API)
+        var baseUrl = Http.BaseAddress?.ToString()?.TrimEnd('/') ?? Nav.BaseUri.TrimEnd('/');
+
+        try
+        {
+            ChatService.OnMensagemRecebida += HandleMensagemRecebida;
+            await ChatService.IniciarAsync(baseUrl, token);
+
+            // entra na sala "geral" compartilhada com o colaborador
+            await ChatService.EntrarNoChamado(ChatChamadoId);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao conectar no chat em tempo real: {ex.Message}");
         }
     }
 
+    // Handler de mensagens recebidas via SignalR
+    // Usa o MensagemDTO global (o mesmo do SignalRChatService)
+    void HandleMensagemRecebida(Guid chamadoId, global::MensagemDTO mensagem)
+    {
+        // só processa a sala geral
+        if (chamadoId != ChatChamadoId)
+            return;
+
+        Mensagens.Add(new MensagemChat
+            {
+                Remetente = "colaborador",
+                Texto = mensagem.Texto
+            });
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    // =================== TOKEN ===================
     async Task InjetarToken()
     {
         try
@@ -436,11 +490,11 @@
         }
     }
 
+    // =================== USUÁRIO ATUAL ===================
     async Task LoadUsuarioAtual()
     {
         try
         {
-            // GET /Usuario/eu
             var res = await Http.GetAsync("Usuario/eu");
             if (res.IsSuccessStatusCode)
             {
@@ -457,6 +511,7 @@
         }
     }
 
+    // =================== CHAMADOS ===================
     async Task LoadChamados()
     {
         ListaCarregando = true;
@@ -464,21 +519,18 @@
 
         try
         {
-            // LISTA GERAL: GET /Chamados
             var resGeral = await Http.GetAsync("Chamados?paginaAtual=0&tamanho=900");
             if (resGeral.IsSuccessStatusCode)
             {
                 ChamadosGerais = await resGeral.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
             }
 
-            // PENDENTES TÉCNICO: GET /Chamados/pendentes-tecnico
             var resPend = await Http.GetAsync("Chamados/pendentes-tecnico");
             if (resPend.IsSuccessStatusCode)
             {
                 ChamadosPendentes = await resPend.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
             }
 
-            // EXPIRADOS: GET /Chamados/expirados
             var resExp = await Http.GetAsync("Chamados/expirados");
             if (resExp.IsSuccessStatusCode)
             {
@@ -502,9 +554,9 @@
     IEnumerable<ChamadoDTO> ChamadosToShow() => ActiveTab switch
     {
         Tab.Pendentes => ChamadosPendentes.OrderByDescending(x => x.Prioridade),
-        Tab.Meus => ChamadosMeus.OrderByDescending(x => x.Prioridade),
-        Tab.Expirados => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
-        _ => Enumerable.Empty<ChamadoDTO>()
+        Tab.Meus       => ChamadosMeus.OrderByDescending(x => x.Prioridade),
+        Tab.Expirados  => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
+        _              => Enumerable.Empty<ChamadoDTO>()
     };
 
     // =================== AÇÕES CHAMADOS (MODAIS) ===================
@@ -517,22 +569,19 @@
         {
             case "assumir":
                 TituloModalConfirmacaoChamado = "Assumir chamado";
-                MensagemModalConfirmacaoChamado =
-                    $"Deseja assumir o chamado \"{chamado.Titulo}\"?";
+                MensagemModalConfirmacaoChamado = $"Deseja assumir o chamado \"{chamado.Titulo}\"?";
                 TextoBotaoConfirmacaoChamado = "Assumir";
                 break;
 
             case "fechar":
                 TituloModalConfirmacaoChamado = "Fechar chamado";
-                MensagemModalConfirmacaoChamado =
-                    $"Deseja marcar o chamado \"{chamado.Titulo}\" como FECHADO?";
+                MensagemModalConfirmacaoChamado = $"Deseja marcar o chamado \"{chamado.Titulo}\" como FECHADO?";
                 TextoBotaoConfirmacaoChamado = "Fechar";
                 break;
 
             case "cancelar":
                 TituloModalConfirmacaoChamado = "Cancelar chamado";
-                MensagemModalConfirmacaoChamado =
-                    $"Deseja cancelar o chamado \"{chamado.Titulo}\"?";
+                MensagemModalConfirmacaoChamado = $"Deseja cancelar o chamado \"{chamado.Titulo}\"?";
                 TextoBotaoConfirmacaoChamado = "Cancelar";
                 break;
 
@@ -568,25 +617,17 @@
             switch (TipoAcaoChamado)
             {
                 case "assumir":
-                    // PATCH /Chamados/{id}/acatar-chamado
                     res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/acatar-chamado", null);
                     break;
-
                 case "fechar":
-                    // PATCH /Chamados/{id}/fechar-chamado
                     res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/fechar-chamado", null);
                     break;
-
                 case "cancelar":
-                    // PATCH /Chamados/{id}/cancelar
                     res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/cancelar", null);
                     break;
-
                 case "sugestao":
-                    // PATCH /Chamados/{id}/alterar-resolveu-sugestao
                     res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/alterar-resolveu-sugestao", null);
                     break;
-
                 default:
                     await JS.InvokeVoidAsync("alert", "Ação inválida.");
                     return;
@@ -643,7 +684,6 @@
 
         try
         {
-            // PATCH /Chamados/{id}/comentar
             var payload = new { texto };
             var res = await Http.PatchAsync(
                 $"Chamados/{ChamadoSelecionado.Id}/comentar",
@@ -682,7 +722,7 @@
         Nav.NavigateTo("/login", true);
     }
 
-    // =================== CHAT ===================
+    // =================== CHAT (LOCAL + SIGNALR) ===================
     async Task InicializarChat()
     {
         var pergunta = await JS.InvokeAsync<string>("localStorage.getItem", "chatTecnicoMensagemInicial");
@@ -721,6 +761,13 @@
             });
 
         await SalvarChat();
+
+        // Envia sempre na sala geral (ChatChamadoId)
+        if (ChatService.Conectado)
+        {
+            await ChatService.EnviarMensagem(ChatChamadoId, NovaMensagem);
+        }
+
         NovaMensagem = "";
     }
 
@@ -760,16 +807,21 @@
         catch { }
     }
 
-    public void Dispose() => timer?.Dispose();
+    public void Dispose()
+    {
+        timer?.Dispose();
+        ChatService.OnMensagemRecebida -= HandleMensagemRecebida;
+        _ = ChatService.EncerrarAsync();
+    }
 
     // =================== HELPERS ===================
     string GetStatusTexto(int status) => status switch
     {
-        (int)EStatusChamado.ABERTO => "Aberto",
+        (int)EStatusChamado.ABERTO          => "Aberto",
         (int)EStatusChamado.SUGESTAO_GERADA => "Sugestão Gerada",
-        (int)EStatusChamado.FECHADO => "Fechado",
-        (int)EStatusChamado.CANCELADO => "Cancelado",
-        _ => "Desconhecido"
+        (int)EStatusChamado.FECHADO         => "Fechado",
+        (int)EStatusChamado.CANCELADO       => "Cancelado",
+        _                                   => "Desconhecido"
     };
 
     bool EhExpirado(ChamadoDTO c) =>
@@ -788,13 +840,14 @@
 
         return c.Status switch
         {
-            (int)EStatusChamado.FECHADO => "status-fechado",
-            (int)EStatusChamado.CANCELADO => "status-cancelado",
-            (int)EStatusChamado.ABERTO => (c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id))
-                ? "status-pendente"
-                : "status-atendimento",
+            (int)EStatusChamado.FECHADO         => "status-fechado",
+            (int)EStatusChamado.CANCELADO       => "status-cancelado",
+            (int)EStatusChamado.ABERTO when
+                (c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id))
+                                                => "status-pendente",
+            (int)EStatusChamado.ABERTO          => "status-atendimento",
             (int)EStatusChamado.SUGESTAO_GERADA => "status-atendimento",
-            _ => "status-pendente"
+            _                                   => "status-pendente"
         };
     }
 

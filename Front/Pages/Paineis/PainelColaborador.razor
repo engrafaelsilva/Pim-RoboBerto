@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using Front.Pages.Modais.Colaborador;
+@using Microsoft.AspNetCore.SignalR.Client
 
 @inject NavigationManager Navigation
 @inject HttpClient Http
@@ -21,7 +22,7 @@
             <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
             <button class="menu-item" @onclick="() => AbrirNovoChamado()">Abrir Chamado</button>
             <button class="menu-item" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
-            <button class="menu-item" @onclick="() => AbrirChatGeral()">Conversar com Técnico</button>
+            <button class="menu-item" @onclick="AbrirChatGeral">Conversar com Técnico</button>
             <button class="menu-item logout" @onclick="Logout">Sair</button>
         </nav>
     </aside>
@@ -117,8 +118,8 @@
                         @foreach (var c in Chamados)
                         {
                             <div class="chamado-ticket status-@c.Status.Replace(" ", "-").ToLower()">
-                                
-                                
+
+
                                 <div class="ticket-info">
                                     <p class="descricao-label">Título do chamado:</p>
                                     <h4 class="ticket-title">@c.Titulo</h4>
@@ -127,11 +128,11 @@
                                     <p class="ia-suggestion-label">Comentário:</p>
                                     <p class="ticket-ai-suggestion">Aqui vai o comentário do chamado...</p>
                                 </div>
-                                
+
                                 <div class="ticket-meta">
                                     <span class="meta-item-data">Data de abertura: <br /> <strong>@c.DataAbertura.ToString("g")</strong></span>
                                     <span class="meta-item-data">Prioridade: <br /> <strong>@c.Prioridade</strong></span>
-                                    <span class="meta-item-data">Status do chamado: <br/> <strong>@c.Status</strong></span>
+                                    <span class="meta-item-data">Status do chamado: <br /> <strong>@c.Status</strong></span>
                                 </div>
 
                                 <div class="ticket-actions">
@@ -238,8 +239,15 @@
 
 @code {
 
-    // Saldações ao usuário novo 
+    // Saudações ao usuário novo 
     string UsuarioNome = "";
+
+    // =============== SIGNALR / CHAT TEMPO REAL ===============
+    HubConnection? _hubConnection;
+
+    // Sala "geral" compartilhada entre colaborador e técnico
+    // Use o MESMO Guid no painel do técnico
+    readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     // Modal para comentar no chamado
     ModalComentar? ModalComentarRef;
@@ -282,14 +290,10 @@
                 await JS.InvokeVoidAsync("alert", "Comentário enviado com sucesso.");
                 ModalComentarRef?.Hide();
 
-                // Se os detalhes desse chamado estiverem abertos, recarrega as mensagens
                 if (ChamadoDetalhe != null && ChamadoDetalhe.Id == ChamadoIdSelecionadoParaComentario)
                 {
                     await VerDetalhes(ChamadoIdSelecionadoParaComentario);
                 }
-
-                // (Opcional) Recarregar lista de chamados
-                // await CarregarMeusChamados(paginaAtual, tamanhoPagina);
             }
             else
             {
@@ -302,7 +306,7 @@
         }
     }
 
-    // ======================= MÉTODO NOVO — ESSENCIAL =======================
+    // ======================= TOKEN =======================
     async Task<bool> InjetarToken()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
@@ -326,7 +330,7 @@
         public Guid Id { get; set; }
         public string Titulo { get; set; } = "";
         public string Descricao { get; set; } = "";
-        public string Prioridade { get; set; } = "";  // ← ADICIONADO
+        public string Prioridade { get; set; } = "";
         public string Status { get; set; } = "";
         public DateTime DataAbertura { get; set; } = DateTime.Now;
         public string SugestaoGemini { get; set; } = "";
@@ -383,18 +387,16 @@
 
     ModalConfirmacaoIA? ModalConfirmacao;
 
+    // =============== CICLO DE VIDA ===============
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // pega o valor salvo
             var nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "usuarioNome") ?? "";
 
-            // se vier vazio, tenta pegar o e-mail
             if (string.IsNullOrWhiteSpace(nomeBruto))
                 nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "email") ?? "";
 
-            // processa para transformar em "Ricardo"
             UsuarioNome = ExtrairPrimeiroNome(nomeBruto);
         }
         catch
@@ -408,34 +410,29 @@
         if (string.IsNullOrWhiteSpace(valor))
             return "";
 
-        // Caso seja e-mail → pega parte antes do @
         if (valor.Contains("@"))
             valor = valor.Split('@')[0];
 
-        // Caso seja nome completo → pega primeira palavra
         var partes = valor.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var primeiro = partes[0];
 
-        // Capitaliza (ricardo → Ricardo)
         if (primeiro.Length == 1)
             return primeiro.ToUpper();
 
         return char.ToUpper(primeiro[0]) + primeiro.Substring(1).ToLower();
     }
-    
-    // Método auxiliar para Abrir Novo Chamado (usado no botão da lista vazia)
+
     void AbrirNovoChamado()
     {
         AbaSelecionada = 1;
     }
 
-    // Método auxiliar para Abrir Chat Geral (não vinculado a chamado)
-    void AbrirChatGeral()
+    async Task AbrirChatGeral()
     {
-        // Limpa o ID do chamado no localStorage para indicar que é um chat geral
-        _ = JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "chamadoId");
         AbaSelecionada = 3;
+        await GarantirConexaoChat();
     }
 
     // =================== LISTAR MEUS CHAMADOS ====================
@@ -449,7 +446,7 @@
         try
         {
             paginaAtual = pagina;
-            tamanhoPagina = 10;
+            tamanhoPagina = tamanho;
 
             var resp = await Http.GetAsync($"Chamados/meus?paginaAtual={pagina}&tamanho={tamanho}");
 
@@ -465,18 +462,15 @@
                     {
                         var item = new ChamadoListItem();
 
-                        // Id
                         if (el.TryGetProperty("id", out var idp) && idp.ValueKind == JsonValueKind.String)
                         {
                             if (Guid.TryParse(idp.GetString(), out var tmpId))
                                 item.Id = tmpId;
                         }
 
-                        // Título e Descrição
                         if (el.TryGetProperty("titulo", out var tp)) item.Titulo = tp.GetString() ?? "";
                         if (el.TryGetProperty("descricao", out var dp)) item.Descricao = dp.GetString() ?? "";
 
-                        // Status (número -> string)
                         if (el.TryGetProperty("status", out var sp))
                         {
                             switch (sp.ValueKind)
@@ -488,8 +482,8 @@
                                         0 => "Aberto",
                                         1 => "Em andamento",
                                         2 => "Fechado",
-                                        3 => "Resolvido", // Adicionei status 3, comum em sistemas de ticket
-                                        4 => "Aguardando Confirmação", // Adicionei status 4
+                                        3 => "Resolvido",
+                                        4 => "Aguardando Confirmação",
                                         _ => "Desconhecido"
                                     };
                                     break;
@@ -499,7 +493,6 @@
                             }
                         }
 
-                        // Prioridade (número -> string)
                         if (el.TryGetProperty("prioridade", out var pp))
                         {
                             switch (pp.ValueKind)
@@ -520,14 +513,12 @@
                             }
                         }
 
-                        // Data de abertura
                         if (el.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
                         {
                             if (DateTime.TryParse(dtp.GetString(), out var tmpDt))
                                 item.DataAbertura = tmpDt;
                         }
 
-                        // Sugestão IA
                         if (el.TryGetProperty("sugestaoGemini", out var sg) && sg.ValueKind == JsonValueKind.String)
                             item.SugestaoGemini = sg.GetString() ?? "";
 
@@ -614,14 +605,12 @@
                 Guid.TryParse(r.GetProperty("id").GetString(), out criadoId);
                 sugestaoGemini = r.GetProperty("sugestaoGemini").GetString() ?? "";
 
-                // 🔥 Salva dados necessários para o ChatBoot
                 await JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", NovoChamado.Descricao);
                 await JS.InvokeVoidAsync("localStorage.setItem", "sugestaoGemini", sugestaoGemini);
                 await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", criadoId.ToString());
 
                 LimparFormulario();
 
-                // 🔥 Vai para o chatboot direto
                 Navigation.NavigateTo("/chatboot");
             }
             else
@@ -674,13 +663,13 @@
                 if (root.TryGetProperty("titulo", out var tp)) det.Titulo = tp.GetString() ?? "";
                 if (root.TryGetProperty("descricao", out var dp)) det.Descricao = dp.GetString() ?? "";
                 if (root.TryGetProperty("sugestaoGemini", out var sg)) det.SugestaoGemini = sg.GetString() ?? "";
-                
-                // Conversão de Status (se vier como número ou string)
-                if (root.TryGetProperty("status", out var st)) 
+
+                if (root.TryGetProperty("status", out var st))
                 {
-                     if (st.ValueKind == JsonValueKind.Number)
-                     {
-                        det.Status = st.GetInt32() switch {
+                    if (st.ValueKind == JsonValueKind.Number)
+                    {
+                        det.Status = st.GetInt32() switch
+                        {
                             0 => "Aberto",
                             1 => "Em andamento",
                             2 => "Fechado",
@@ -688,11 +677,12 @@
                             4 => "Aguardando Confirmação",
                             _ => "Desconhecido"
                         };
-                     } else {
+                    }
+                    else
+                    {
                         det.Status = st.GetString() ?? "";
-                     }
+                    }
                 }
-
 
                 if (root.TryGetProperty("dataAbertura", out var dtp) && dtp.ValueKind == JsonValueKind.String)
                 {
@@ -700,14 +690,12 @@
                         det.DataAbertura = tmpDt;
                 }
 
-                // tecnico
                 if (root.TryGetProperty("tecnico", out var t) && t.ValueKind == JsonValueKind.Object)
                 {
                     if (t.TryGetProperty("nome", out var nomeP))
                         det.TecnicoNome = nomeP.GetString() ?? "";
                 }
 
-                // sugestaoResolveu
                 if (root.TryGetProperty("sugestaoResolveu", out var sr) && sr.ValueKind != JsonValueKind.Null)
                 {
                     if (sr.ValueKind == JsonValueKind.True || sr.ValueKind == JsonValueKind.False)
@@ -781,11 +769,11 @@
             {
                 ChamadoDetalhe.Mensagens ??= new List<MensagemDTO>();
                 ChamadoDetalhe.Mensagens.Add(new MensagemDTO
-                    {
-                        Texto = ComentarioTexto,
-                        DataHoraMensagem = DateTime.Now,
-                        AutorNome = "Você"
-                    });
+                {
+                    Texto = ComentarioTexto,
+                    DataHoraMensagem = DateTime.Now,
+                    AutorNome = "Você"
+                });
 
                 ComentarioTexto = "";
                 StateHasChanged();
@@ -817,9 +805,8 @@
             if (resp.IsSuccessStatusCode)
             {
                 await JS.InvokeVoidAsync("alert", "Chamado cancelado.");
-                // Recarrega listagem e detalhes
                 await CarregarMeusChamados(paginaAtual, tamanhoPagina);
-                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) FecharDetalhes(); // Fecha detalhes para não mostrar info desatualizada
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) FecharDetalhes();
             }
             else
             {
@@ -856,7 +843,6 @@
         }
     }
 
-	// Processar a confirmação da sugestão da IA vinda do modal
     async Task ProcessarConfirmacaoIA((bool resolveu, Guid chamadoId) data)
     {
         var resolveu = data.resolveu;
@@ -872,7 +858,6 @@
             {
                 await JS.InvokeVoidAsync("alert", "Obrigado — sua resposta foi registrada.");
 
-                // Recarrega lista e detalhes
                 await CarregarMeusChamados(paginaAtual, tamanhoPagina);
 
                 if (ChamadoDetalhe != null && ChamadoDetalhe.Id == chamadoId)
@@ -889,11 +874,8 @@
         }
     }
 
-
-    // Chamado quando o modal solicita "Ir para Chat"
     async Task IrParaChatDoModal(Guid chamadoId)
     {
-        // Mantém chatPergunta/chatResposta/chamadoId no localStorage (já setados ao criar)
         try
         {
             await JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", chamadoId.ToString());
@@ -902,19 +884,105 @@
         Navigation.NavigateTo("/chatboot");
     }
 
-    // ================= AUXILIARES ====================
-    void EnviarMensagemChat()
+    // ================= CHAT TEMPO REAL (SignalR) ====================
+    async Task GarantirConexaoChat()
     {
-        if (string.IsNullOrWhiteSpace(MensagemChat)) return;
-        ChatMensagens.Add(new Mensagem { Remetente = "usuario", Texto = MensagemChat });
+        if (_hubConnection is { State: HubConnectionState.Connected })
+            return;
+
+        if (!await InjetarToken()) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        // >>> IMPORTANTE: usar a base da API, não do Front
+        var apiBase = Http.BaseAddress?.ToString().TrimEnd('/');
+        if (string.IsNullOrEmpty(apiBase))
+        {
+            await JS.InvokeVoidAsync("alert", "BaseAddress da API não configurada no HttpClient.");
+            return;
+        }
+
+        var hubUrl = $"{apiBase}/hubs/chat";
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl, options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<Guid, MensagemDTO>("ReceberMensagem", (chamadoId, msg) =>
+        {
+            if (chamadoId != ChatChamadoId)
+                return;
+
+            ChatMensagens.Add(new Mensagem
+            {
+                Remetente = "tecnico",
+                Texto = msg.Texto
+            });
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+            await _hubConnection.InvokeAsync("EntrarNoGrupoDoChamado", ChatChamadoId);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao conectar no chat em tempo real: {ex.Message}");
+        }
+    }
+
+    async Task EnviarMensagemChat()
+    {
+        if (string.IsNullOrWhiteSpace(MensagemChat))
+            return;
+
+        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+        {
+            await GarantirConexaoChat();
+
+            if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+            {
+                await JS.InvokeVoidAsync("alert", "Não foi possível conectar ao chat em tempo real.");
+                return;
+            }
+        }
+
+        var texto = MensagemChat.Trim();
         MensagemChat = "";
+
+        ChatMensagens.Add(new Mensagem
+        {
+            Remetente = "usuario",
+            Texto = texto
+        });
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await _hubConnection.InvokeAsync("EnviarMensagemParaGrupo", ChatChamadoId, texto);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao enviar mensagem no chat: {ex.Message}");
+        }
     }
 
     void AbrirChatBootPara(Guid id)
     {
         _ = JS.InvokeVoidAsync("localStorage.setItem", "chamadoId", id.ToString());
         _ = JS.InvokeVoidAsync("localStorage.setItem", "chatPergunta", Chamados.FirstOrDefault(c => c.Id == id)?.Descricao ?? "");
-        // Mantemos também a chatResposta (se existir na lista)
         var sugest = Chamados.FirstOrDefault(c => c.Id == id)?.SugestaoGemini ?? "";
         if (!string.IsNullOrEmpty(sugest))
             _ = JS.InvokeVoidAsync("localStorage.setItem", "chatResposta", sugest);
@@ -926,6 +994,10 @@
         Navigation.NavigateTo("/login");
     }
 
-    public class Mensagem { public string Remetente { get; set; } = "usuario"; public string Texto { get; set; } = ""; }
+    public class Mensagem
+    {
+        public string Remetente { get; set; } = "usuario";
+        public string Texto { get; set; } = "";
+    }
 
 }

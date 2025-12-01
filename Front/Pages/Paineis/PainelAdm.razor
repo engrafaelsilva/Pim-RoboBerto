@@ -40,49 +40,88 @@
     <!-- Conteúdo -->
     <main class="conteudo">
 
+        @* ===================== DASHBOARD GERAL ===================== *@
         @if (AbaSelecionada == 0)
         {
-            <section class="card p-4">
-                <h1 class="mb-3">📊 Dashboard Geral</h1>
+            <section class="card dashboard-card">
+                <div class="dashboard-header">
+                    <div>
+                        <h1>📊 Dashboard Geral</h1>
+                        <p class="subtitle">
+                            Visão consolidada dos chamados, usuários, categorias e departamentos do sistema.
+                        </p>
+                    </div>
+                    <button class="btn-refresh" @onclick="LoadAllData">
+                        🔄 Atualizar dados
+                    </button>
+                </div>
 
-                <div class="row text-center">
-                    <div class="col-md-3 mb-3">
-                        <div class="card shadow-sm p-3">
-                            <h4>@Chamados.Count</h4>
-                            <p>Total de Chamados</p>
-                        </div>
+                <div class="dashboard-grid">
+                    <div class="dash-card primary">
+                        <span class="dash-label">Total de chamados</span>
+                        <span class="dash-value">@TotalChamados</span>
+                        <span class="dash-footer">Abertos: @ChamadosAbertos • Fechados: @ChamadosFechados</span>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <div class="card shadow-sm p-3">
-                            <h4>@Chamados.Count(c => c.Status == (int)EStatusChamado.ABERTO)</h4>
-                            <p>Abertos</p>
-                        </div>
+                    <div class="dash-card">
+                        <span class="dash-label">Chamados por status</span>
+                        <span class="dash-value-sm">
+                            Aberto: @ChamadosAbertos<br />
+                            Sugestão: @ChamadosSugestao<br />
+                            Fechado: @ChamadosFechados<br />
+                            Cancelado: @ChamadosCancelados
+                        </span>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <div class="card shadow-sm p-3">
-                            <h4>@Chamados.Count(c => c.Status == (int)EStatusChamado.FECHADO)</h4>
-                            <p>Fechados</p>
-                        </div>
+                    <div class="dash-card">
+                        <span class="dash-label">Chamados sem técnico</span>
+                        <span class="dash-value">@ChamadosSemTecnico</span>
+                        <span class="dash-footer">Pendentes de alocação</span>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <div class="card shadow-sm p-3">
-                            <h4>@Usuarios.Count</h4>
-                            <p>Usuários</p>
-                        </div>
+                    <div class="dash-card">
+                        <span class="dash-label">Usuários</span>
+                        <span class="dash-value">@Usuarios.Count</span>
+                        <span class="dash-footer">
+                            Técnicos ativos: @TotalTecnicosAtivos
+                        </span>
                     </div>
                 </div>
 
+                <div class="dashboard-grid dashboard-grid-sec">
+                    <div class="dash-card">
+                        <span class="dash-label">Categorias</span>
+                        <span class="dash-value">@Categorias.Count</span>
+                        <span class="dash-footer">Organizam os chamados por tema</span>
+                    </div>
+
+                    <div class="dash-card">
+                        <span class="dash-label">Departamentos</span>
+                        <span class="dash-value">@Departamentos.Count</span>
+                        <span class="dash-footer">Relacionados aos usuários</span>
+                    </div>
+
+                    <div class="dash-card">
+                        <span class="dash-label">Prioridade média (0–3)</span>
+                        <span class="dash-value">@PrioridadeMedia.ToString("0.0")</span>
+                        <span class="dash-footer">Cálculo sobre todos os chamados</span>
+                    </div>
+                </div>
             </section>
         }
 
+        @* ===================== CHAMADOS (TABELA ADM) ===================== *@
         @if (AbaSelecionada == 1)
         {
-            <div class="card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold">📋 Chamados</h5>
+            <section class="card">
+                <div class="card-header-flex">
+                    <div>
+                        <h5 class="fw-bold">📋 Chamados</h5>
+                        <p class="subtitle">
+                            Lista de todos os chamados cadastrados no sistema.
+                        </p>
+                    </div>
+                    <button class="btn-refresh" @onclick="LoadChamados">🔄 Recarregar</button>
                 </div>
 
                 <table class="table table-hover text-center">
@@ -94,14 +133,16 @@
                             <th>Status</th>
                             <th>Prioridade</th>
                             <th>Técnico</th>
-                            <th>Último Comentário</th>   @* NOVO *@
+                            <th>Último Comentário</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var c in Chamados)
                         {
-                            var ultimoComentario = c.Mensagens?.OrderByDescending(m => m.DataHoraMensagem).FirstOrDefault()?.Texto ?? "-";
+                            var ultimoComentario = c.Mensagens?
+                                .OrderByDescending(m => m.DataHoraMensagem)
+                                .FirstOrDefault()?.Texto ?? "-";
 
                             <tr>
                                 <td>@(c.Id?.Length > 6 ? c.Id.Substring(0, 6) : c.Id)</td>
@@ -110,7 +151,7 @@
                                 <td>@GetStatusTexto(c.Status)</td>
                                 <td>@GetPrioridadeTexto(c.Prioridade)</td>
                                 <td>@(c.Tecnico?.Nome ?? "-")</td>
-                                <td>@ultimoComentario</td> @* NOVO *@
+                                <td>@ultimoComentario</td>
                                 <td>
                                     <button class="btn btn-danger btn-sm"
                                             @onclick='() => AbrirModalAcaoChamado(c, "excluir")'>
@@ -136,12 +177,13 @@
                         }
                     </tbody>
                 </table>
-            </div>
+            </section>
         }
 
+        @* ===================== USUÁRIOS ===================== *@
         @if (AbaSelecionada == 2)
         {
-            <div class="card p-4">
+            <section class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold">👥 Usuários</h5>
                     <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarUsuario">Criar Usuário</button>
@@ -173,12 +215,13 @@
                         }
                     </tbody>
                 </table>
-            </div>
+            </section>
         }
 
+        @* ===================== CATEGORIAS ===================== *@
         @if (AbaSelecionada == 3)
         {
-            <div class="card p-4">
+            <section class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold">🏷️ Categorias</h5>
                     <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarCategoria">Criar Categoria</button>
@@ -194,12 +237,13 @@
                         </div>
                     </div>
                 }
-            </div>
+            </section>
         }
 
+        @* ===================== DEPARTAMENTOS ===================== *@
         @if (AbaSelecionada == 4)
         {
-            <div class="card p-4">
+            <section class="card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold">🏢 Departamentos</h5>
                     <button class="btn btn-success btn-sm" @onclick="AbrirModalCriarDepartamento">Criar Departamento</button>
@@ -221,33 +265,143 @@
                         </div>
                     </div>
                 }
-            </div>
+            </section>
         }
 
+        @* ===================== ROLES (APENAS LEITURA) ===================== *@
         @if (AbaSelecionada == 5)
         {
-            <div class="card p-4">
+            <section class="card p-4">
                 <h5 class="fw-bold mb-3">🛡️ Roles</h5>
-                <p class="text-muted">Roles são somente leitura via API (só GET está exposto).</p>
-                @foreach (var r in Roles)
-                {
-                    <div class="border p-2 rounded mb-2 d-flex justify-content-between align-items-center">
-                        @r.Nome
-                        <div>
-                            <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalRole(r)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverRole(r.Id)">Excluir</button>
-                        </div>
-                    </div>
-                }
-            </div>
+                <p class="text-muted mb-3">
+                    Roles são somente leitura via API (somente endpoints GET estão expostos).
+                </p>
+
+                <table class="table table-striped text-center">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Nome da Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Roles)
+                        {
+                            <tr>
+                                <td>@r.Nome</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
         }
 
+        @* ===================== RELATÓRIOS DINÂMICOS ===================== *@
         @if (AbaSelecionada == 6)
         {
-            <div class="card p-4">
-                <h5 class="fw-bold mb-3">📊 Relatórios</h5>
-                <p>Em breve: dashboards com SLA, técnicos livres, chamados urgentes e muito mais.</p>
-            </div>
+            <section class="card relatorios-card">
+                <div class="card-header-flex">
+                    <div>
+                        <h5 class="fw-bold mb-1">📊 Relatórios Dinâmicos</h5>
+                        <p class="subtitle">
+                            Análise consolidada dos chamados por status, prioridade, técnico e categoria.
+                        </p>
+                    </div>
+                    <button class="btn-refresh" @onclick="LoadChamados">🔄 Atualizar chamados</button>
+                </div>
+
+                <div class="relatorio-grid">
+                    <div class="relatorio-section">
+                        <h6>Chamados por Status</h6>
+                        <table class="table table-sm table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Chamados.GroupBy(c => c.Status))
+                                {
+                                    <tr>
+                                        <td>@GetStatusTexto(g.Key)</td>
+                                        <td>@g.Count()</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="relatorio-section">
+                        <h6>Chamados por Prioridade</h6>
+                        <table class="table table-sm table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th>Prioridade</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Chamados.GroupBy(c => c.Prioridade))
+                                {
+                                    <tr>
+                                        <td>@GetPrioridadeTexto(g.Key)</td>
+                                        <td>@g.Count()</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="relatorio-section">
+                        <h6>Chamados por Técnico</h6>
+                        <table class="table table-sm table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th>Técnico</th>
+                                    <th>Abertos</th>
+                                    <th>Fechados</th>
+                                    <th>Cancelados</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Chamados
+                                    .Where(c => c.Tecnico != null && !string.IsNullOrWhiteSpace(c.Tecnico.Nome))
+                                    .GroupBy(c => c.Tecnico.Nome))
+                                {
+                                    <tr>
+                                        <td>@g.Key</td>
+                                        <td>@g.Count(c => c.Status == (int)EStatusChamado.ABERTO || c.Status == (int)EStatusChamado.SUGESTAO_GERADA)</td>
+                                        <td>@g.Count(c => c.Status == (int)EStatusChamado.FECHADO)</td>
+                                        <td>@g.Count(c => c.Status == (int)EStatusChamado.CANCELADO)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="relatorio-section">
+                        <h6>Chamados por Categoria</h6>
+                        <table class="table table-sm table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th>Categoria</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Chamados
+                                    .GroupBy(c => c.Categoria?.Nome ?? "Sem categoria"))
+                                {
+                                    <tr>
+                                        <td>@g.Key</td>
+                                        <td>@g.Count()</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         }
 
     </main>
@@ -322,35 +476,19 @@
     </div>
 }
 
-@if (ModalRoleAtivo)
-{
-    <div class="modal-backdrop">
-        <div class="modal">
-            <h5>Editar Role</h5>
-            <input class="form-control mb-2" placeholder="Nome" @bind="RoleModal.Nome" />
-            <div class="d-flex gap-2">
-                <button class="btn btn-success" @onclick="SalvarRole">Salvar</button>
-                <button class="btn btn-secondary" @onclick="() => ModalRoleAtivo=false">Cancelar</button>
-            </div>
-        </div>
-    </div>
-}
+<ModalConfirmarAcaoChamado Mostrar="@MostrarModalConfirmacaoChamado"
+                           Titulo="@TituloModalConfirmacaoChamado"
+                           Mensagem="@MensagemModalConfirmacaoChamado"
+                           TextoBotaoConfirmar="@TextoBotaoConfirmacaoChamado"
+                           OnConfirmar="ConfirmarAcaoChamado"
+                           OnCancelar="FecharModalConfirmacaoChamado" />
 
-<ModalConfirmarAcaoChamado
-    Mostrar="@MostrarModalConfirmacaoChamado"
-    Titulo="@TituloModalConfirmacaoChamado"
-    Mensagem="@MensagemModalConfirmacaoChamado"
-    TextoBotaoConfirmar="@TextoBotaoConfirmacaoChamado"
-    OnConfirmar="ConfirmarAcaoChamado"
-    OnCancelar="FecharModalConfirmacaoChamado" />
-
-<ModalComentarChamado
-    Mostrar="@MostrarModalComentarChamado"
-    Titulo="Comentar Chamado"
-    TextoComentario="@ComentarioChamadoTexto"
-    IsSaving="@IsSavingComentarioChamado"
-    OnEnviar="EnviarComentarioChamado"
-    OnCancelar="FecharModalComentarChamado" />
+<ModalComentarChamado Mostrar="@MostrarModalComentarChamado"
+                      Titulo="Comentar Chamado"
+                      TextoComentario="@ComentarioChamadoTexto"
+                      IsSaving="@IsSavingComentarioChamado"
+                      OnEnviar="EnviarComentarioChamado"
+                      OnCancelar="FecharModalComentarChamado" />
 
 @code {
 
@@ -515,7 +653,6 @@
         }
     }
 
-
     int AbaSelecionada = 0;
 
     List<ChamadoDTO> Chamados { get; set; } = new();
@@ -536,9 +673,6 @@
     bool ModalDepartamentoAtivo = false;
     bool IsCreatingDepartamento = false;
     DepartamentoDTO DepartamentoModal = new();
-
-    bool ModalRoleAtivo = false;
-    RoleDTO RoleModal = new();
 
     // DTOs (leves, focados no front)
     public class ChamadoDTO
@@ -568,14 +702,13 @@
         public bool Ativo { get; set; } = true;
     }
 
-    // Modelo usado no modal de criação/edição (inclui senha e ids)
     public class UsuarioModalModel
     {
         public string Id { get; set; } = "";
         public string Nome { get; set; } = "";
         public string Email { get; set; } = "";
         public string Senha { get; set; } = "";
-        public string Tipo { get; set; } = "COLABORADOR"; // role name
+        public string Tipo { get; set; } = "COLABORADOR";
         public bool Ativo { get; set; } = true;
         public string DepartamentoId { get; set; } = "";
         public string RoleId { get; set; } = "";
@@ -679,7 +812,6 @@
             var res = await Http.GetAsync("Categoria");
             if (res.IsSuccessStatusCode)
             {
-                // Nota: seu controller retorna resultado.Items — mas aqui pedimos lista direta
                 Categorias = await res.Content.ReadFromJsonAsync<List<CategoriaDTO>>() ?? new();
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -731,7 +863,6 @@
 
     // ============================== CRUD GENÉRICOS ==============================
 
-    // ==== EXCLUSÃO DE USUÁRIO COM MODAL ====
     void ConfirmRemoverUsuario(string id, string nome)
     {
         UsuarioIdParaExcluir = id;
@@ -769,7 +900,6 @@
         }
     }
 
-    // Categoria continua usando confirm nativo (se quiser pode trocar pra modal depois)
     async Task ConfirmRemoverCategoria(string id)
     {
         var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta categoria?");
@@ -794,7 +924,6 @@
         }
     }
 
-    // ==== EXCLUSÃO DE DEPARTAMENTO COM MODAL ====
     void ConfirmRemoverDepartamento(string id, string nome)
     {
         DepartamentoIdParaExcluir = id;
@@ -832,42 +961,18 @@
         }
     }
 
-    async Task ConfirmRemoverRole(string id)
-    {
-        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta role?");
-        if (ok) await RemoverRole(id);
-    }
-
-    async Task RemoverRole(string id)
-    {
-        try
-        {
-            var res = await Http.DeleteAsync($"Role/{id}");
-            if (res.IsSuccessStatusCode)
-                await LoadRoles();
-            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-                await JS.InvokeVoidAsync("alert", "Não é possível remover a role (integridade - 409).");
-            else
-                await JS.InvokeVoidAsync("alert", $"Erro ao remover role: {res.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao remover role: {ex.Message}");
-        }
-    }
-
     // ============================== MODAIS SALVAR ==============================
     void AbrirModalUsuario(UsuarioDTO u)
     {
         IsCreatingUsuario = false;
         UsuarioModal = new UsuarioModalModel
-            {
-                Id = u.Id,
-                Nome = u.Nome,
-                Email = u.Email,
-                Tipo = u.Tipo,
-                Ativo = u.Ativo
-            };
+        {
+            Id = u.Id,
+            Nome = u.Nome,
+            Email = u.Email,
+            Tipo = u.Tipo,
+            Ativo = u.Ativo
+        };
         ModalUsuarioAtivo = true;
     }
 
@@ -884,12 +989,11 @@
         {
             if (IsCreatingUsuario)
             {
-                // Payload para criação — ajuste os nomes caso seu backend precise outros nomes
                 var payload = new
                 {
                     Nome = UsuarioModal.Nome,
                     Email = UsuarioModal.Email,
-                    Senha = UsuarioModal.Senha,           // backend espera campo senha
+                    Senha = UsuarioModal.Senha,
                     DepartamentoId = string.IsNullOrEmpty(UsuarioModal.DepartamentoId) ? (string?)null : UsuarioModal.DepartamentoId,
                     RoleId = Roles.FirstOrDefault(r => r.Nome == UsuarioModal.Tipo)?.Id
                 };
@@ -911,7 +1015,6 @@
             }
             else
             {
-                // Atualização — tentamos colocar um payload compatível com o que seu serviço usa para atualizar
                 var payload = new
                 {
                     Id = UsuarioModal.Id,
@@ -1054,35 +1157,6 @@
         }
     }
 
-    void AbrirModalRole(RoleDTO r)
-    {
-        RoleModal = new RoleDTO { Id = r.Id, Nome = r.Nome };
-        ModalRoleAtivo = true;
-    }
-
-    async Task SalvarRole()
-    {
-        try
-        {
-            // Sua API não possui endpoints para criar/editar roles (apenas GET foi exposto),
-            // mas caso existam, este é o lugar para chamar POST/PUT.
-            var res = await Http.PutAsJsonAsync($"Role/{RoleModal.Id}", RoleModal);
-            if (res.IsSuccessStatusCode)
-            {
-                ModalRoleAtivo = false;
-                await LoadRoles();
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", $"Erro ao salvar role: {res.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao salvar role: {ex.Message}");
-        }
-    }
-
     // ============================== SAIR ==============================
     async Task Sair()
     {
@@ -1110,4 +1184,21 @@
         3 => "Crítica",
         _ => "?"
     };
+
+    // === Métricas para o Dashboard (números reais a partir da lista) ===
+    int TotalChamados => Chamados.Count;
+    int ChamadosAbertos => Chamados.Count(c => c.Status == (int)EStatusChamado.ABERTO);
+    int ChamadosSugestao => Chamados.Count(c => c.Status == (int)EStatusChamado.SUGESTAO_GERADA);
+    int ChamadosFechados => Chamados.Count(c => c.Status == (int)EStatusChamado.FECHADO);
+    int ChamadosCancelados => Chamados.Count(c => c.Status == (int)EStatusChamado.CANCELADO);
+    int ChamadosSemTecnico => Chamados.Count(c =>
+        (c.Tecnico == null || string.IsNullOrWhiteSpace(c.Tecnico.Id)) &&
+        c.Status != (int)EStatusChamado.FECHADO &&
+        c.Status != (int)EStatusChamado.CANCELADO);
+
+    int TotalTecnicosAtivos => Usuarios.Count(u =>
+        u.Ativo && u.Tipo != null && u.Tipo.ToUpper().Contains("TECNICO"));
+
+    double PrioridadeMedia =>
+        Chamados.Count == 0 ? 0 : Chamados.Average(c => c.Prioridade);
 }

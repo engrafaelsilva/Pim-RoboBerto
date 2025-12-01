@@ -19,6 +19,9 @@ namespace Front
                 BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/")
             });
 
+            // AQUI entra o serviço do SignalR (FRONT)
+            builder.Services.AddSingleton<SignalRChatService>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

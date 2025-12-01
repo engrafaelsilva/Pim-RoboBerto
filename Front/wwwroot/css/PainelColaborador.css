@@ -222,6 +222,7 @@ h3 {
 
     .btn-control:hover:not(:disabled) {
         background: #e5e7eb;
+        cursor: not-allowed;
     }
 
 .page-info {
@@ -416,6 +417,16 @@ h3 {
 }
 
     .btn-comment:hover {
+        background: #003f9e;
+        color: white;
+    }
+
+.btn-refresh {
+    background: #0054d8;
+    color: white;
+}
+
+    .btn-refresh:hover {
         background: #003f9e;
         color: white;
     }
