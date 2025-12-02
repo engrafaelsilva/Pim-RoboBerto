@@ -60,7 +60,7 @@ class _RegistrarFormState extends State<RegistrarForm> {
               TextFormField(
                 controller: _usuarioController,
                 decoration: InputDecoration(
-                  hintText: 'seu.usuario',
+                  hintText: 'Nome completo',
                   fillColor: Colors.grey[200],
                   filled: true,
                   border: OutlineInputBorder(
