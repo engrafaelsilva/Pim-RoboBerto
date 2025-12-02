@@ -1,0 +1,84 @@
+﻿/* Fundo escuro atrás do modal */
+.modal-backdrop-admin {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+
+/* Caixa do modal */
+.modal-admin {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    min-width: 320px;
+    max-width: 480px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+    .modal-admin h5 {
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+
+    .modal-admin.modal-confirm p {
+        margin-bottom: 16px;
+    }
+
+/* Botões do rodapé do modal */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mensagens de status no topo do painel */
+.admin-alert {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+}
+
+.admin-alert-success {
+    background-color: #eaf8e9;
+    color: #256029;
+    border-color: #c8e6c9;
+}
+
+.admin-alert-error {
+    background-color: #ffeaea;
+    color: #b71c1c;
+    border-color: #ffcdd2;
+}
+
+/* Barra de carregamento global */
+.admin-loading-bar {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    background: #eef2ff;
+    color: #3730a3;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}

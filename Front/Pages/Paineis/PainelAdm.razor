@@ -7,6 +7,7 @@
 @using System.Threading.Tasks
 @using IA_RoboBerto.Models.Enums
 @using Front.Pages.Modais.Admin
+@using System.Net.Http.Headers
 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -40,6 +41,22 @@
     <!-- Conteúdo -->
     <main class="conteudo">
 
+        @* MENSAGEM GLOBAL DE STATUS *@
+        @if (!string.IsNullOrEmpty(UiStatusMessage))
+        {
+            <div class="admin-alert @(UiStatusIsError ? "admin-alert-error" : "admin-alert-success")">
+                @UiStatusMessage
+            </div>
+        }
+
+        @* BARRA DE CARREGAMENTO GLOBAL (QUALQUER COISA CARREGANDO) *@
+        @if (IsAnyLoading)
+        {
+            <div class="admin-loading-bar">
+                <span>@LoadingText</span>
+            </div>
+        }
+
         @* ===================== DASHBOARD GERAL ===================== *@
         @if (AbaSelecionada == 0)
         {
@@ -51,8 +68,10 @@
                             Visão consolidada dos chamados, usuários, categorias e departamentos do sistema.
                         </p>
                     </div>
-                    <button class="btn-refresh" @onclick="LoadAllData">
-                        🔄 Atualizar dados
+                    <button class="btn-refresh"
+                            disabled="@IsLoadingAllData"
+                            @onclick="LoadAllData">
+                        @(IsLoadingAllData ? "⏳ Atualizando..." : "🔄 Atualizar dados")
                     </button>
                 </div>
 
@@ -102,7 +121,7 @@
                     </div>
 
                     <div class="dash-card">
-                        <span class="dash-label">Prioridade média (0–3)</span>
+                        <span class="dash-label">Prioridade média (0–2)</span>
                         <span class="dash-value">@PrioridadeMedia.ToString("0.0")</span>
                         <span class="dash-footer">Cálculo sobre todos os chamados</span>
                     </div>
@@ -121,7 +140,11 @@
                             Lista de todos os chamados cadastrados no sistema.
                         </p>
                     </div>
-                    <button class="btn-refresh" @onclick="LoadChamados">🔄 Recarregar</button>
+                    <button class="btn-refresh"
+                            disabled="@IsLoadingChamados"
+                            @onclick="LoadChamados">
+                        @(IsLoadingChamados ? "⏳ Recarregando..." : "🔄 Recarregar")
+                    </button>
                 </div>
 
                 <table class="table table-hover text-center">
@@ -233,7 +256,7 @@
                         @c.Nome
                         <div>
                             <button class="btn btn-warning btn-sm" @onclick="() => AbrirModalCategoria(c)">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverCategoria(c.Id)">Excluir</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmRemoverCategoria(c.Id, c.Nome)">Excluir</button>
                         </div>
                     </div>
                 }
@@ -302,11 +325,12 @@
                 <div class="card-header-flex">
                     <div>
                         <h5 class="fw-bold mb-1">📊 Relatórios Dinâmicos</h5>
-                        <p class="subtitle">
-                            Análise consolidada dos chamados por status, prioridade, técnico e categoria.
-                        </p>
                     </div>
-                    <button class="btn-refresh" @onclick="LoadChamados">🔄 Atualizar chamados</button>
+                    <button class="btn-refresh"
+                            disabled="@IsLoadingChamados"
+                            @onclick="LoadChamados">
+                        @(IsLoadingChamados ? "⏳ Atualizando..." : "🔄 Atualizar chamados")
+                    </button>
                 </div>
 
                 <div class="relatorio-grid">
@@ -407,11 +431,12 @@
     </main>
 </div>
 
-<!-- MODAIS -->
+@* ===================== MODAIS DE FORMULÁRIO ===================== *@
+
 @if (ModalUsuarioAtivo)
 {
-    <div class="modal-backdrop">
-        <div class="modal">
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin">
             <h5>@(IsCreatingUsuario ? "Criar Usuário" : "Editar Usuário")</h5>
 
             <input class="form-control mb-2" placeholder="Nome" @bind="UsuarioModal.Nome" />
@@ -435,12 +460,12 @@
                 }
             </select>
 
-            <div class="form-check mb-2">
+            <div class="form-check mb-3">
                 <input class="form-check-input" type="checkbox" @bind="UsuarioModal.Ativo" />
                 <label class="form-check-label">Ativo</label>
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="modal-actions">
                 <button class="btn btn-success" @onclick="SalvarUsuario">Salvar</button>
                 <button class="btn btn-secondary" @onclick="() => ModalUsuarioAtivo = false">Cancelar</button>
             </div>
@@ -450,11 +475,11 @@
 
 @if (ModalCategoriaAtivo)
 {
-    <div class="modal-backdrop">
-        <div class="modal">
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin">
             <h5>@(IsCreatingCategoria ? "Criar Categoria" : "Editar Categoria")</h5>
-            <input class="form-control mb-2" placeholder="Nome" @bind="CategoriaModal.Nome" />
-            <div class="d-flex gap-2">
+            <input class="form-control mb-3" placeholder="Nome" @bind="CategoriaModal.Nome" />
+            <div class="modal-actions">
                 <button class="btn btn-success" @onclick="SalvarCategoria">Salvar</button>
                 <button class="btn btn-secondary" @onclick="() => ModalCategoriaAtivo=false">Cancelar</button>
             </div>
@@ -464,13 +489,56 @@
 
 @if (ModalDepartamentoAtivo)
 {
-    <div class="modal-backdrop">
-        <div class="modal">
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin">
             <h5>@(IsCreatingDepartamento ? "Criar Departamento" : "Editar Departamento")</h5>
-            <input class="form-control mb-2" placeholder="Nome" @bind="DepartamentoModal.Nome" />
-            <div class="d-flex gap-2">
+            <input class="form-control mb-3" placeholder="Nome" @bind="DepartamentoModal.Nome" />
+            <div class="modal-actions">
                 <button class="btn btn-success" @onclick="SalvarDepartamento">Salvar</button>
                 <button class="btn btn-secondary" @onclick="() => ModalDepartamentoAtivo=false">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===================== MODAIS DE CONFIRMAÇÃO ===================== *@
+@if (ModalConfirmacaoUsuarioAtivo)
+{
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin modal-confirm">
+            <h5>Excluir usuário</h5>
+            <p>Deseja realmente excluir o usuário <strong>@UsuarioNomeParaExcluir</strong>? Esta ação é irreversível.</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" @onclick="RemoverUsuarioConfirmado">Excluir</button>
+                <button class="btn btn-secondary" @onclick="FecharModalConfirmacaoUsuario">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ModalConfirmacaoCategoriaAtivo)
+{
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin modal-confirm">
+            <h5>Excluir categoria</h5>
+            <p>Deseja realmente excluir a categoria <strong>@CategoriaNomeParaExcluir</strong>?</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" @onclick="RemoverCategoriaConfirmado">Excluir</button>
+                <button class="btn btn-secondary" @onclick="FecharModalConfirmacaoCategoria">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ModalConfirmacaoDepartamentoAtivo)
+{
+    <div class="modal-backdrop-admin">
+        <div class="modal-admin modal-confirm">
+            <h5>Excluir departamento</h5>
+            <p>Deseja realmente excluir o departamento <strong>@DepartamentoNomeParaExcluir</strong>?</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" @onclick="RemoverDepartamentoConfirmado">Excluir</button>
+                <button class="btn btn-secondary" @onclick="FecharModalConfirmacaoDepartamento">Cancelar</button>
             </div>
         </div>
     </div>
@@ -492,9 +560,38 @@
 
 @code {
 
+    // ================== STATUS GLOBAL / LOADING ==================
+    string UiStatusMessage { get; set; }
+    bool UiStatusIsError { get; set; }
+
+    bool IsLoadingAllData { get; set; }
+    bool IsLoadingChamados { get; set; }
+    string LoadingText { get; set; } = "";
+
+    bool IsAnyLoading => IsLoadingAllData || IsLoadingChamados;
+
+    void ShowSuccess(string msg)
+    {
+        UiStatusMessage = msg;
+        UiStatusIsError = false;
+        StateHasChanged();
+    }
+
+    void ShowError(string msg)
+    {
+        UiStatusMessage = msg;
+        UiStatusIsError = true;
+        StateHasChanged();
+    }
+
+    // ================== ESTADO PARA CONFIRMAÇÕES ==================
     bool ModalConfirmacaoUsuarioAtivo = false;
     string UsuarioIdParaExcluir = "";
     string UsuarioNomeParaExcluir = "";
+
+    bool ModalConfirmacaoCategoriaAtivo = false;
+    string CategoriaIdParaExcluir = "";
+    string CategoriaNomeParaExcluir = "";
 
     bool ModalConfirmacaoDepartamentoAtivo = false;
     string DepartamentoIdParaExcluir = "";
@@ -551,7 +648,7 @@
     {
         if (ChamadoSelecionado == null || string.IsNullOrEmpty(TipoAcaoChamado))
         {
-            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            ShowError("Nenhum chamado selecionado.");
             return;
         }
 
@@ -578,24 +675,25 @@
             if (res.IsSuccessStatusCode)
             {
                 await LoadChamados();
+                ShowSuccess("Ação executada com sucesso no chamado.");
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                await JS.InvokeVoidAsync("alert", "Você não tem permissão para executar esta ação.");
+                ShowError("Você não tem permissão para executar esta ação.");
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
-                await JS.InvokeVoidAsync("alert", "Operação não permitida (409 - integridade).");
+                ShowError("Operação não permitida (409 - integridade).");
             }
             else
             {
                 var txt = await res.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {res.StatusCode}\n{txt}");
+                ShowError($"Erro ao realizar ação: {res.StatusCode}\n{txt}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {ex.Message}");
+            ShowError($"Erro ao realizar ação: {ex.Message}");
         }
         finally
         {
@@ -621,7 +719,7 @@
     {
         if (ChamadoSelecionado == null)
         {
-            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            ShowError("Nenhum chamado selecionado.");
             return;
         }
 
@@ -636,16 +734,17 @@
             {
                 await LoadChamados();
                 await FecharModalComentarChamado();
+                ShowSuccess("Comentário enviado com sucesso.");
             }
             else
             {
                 var txt = await res.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
+                ShowError($"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+            ShowError($"Erro ao enviar comentário: {ex.Message}");
         }
         finally
         {
@@ -725,14 +824,14 @@
         {
             var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
 
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrWhiteSpace(token))
             {
                 Nav.NavigateTo("/login", true);
                 return;
             }
 
-            if (!Http.DefaultRequestHeaders.Contains("Authorization"))
-                Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            Http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
         }
         catch
         {
@@ -752,56 +851,86 @@
 
     async Task LoadAllData()
     {
-        await LoadChamados();
-        await LoadUsuarios();
-        await LoadCategorias();
-        await LoadDepartamentos();
-        await LoadRoles();
+        try
+        {
+            IsLoadingAllData = true;
+            LoadingText = "Atualizando dados do painel...";
+            UiStatusMessage = null;
+
+            await LoadChamados();
+            await LoadUsuarios();
+            await LoadCategorias();
+            await LoadDepartamentos();
+            await LoadRoles();
+            ShowSuccess("Dados atualizados com sucesso.");
+        }
+        finally
+        {
+            IsLoadingAllData = false;
+            LoadingText = "";
+            StateHasChanged();
+        }
     }
 
     // ============================== LOADS ====================================
     async Task LoadChamados()
     {
+        IsLoadingChamados = true;
+        LoadingText = "Carregando chamados...";
+        StateHasChanged();
+
         try
         {
-            var res = await Http.GetAsync("Chamados?paginaAtual=0&tamanho=900");
-            if (res.IsSuccessStatusCode)
+            try
             {
-                Chamados = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+                var res = await Http.GetAsync("Chamados?paginaAtual=0&tamanho=900");
+                if (res.IsSuccessStatusCode)
+                {
+                    Chamados = await res.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    ShowError("Sessão expirada. Faça login novamente.");
+                    Nav.NavigateTo("/login", true);
+                }
+                else
+                {
+                    ShowError($"Erro ao carregar chamados: {res.StatusCode}");
+                }
             }
-            else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
-                Nav.NavigateTo("/login", true);
+                ShowError($"Erro ao carregar chamados: {ex.Message}");
             }
         }
-        catch (Exception ex)
+        finally
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar chamados: {ex.Message}");
+            IsLoadingChamados = false;
+            LoadingText = IsLoadingAllData ? "Atualizando dados do painel..." : "";
+            StateHasChanged();
         }
-
-        StateHasChanged();
     }
 
     async Task LoadUsuarios()
     {
         try
         {
-            var res = await Http.GetAsync("Usuario");
+            var res = await Http.GetAsync("Usuario?paginaAtual=0&tamanho=900");
             if (res.IsSuccessStatusCode)
                 Usuarios = await res.Content.ReadFromJsonAsync<List<UsuarioDTO>>() ?? new();
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                ShowError("Sessão expirada. Faça login novamente.");
                 Nav.NavigateTo("/login", true);
             }
             else
             {
-                await JS.InvokeVoidAsync("alert", $"Erro ao carregar usuários: {res.StatusCode}");
+                ShowError($"Erro ao carregar usuários: {res.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar usuários: {ex.Message}");
+            ShowError($"Erro ao carregar usuários: {ex.Message}");
         }
     }
 
@@ -809,19 +938,24 @@
     {
         try
         {
-            var res = await Http.GetAsync("Categoria");
+            var res = await Http.GetAsync("Categoria?paginaAtual=0&tamanho=900");
             if (res.IsSuccessStatusCode)
             {
                 Categorias = await res.Content.ReadFromJsonAsync<List<CategoriaDTO>>() ?? new();
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                ShowError("Sessão expirada. Faça login novamente.");
                 Nav.NavigateTo("/login", true);
+            }
+            else
+            {
+                ShowError($"Erro ao carregar categorias: {res.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar categorias: {ex.Message}");
+            ShowError($"Erro ao carregar categorias: {ex.Message}");
         }
     }
 
@@ -829,17 +963,22 @@
     {
         try
         {
-            var res = await Http.GetAsync("Departamento");
+            var res = await Http.GetAsync("Departamento?paginaAtual=0&tamanho=900");
             if (res.IsSuccessStatusCode)
                 Departamentos = await res.Content.ReadFromJsonAsync<List<DepartamentoDTO>>() ?? new();
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                ShowError("Sessão expirada. Faça login novamente.");
                 Nav.NavigateTo("/login", true);
+            }
+            else
+            {
+                ShowError($"Erro ao carregar departamentos: {res.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar departamentos: {ex.Message}");
+            ShowError($"Erro ao carregar departamentos: {ex.Message}");
         }
     }
 
@@ -852,22 +991,35 @@
                 Roles = await res.Content.ReadFromJsonAsync<List<RoleDTO>>() ?? new();
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                ShowError("Sessão expirada. Faça login novamente.");
                 Nav.NavigateTo("/login", true);
+            }
+            else
+            {
+                ShowError($"Erro ao carregar roles: {res.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar roles: {ex.Message}");
+            ShowError($"Erro ao carregar roles: {ex.Message}");
         }
     }
 
-    // ============================== CRUD GENÉRICOS ==============================
+    // ============================== CRUD USUÁRIOS ==============================
 
     void ConfirmRemoverUsuario(string id, string nome)
     {
         UsuarioIdParaExcluir = id;
         UsuarioNomeParaExcluir = nome;
         ModalConfirmacaoUsuarioAtivo = true;
+    }
+
+    Task FecharModalConfirmacaoUsuario()
+    {
+        ModalConfirmacaoUsuarioAtivo = false;
+        UsuarioIdParaExcluir = "";
+        UsuarioNomeParaExcluir = "";
+        return Task.CompletedTask;
     }
 
     async Task RemoverUsuarioConfirmado()
@@ -883,85 +1035,24 @@
             var res = await Http.DeleteAsync($"Usuario/{id}");
             if (res.IsSuccessStatusCode)
             {
-                await LoadUsuarios();
+                await LoadAllData();
+                ShowSuccess("Usuário removido com sucesso.");
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
-                await JS.InvokeVoidAsync("alert", "Não é possível remover o usuário devido à integridade referencial (409).");
+                ShowError("Não é possível remover o usuário devido à integridade referencial (409).");
             }
             else
             {
-                await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {res.StatusCode}");
+                ShowError($"Erro ao remover usuário: {res.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao remover usuário: {ex.Message}");
+            ShowError($"Erro ao remover usuário: {ex.Message}");
         }
     }
 
-    async Task ConfirmRemoverCategoria(string id)
-    {
-        var ok = await JS.InvokeAsync<bool>("confirm", "Deseja realmente excluir esta categoria?");
-        if (ok) await RemoverCategoria(id);
-    }
-
-    async Task RemoverCategoria(string id)
-    {
-        try
-        {
-            var res = await Http.DeleteAsync($"Categoria/{id}");
-            if (res.IsSuccessStatusCode)
-                await LoadCategorias();
-            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-                await JS.InvokeVoidAsync("alert", "Não é possível remover a categoria (integridade - 409).");
-            else
-                await JS.InvokeVoidAsync("alert", $"Erro ao remover categoria: {res.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao remover categoria: {ex.Message}");
-        }
-    }
-
-    void ConfirmRemoverDepartamento(string id, string nome)
-    {
-        DepartamentoIdParaExcluir = id;
-        DepartamentoNomeParaExcluir = nome;
-        ModalConfirmacaoDepartamentoAtivo = true;
-    }
-
-    async Task RemoverDepartamentoConfirmado()
-    {
-        ModalConfirmacaoDepartamentoAtivo = false;
-        await RemoverDepartamento(DepartamentoIdParaExcluir);
-    }
-
-    async Task RemoverDepartamento(string id)
-    {
-        try
-        {
-            var res = await Http.DeleteAsync($"Departamento/{id}");
-            if (res.IsSuccessStatusCode)
-            {
-                await LoadDepartamentos();
-            }
-            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-            {
-                await JS.InvokeVoidAsync("alert", "Não é possível remover o departamento (integridade referencial - 409).");
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {res.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao remover departamento: {ex.Message}");
-        }
-    }
-
-    // ============================== MODAIS SALVAR ==============================
     void AbrirModalUsuario(UsuarioDTO u)
     {
         IsCreatingUsuario = false;
@@ -989,57 +1080,119 @@
         {
             if (IsCreatingUsuario)
             {
+                // POST /Usuario
                 var payload = new
                 {
                     Nome = UsuarioModal.Nome,
                     Email = UsuarioModal.Email,
                     Senha = UsuarioModal.Senha,
-                    DepartamentoId = string.IsNullOrEmpty(UsuarioModal.DepartamentoId) ? (string?)null : UsuarioModal.DepartamentoId,
-                    RoleId = Roles.FirstOrDefault(r => r.Nome == UsuarioModal.Tipo)?.Id
+                    Tipo = UsuarioModal.Tipo,
+                    Ativo = UsuarioModal.Ativo,
+                    DepartamentoId = string.IsNullOrEmpty(UsuarioModal.DepartamentoId)
+                        ? (string?)null
+                        : UsuarioModal.DepartamentoId
                 };
 
                 var res = await Http.PostAsJsonAsync("Usuario", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalUsuarioAtivo = false;
-                    await LoadUsuarios();
+                    await LoadAllData();
+                    ShowSuccess("Usuário criado com sucesso.");
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    await JS.InvokeVoidAsync("alert", "Email já cadastrado (409).");
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Email já cadastrado (409).\n{body}");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao criar usuário (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao criar usuário: {res.StatusCode}");
+                    ShowError($"Erro ao criar usuário: {res.StatusCode}");
                 }
             }
             else
             {
+                // PUT /Usuario/{id}
                 var payload = new
                 {
-                    Id = UsuarioModal.Id,
                     Nome = UsuarioModal.Nome,
                     Email = UsuarioModal.Email,
                     Tipo = UsuarioModal.Tipo,
                     Ativo = UsuarioModal.Ativo,
-                    Departamento = new { Nome = Departamentos.FirstOrDefault(d => d.Id == UsuarioModal.DepartamentoId)?.Nome ?? "" }
+                    DepartamentoId = string.IsNullOrEmpty(UsuarioModal.DepartamentoId)
+                        ? (string?)null
+                        : UsuarioModal.DepartamentoId
                 };
 
                 var res = await Http.PutAsJsonAsync($"Usuario/{UsuarioModal.Id}", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalUsuarioAtivo = false;
-                    await LoadUsuarios();
+                    await LoadAllData();
+                    ShowSuccess("Usuário atualizado com sucesso.");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao atualizar usuário (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar usuário: {res.StatusCode}");
+                    ShowError($"Erro ao atualizar usuário: {res.StatusCode}");
                 }
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao salvar usuário: {ex.Message}");
+            ShowError($"Erro ao salvar usuário: {ex.Message}");
+        }
+    }
+
+    // ============================== CRUD CATEGORIAS ==============================
+    void ConfirmRemoverCategoria(string id, string nome)
+    {
+        CategoriaIdParaExcluir = id;
+        CategoriaNomeParaExcluir = nome;
+        ModalConfirmacaoCategoriaAtivo = true;
+    }
+
+    Task FecharModalConfirmacaoCategoria()
+    {
+        ModalConfirmacaoCategoriaAtivo = false;
+        CategoriaIdParaExcluir = "";
+        CategoriaNomeParaExcluir = "";
+        return Task.CompletedTask;
+    }
+
+    async Task RemoverCategoriaConfirmado()
+    {
+        ModalConfirmacaoCategoriaAtivo = false;
+        await RemoverCategoria(CategoriaIdParaExcluir);
+    }
+
+    async Task RemoverCategoria(string id)
+    {
+        try
+        {
+            var res = await Http.DeleteAsync($"Categoria/{id}");
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadAllData();
+                ShowSuccess("Categoria removida com sucesso.");
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+                ShowError("Não é possível remover a categoria (integridade - 409).");
+            else
+                ShowError($"Erro ao remover categoria: {res.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Erro ao remover categoria: {ex.Message}");
         }
     }
 
@@ -1063,42 +1216,113 @@
         {
             if (IsCreatingCategoria)
             {
-                var res = await Http.PostAsJsonAsync("Categoria", CategoriaModal);
+                // POST /Categoria  -> manda só o Nome
+                var payload = new
+                {
+                    Nome = CategoriaModal.Nome
+                };
+
+                var res = await Http.PostAsJsonAsync("Categoria", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalCategoriaAtivo = false;
-                    await LoadCategorias();
+                    await LoadAllData();
+                    ShowSuccess("Categoria criada com sucesso.");
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    await JS.InvokeVoidAsync("alert", "Categoria já existe (409).");
+                    ShowError("Categoria já existe (409).");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao criar categoria (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao criar categoria: {res.StatusCode}");
+                    ShowError($"Erro ao criar categoria: {res.StatusCode}");
                 }
             }
             else
             {
-                var res = await Http.PutAsJsonAsync($"Categoria/{CategoriaModal.Id}", CategoriaModal);
+                // PUT /Categoria/{id}
+                var payload = new
+                {
+                    Nome = CategoriaModal.Nome
+                };
+
+                var res = await Http.PutAsJsonAsync($"Categoria/{CategoriaModal.Id}", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalCategoriaAtivo = false;
-                    await LoadCategorias();
+                    await LoadAllData();
+                    ShowSuccess("Categoria atualizada com sucesso.");
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    await JS.InvokeVoidAsync("alert", "Violação de integridade (409).");
+                    ShowError("Violação de integridade (409).");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao atualizar categoria (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar categoria: {res.StatusCode}");
+                    ShowError($"Erro ao atualizar categoria: {res.StatusCode}");
                 }
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao salvar categoria: {ex.Message}");
+            ShowError($"Erro ao salvar categoria: {ex.Message}");
+        }
+    }
+
+    // ============================== CRUD DEPARTAMENTOS ==============================
+    void ConfirmRemoverDepartamento(string id, string nome)
+    {
+        DepartamentoIdParaExcluir = id;
+        DepartamentoNomeParaExcluir = nome;
+        ModalConfirmacaoDepartamentoAtivo = true;
+    }
+
+    Task FecharModalConfirmacaoDepartamento()
+    {
+        ModalConfirmacaoDepartamentoAtivo = false;
+        DepartamentoIdParaExcluir = "";
+        DepartamentoNomeParaExcluir = "";
+        return Task.CompletedTask;
+    }
+
+    async Task RemoverDepartamentoConfirmado()
+    {
+        ModalConfirmacaoDepartamentoAtivo = false;
+        await RemoverDepartamento(DepartamentoIdParaExcluir);
+    }
+
+    async Task RemoverDepartamento(string id)
+    {
+        try
+        {
+            var res = await Http.DeleteAsync($"Departamento/{id}");
+            if (res.IsSuccessStatusCode)
+            {
+                await LoadAllData();
+                ShowSuccess("Departamento removido com sucesso.");
+            }
+            else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                ShowError("Não é possível remover o departamento (integridade referencial - 409).");
+            }
+            else
+            {
+                ShowError($"Erro ao remover departamento: {res.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Erro ao remover departamento: {ex.Message}");
         }
     }
 
@@ -1122,46 +1346,78 @@
         {
             if (IsCreatingDepartamento)
             {
-                var res = await Http.PostAsJsonAsync("Departamento", DepartamentoModal);
+                // POST /Departamento
+                var payload = new
+                {
+                    Nome = DepartamentoModal.Nome
+                };
+
+                var res = await Http.PostAsJsonAsync("Departamento", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalDepartamentoAtivo = false;
-                    await LoadDepartamentos();
+                    await LoadAllData();
+                    ShowSuccess("Departamento criado com sucesso.");
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    await JS.InvokeVoidAsync("alert", "Departamento já existe (409).");
+                    ShowError("Departamento já existe (409).");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao criar departamento (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao criar departamento: {res.StatusCode}");
+                    ShowError($"Erro ao criar departamento: {res.StatusCode}");
                 }
             }
             else
             {
-                var res = await Http.PutAsJsonAsync($"Departamento/{DepartamentoModal.Id}", DepartamentoModal);
+                // PUT /Departamento/{id}
+                var payload = new
+                {
+                    Nome = DepartamentoModal.Nome
+                };
+
+                var res = await Http.PutAsJsonAsync($"Departamento/{DepartamentoModal.Id}", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     ModalDepartamentoAtivo = false;
-                    await LoadDepartamentos();
+                    await LoadAllData();
+                    ShowSuccess("Departamento atualizado com sucesso.");
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var body = await res.Content.ReadAsStringAsync();
+                    ShowError($"Requisição inválida ao atualizar departamento (400).\n{body}");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Erro ao atualizar departamento: {res.StatusCode}");
+                    ShowError($"Erro ao atualizar departamento: {res.StatusCode}");
                 }
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao salvar departamento: {ex.Message}");
+            ShowError($"Erro ao salvar departamento: {ex.Message}");
         }
     }
 
     // ============================== SAIR ==============================
     async Task Sair()
     {
-        try { await JS.InvokeVoidAsync("localStorage.removeItem", "token"); }
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "token");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "role");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "email");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "usuarioNome");
+        }
         catch { }
+
+        Http.DefaultRequestHeaders.Authorization = null;
 
         Nav.NavigateTo("/login", true);
     }
@@ -1181,11 +1437,9 @@
         0 => "Baixa",
         1 => "Média",
         2 => "Alta",
-        3 => "Crítica",
         _ => "?"
     };
 
-    // === Métricas para o Dashboard (números reais a partir da lista) ===
     int TotalChamados => Chamados.Count;
     int ChamadosAbertos => Chamados.Count(c => c.Status == (int)EStatusChamado.ABERTO);
     int ChamadosSugestao => Chamados.Count(c => c.Status == (int)EStatusChamado.SUGESTAO_GERADA);

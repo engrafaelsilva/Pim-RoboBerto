@@ -1,8 +1,4 @@
-﻿.departamento-modal .form-label {
-    font-weight: 600;
-    font-size: 0.9rem;
-}
+﻿/* Reaproveita o mesmo estilo base dos outros modais */
+@import url("ModalUsuarioAdm.css");
 
-.departamento-modal .form-control {
-    font-size: 0.9rem;
-}
+/* Se quiser algo específico para modal de departamento, coloca aqui. */

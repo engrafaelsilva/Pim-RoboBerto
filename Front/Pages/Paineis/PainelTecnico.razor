@@ -60,20 +60,37 @@
     <!-- Conteúdo -->
     <main class="conteudo">
 
+        @* STATUS GLOBAL *@
+        @if (!string.IsNullOrEmpty(UiStatusMessage))
+        {
+            <div class="tec-alert @(UiStatusIsError ? "tec-alert-error" : "tec-alert-success")">
+                @UiStatusMessage
+            </div>
+        }
+
+        @if (IsLoadingChamados)
+        {
+            <div class="tec-loading-bar">
+                <span>@LoadingText</span>
+            </div>
+        }
+
         @* ================== HOME ================== *@
         @if (AbaSelecionada == 0)
         {
             <section class="card home-card">
                 <div class="home-header">
                     <div>
-                        <h1>👨‍🔧 Olá, Bob!</h1>
+                        <h1>👨‍🔧 Olá, @UsuarioAtual?.Nome!</h1>
                         <p class="home-subtitle">
                             Aqui você acompanha seus chamados, assume pendências, comenta, fecha e interage com os colaboradores.
                         </p>
                     </div>
 
-                    <button class="btn-refresh" @onclick="LoadChamados">
-                        🔄 Atualizar dados
+                    <button class="btn-refresh"
+                            disabled="@IsLoadingChamados"
+                            @onclick="LoadChamados">
+                        @(IsLoadingChamados ? "⏳ Atualizando..." : "🔄 Atualizar dados")
                     </button>
                 </div>
 
@@ -104,6 +121,15 @@
                         <span class="metric-value">@CountExpirados</span>
                         <span class="metric-hint">Chamados com SLA vencido.</span>
                     </div>
+
+                    <div class="metric-card metric-acatados">
+                        <div class="metric-top">
+                            <span class="metric-icon">📌</span>
+                            <span class="metric-label">Acatados</span>
+                        </div>
+                        <span class="metric-value">@CountAcatados</span>
+                        <span class="metric-hint">Chamados que você já acatou.</span>
+                    </div>
                 </div>
 
                 <div class="home-bottom">
@@ -111,7 +137,7 @@
                         <span class="tip-icon">💡</span>
                         <div>
                             <strong>Dica rápida:</strong>
-                            <p>Use a aba <b>Chamados</b> para assumir novas demandas e registrar comentários diretamente na linha do tempo do chamado.</p>
+                            <p>Use a aba <b>Chamados</b> para assumir novas demandas, visualizar acatados e registrar comentários diretamente na linha do tempo.</p>
                         </div>
                     </div>
                 </div>
@@ -130,8 +156,10 @@
                         </p>
                     </div>
 
-                    <button class="btn-refresh" @onclick="LoadChamados">
-                        🔄 Recarregar
+                    <button class="btn-refresh"
+                            disabled="@IsLoadingChamados"
+                            @onclick="LoadChamados">
+                        @(IsLoadingChamados ? "⏳ Recarregando..." : "🔄 Recarregar")
                     </button>
                 </div>
 
@@ -149,6 +177,11 @@
                     <button class="tab @(ActiveTab == Tab.Expirados ? "active" : "")"
                             @onclick="() => SelectTab(Tab.Expirados)">
                         Expirados (@CountExpirados)
+                    </button>
+
+                    <button class="tab @(ActiveTab == Tab.Acatados ? "active" : "")"
+                            @onclick="() => SelectTab(Tab.Acatados)">
+                        Acatados (@CountAcatados)
                     </button>
                 </div>
 
@@ -307,7 +340,7 @@
                            @bind="MensagemChat"
                            placeholder="Digite sua mensagem..."
                            @onkeydown="HandleChatKeyDown"
-                           @onkeydown:preventDefault="@(MensagemChat?.Length > 0)" />
+                           @onkeydown:preventDefault="@(MensagemChat?.Length > 0 && MensagemChat.EndsWith('\n'))" />
 
                     <button class="chat-send-btn" @onclick="EnviarMensagemChat">Enviar</button>
                 </div>
@@ -351,28 +384,35 @@
     string TituloChat = "Chat com Colaborador";
     string SubtituloChat = "Alinhamento rápido com o colaborador.";
 
-    // SignalR
     HubConnection? _hubConnection;
-
-    // Sala geral compartilhada entre colaborador e técnico
     readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     List<ChatMensagem> ChatMensagens = new();
     string MensagemChat = "";
 
-    // =================== Envio com ENTER ===================
-    void HandleChatKeyDown(KeyboardEventArgs e)
+    // =================== ESTADOS GERAIS / STATUS UI ===================
+    string UiStatusMessage { get; set; }
+    bool UiStatusIsError { get; set; }
+    bool IsLoadingChamados { get; set; }
+    string LoadingText { get; set; } = "";
+
+    void ShowSuccess(string msg)
     {
-        if (e.Key == "Enter" && !e.ShiftKey)
-        {
-            _ = EnviarMensagemChat();
-        }
+        UiStatusMessage = msg;
+        UiStatusIsError = false;
+        StateHasChanged();
     }
 
-    // =================== ESTADOS GERAIS ===================
+    void ShowError(string msg)
+    {
+        UiStatusMessage = msg;
+        UiStatusIsError = true;
+        StateHasChanged();
+    }
+
     int AbaSelecionada = 0;
 
-    enum Tab { Pendentes, Meus, Expirados }
+    enum Tab { Pendentes, Meus, Expirados, Acatados }
     Tab ActiveTab = Tab.Pendentes;
 
     bool ListaCarregando = false;
@@ -381,6 +421,7 @@
     List<ChamadoDTO> ChamadosPendentes { get; set; } = new();
     List<ChamadoDTO> ChamadosGerais { get; set; } = new();
     List<ChamadoDTO> ChamadosExpirados { get; set; } = new();
+    List<ChamadoDTO> ChamadosAcatados { get; set; } = new();
 
     // Usuário atual (técnico logado)
     UsuarioAtualDTO? UsuarioAtual { get; set; }
@@ -399,6 +440,7 @@
     int CountPendentes => ChamadosPendentes.Count;
     int CountMeus => ChamadosMeus.Count;
     int CountExpirados => ChamadosExpirados.Count;
+    int CountAcatados => ChamadosAcatados.Count;
 
     // =================== MODAIS DE CHAMADOS ===================
     ChamadoDTO? ChamadoSelecionado { get; set; }
@@ -431,7 +473,6 @@
     public class TecnicoDTO { public string Id { get; set; } = ""; public string Nome { get; set; } = ""; }
     public class CategoriaMini { public string Nome { get; set; } = ""; }
 
-    // DTO das mensagens de chamado (para lista / timeline)
     public class MensagemChamadoDTO
     {
         public string Id { get; set; } = "";
@@ -494,12 +535,13 @@
             }
             else if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                ShowError("Sessão expirada. Faça login novamente.");
                 Nav.NavigateTo("/login", true);
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar usuário atual: {ex.Message}");
+            ShowError($"Erro ao carregar usuário atual: {ex.Message}");
         }
     }
 
@@ -507,35 +549,44 @@
     async Task LoadChamados()
     {
         ListaCarregando = true;
+        IsLoadingChamados = true;
+        LoadingText = "Carregando chamados...";
+        UiStatusMessage = null;
         StateHasChanged();
 
         try
         {
+            // gerais
             var resGeral = await Http.GetAsync("Chamados?paginaAtual=0&tamanho=900");
             if (resGeral.IsSuccessStatusCode)
-            {
                 ChamadosGerais = await resGeral.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
-            }
 
+            // pendentes do técnico
             var resPend = await Http.GetAsync("Chamados/pendentes-tecnico");
             if (resPend.IsSuccessStatusCode)
-            {
                 ChamadosPendentes = await resPend.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
-            }
 
+            // expirados
             var resExp = await Http.GetAsync("Chamados/expirados");
             if (resExp.IsSuccessStatusCode)
-            {
                 ChamadosExpirados = await resExp.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
-            }
+
+            // acatados
+            var resAcat = await Http.GetAsync("Chamados/acatados?paginaAtual=0&tamanho=900");
+            if (resAcat.IsSuccessStatusCode)
+                ChamadosAcatados = await resAcat.Content.ReadFromJsonAsync<List<ChamadoDTO>>() ?? new();
+
+            ShowSuccess("Chamados atualizados com sucesso.");
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao carregar chamados: {ex.Message}");
+            ShowError($"Erro ao carregar chamados: {ex.Message}");
         }
         finally
         {
             ListaCarregando = false;
+            IsLoadingChamados = false;
+            LoadingText = "";
             StateHasChanged();
         }
     }
@@ -548,6 +599,7 @@
         Tab.Pendentes => ChamadosPendentes.OrderByDescending(x => x.Prioridade),
         Tab.Meus      => ChamadosMeus.OrderByDescending(x => x.Prioridade),
         Tab.Expirados => ChamadosExpirados.OrderByDescending(x => x.Prioridade),
+        Tab.Acatados  => ChamadosAcatados.OrderByDescending(x => x.Prioridade),
         _             => Enumerable.Empty<ChamadoDTO>()
     };
 
@@ -598,46 +650,61 @@
     {
         if (ChamadoSelecionado == null || string.IsNullOrEmpty(TipoAcaoChamado))
         {
-            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            ShowError("Nenhum chamado selecionado.");
             return;
         }
 
         try
         {
             HttpResponseMessage res;
+            // JSON vazio só para garantir Content-Type application/json
+            var emptyJson = JsonContent.Create(new { });
 
             switch (TipoAcaoChamado)
             {
                 case "assumir":
-                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/acatar-chamado", null);
+                    res = await Http.PatchAsync(
+                        $"Chamados/{ChamadoSelecionado.Id}/acatar-chamado",
+                        emptyJson);
                     break;
+
                 case "fechar":
-                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/fechar-chamado", null);
+                    res = await Http.PatchAsync(
+                        $"Chamados/{ChamadoSelecionado.Id}/fechar-chamado",
+                        emptyJson);
                     break;
+
                 case "cancelar":
-                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/cancelar", null);
+                    res = await Http.PatchAsync(
+                        $"Chamados/{ChamadoSelecionado.Id}/cancelar",
+                        emptyJson);
                     break;
+
                 case "sugestao":
-                    res = await Http.PatchAsync($"Chamados/{ChamadoSelecionado.Id}/alterar-resolveu-sugestao", null);
+                    res = await Http.PatchAsync(
+                        $"Chamados/{ChamadoSelecionado.Id}/alterar-resolveu-sugestao",
+                        emptyJson);
                     break;
+
                 default:
-                    await JS.InvokeVoidAsync("alert", "Ação inválida.");
+                    ShowError("Ação inválida.");
                     return;
             }
 
             if (res.IsSuccessStatusCode)
             {
                 await LoadChamados();
+                ShowSuccess("Ação executada com sucesso no chamado.");
             }
             else
             {
                 var txt = await res.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {res.StatusCode}\n{txt}");
+                ShowError($"Erro ao realizar ação: {res.StatusCode}\n{txt}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao realizar ação: {ex.Message}");
+            ShowError($"Erro ao realizar ação: {ex.Message}");
         }
         finally
         {
@@ -662,13 +729,13 @@
     {
         if (ChamadoSelecionado == null)
         {
-            await JS.InvokeVoidAsync("alert", "Nenhum chamado selecionado.");
+            ShowError("Nenhum chamado selecionado.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(texto))
         {
-            await JS.InvokeVoidAsync("alert", "Digite um comentário antes de enviar.");
+            ShowError("Digite um comentário antes de enviar.");
             return;
         }
 
@@ -683,18 +750,55 @@
 
             if (res.IsSuccessStatusCode)
             {
+                // 1) Atualiza localmente o chamado selecionado
+                var novaMsg = new MensagemChamadoDTO
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Autor = new Autor
+                        {
+                            Id = UsuarioAtual?.Id ?? "",
+                            Nome = UsuarioAtual?.Nome ?? "Técnico"
+                        },
+                        DataHoraMensagem = DateTime.Now,
+                        Texto = texto
+                    };
+
+                ChamadoSelecionado.Mensagens ??= new List<MensagemChamadoDTO>();
+                ChamadoSelecionado.Mensagens.Add(novaMsg);
+
+                // atualiza também nas listas usadas pelos cards
+                void AtualizarColecao(List<ChamadoDTO> lista)
+                {
+                    var item = lista.FirstOrDefault(x => x.Id == ChamadoSelecionado.Id);
+                    if (item != null)
+                    {
+                        item.Mensagens ??= new List<MensagemChamadoDTO>();
+                        item.Mensagens.Add(novaMsg);
+                    }
+                }
+
+                AtualizarColecao(ChamadosGerais);
+                AtualizarColecao(ChamadosPendentes);
+                AtualizarColecao(ChamadosExpirados);
+                AtualizarColecao(ChamadosAcatados);
+
+                StateHasChanged(); // já reflete "Última interação"
+
+                // 2) Recarrega do backend para ficar 100% em linha
                 await LoadChamados();
+
                 FecharModalComentarChamado();
+                ShowSuccess("Comentário enviado com sucesso.");
             }
             else
             {
                 var txt = await res.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
+                ShowError($"Erro ao enviar comentário: {res.StatusCode}\n{txt}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao enviar comentário: {ex.Message}");
+            ShowError($"Erro ao enviar comentário: {ex.Message}");
         }
         finally
         {
@@ -717,7 +821,6 @@
     // =================== CHAT (SignalR) ===================
     async Task InicializarChat()
     {
-        // Mensagens iniciais opcionais
         if (!ChatMensagens.Any())
         {
             ChatMensagens.Add(new ChatMensagem
@@ -736,7 +839,7 @@
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         if (string.IsNullOrWhiteSpace(token))
         {
-            await JS.InvokeVoidAsync("alert", "Sessão expirada. Faça login novamente.");
+            ShowError("Sessão expirada. Faça login novamente.");
             Nav.NavigateTo("/login");
             return;
         }
@@ -744,7 +847,7 @@
         var apiBase = Http.BaseAddress?.ToString().TrimEnd('/');
         if (string.IsNullOrEmpty(apiBase))
         {
-            await JS.InvokeVoidAsync("alert", "BaseAddress da API não configurada no HttpClient.");
+            ShowError("BaseAddress da API não configurada no HttpClient.");
             return;
         }
 
@@ -760,21 +863,20 @@
 
         _hubConnection.On<Guid, MensagemDTO>("ReceberMensagem", (chamadoId, msg) =>
         {
-        if (chamadoId != ChatChamadoId)
-            return;
+            if (chamadoId != ChatChamadoId)
+                return;
 
-        // Quando recebo mensagem do colaborador, marco as minhas como lidas
-        foreach (var m in ChatMensagens.Where(x => x.Remetente == "tecnico"))
-            m.Lida = true;
+            foreach (var m in ChatMensagens.Where(x => x.Remetente == "tecnico"))
+                m.Lida = true;
 
-        ChatMensagens.Add(new ChatMensagem
+            ChatMensagens.Add(new ChatMensagem
             {
                 Remetente = "colaborador",
                 Texto = msg.Texto,
                 Lida = false
             });
 
-        InvokeAsync(StateHasChanged);
+            InvokeAsync(StateHasChanged);
         });
 
         try
@@ -784,7 +886,7 @@
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao conectar no chat em tempo real: {ex.Message}");
+            ShowError($"Erro ao conectar no chat em tempo real: {ex.Message}");
         }
     }
 
@@ -799,7 +901,7 @@
 
             if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
             {
-                await JS.InvokeVoidAsync("alert", "Não foi possível conectar ao chat em tempo real.");
+                ShowError("Não foi possível conectar ao chat em tempo real.");
                 return;
             }
         }
@@ -809,9 +911,9 @@
 
         ChatMensagens.Add(new ChatMensagem
         {
-                Remetente = "tecnico",
-                Texto = texto,
-                Lida = false
+            Remetente = "tecnico",
+            Texto = texto,
+            Lida = false
         });
 
         await InvokeAsync(StateHasChanged);
@@ -822,7 +924,7 @@
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro ao enviar mensagem no chat: {ex.Message}");
+            ShowError($"Erro ao enviar mensagem no chat: {ex.Message}");
         }
     }
 
@@ -890,4 +992,13 @@
         3 => "prio-critica",
         _ => "prio-media"
     };
+
+    // =================== CHAT ENTER ===================
+    void HandleChatKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            _ = EnviarMensagemChat();
+        }
+    }
 }

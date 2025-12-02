@@ -16,7 +16,7 @@ namespace Front
             builder.Services.AddSingleton<WeatherForecastService>();
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/")
+                BaseAddress = new Uri("https://robobertov3-a8a4fcd8fuh4e6g8.brazilsouth-01.azurewebsites.net/")
             });
 
             // AQUI entra o serviço do SignalR (FRONT)

@@ -2,6 +2,7 @@
 
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using System.Net.Http.Json
 @using Front.Pages.Modais.Colaborador
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Components.Web
@@ -21,30 +22,53 @@
         <h2 class="logo">Painel do Colaborador</h2>
 
         <nav class="menu">
-            <button class="menu-item" @onclick="() => AbaSelecionada = 0">Home</button>
-            <button class="menu-item" @onclick="() => AbrirNovoChamado()">Abrir Chamado</button>
-            <button class="menu-item" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
-            <button class="menu-item" @onclick="AbrirChatGeral">Conversar com Técnico</button>
+            <button class="menu-item @(AbaSelecionada == 0 ? "active" : "")" @onclick="() => AbaSelecionada = 0">Home</button>
+            <button class="menu-item @(AbaSelecionada == 1 ? "active" : "")" @onclick="() => AbrirNovoChamado()">Abrir Chamado</button>
+            <button class="menu-item @(AbaSelecionada == 2 ? "active" : "")" @onclick="() => { AbaSelecionada = 2; _ = CarregarMeusChamados(); }">Meus Chamados</button>
+            <button class="menu-item @(AbaSelecionada == 3 ? "active" : "")" @onclick="AbrirChatGeral">Conversar com Técnico</button>
             <button class="menu-item logout" @onclick="Logout">Sair</button>
         </nav>
     </aside>
 
     <main class="conteudo">
+        @* ================= HOME ================= *@
         @if (AbaSelecionada == 0)
         {
-            <section class="card">
-                <h1>Seja bem-vindo(a), @UsuarioNome!</h1>
-                <p>Aqui você poderá abrir um chamado, acompanhar o status do chamado e conversar com um técnico.</p>
+            <section class="card home-card">
+                <div class="home-header">
+                    <div>
+                        <h1>👋 Bem-vindo, colaborador!</h1>
+                        <p class="home-subtitle">
+                            Aqui você pode abrir chamados, acompanhar o status e conversar com o time técnico em tempo real.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="home-metrics">
+                    <div class="metric-card">
+                        <span class="metric-label">Total de chamados</span>
+                        <span class="metric-value">@Chamados.Count</span>
+                        <span class="metric-hint">Use a aba <b>Meus Chamados</b> para filtrar e acompanhar.</span>
+                    </div>
+                </div>
             </section>
         }
 
+        @* ================= ABRIR CHAMADO ================= *@
         @if (AbaSelecionada == 1)
         {
-            <section class="card">
-                <h3>Abrir Novo Chamado</h3>
+            <section class="card form-card">
+                <div class="form-header">
+                    <div>
+                        <h3>📨 Abrir Novo Chamado</h3>
+                        <p class="form-subtitle">
+                            Descreva o problema com detalhes para que o time técnico consiga te ajudar mais rápido.
+                        </p>
+                    </div>
+                </div>
 
                 <div class="form-grid">
-                    <div class="form-control">
+                    <div class="form-control full">
                         <label>Título</label>
                         <input class="input" @bind="NovoChamado.Titulo" placeholder="Informe o título do chamado" />
                     </div>
@@ -75,15 +99,16 @@
 
                 <div class="btn-row">
                     <button class="btn secondary" @onclick="LimparFormulario" disabled="@isSending">Limpar</button>
-                    <button class="btn primary" @onclick="EnviarChamado" disabled="@isSending">@((isSending) ? "Enviando..." : "Enviar")</button>
+                    <button class="btn primary" @onclick="EnviarChamado" disabled="@isSending">@((isSending) ? "Enviando..." : "Enviar Chamado")</button>
                 </div>
             </section>
         }
 
+        @* ================= MEUS CHAMADOS ================= *@
         @if (AbaSelecionada == 2)
         {
             <section class="card">
-                <h3>Meus Chamados</h3>
+                <h3>📋 Meus Chamados</h3>
 
                 <div class="chamados-controls-bar">
                     <button class="btn btn-refresh" @onclick="() => CarregarMeusChamados(paginaAtual, tamanhoPagina)">
@@ -111,7 +136,7 @@
                 {
                     <div class="lista-vazia">
                         <p class="msg-empty">Nenhum chamado encontrado. 🎉</p>
-                        <button class="btn-primary" @onclick="() => AbrirNovoChamado()">Abrir Novo Chamado</button>
+                        <button class="btn primary" @onclick="() => AbrirNovoChamado()">Abrir Novo Chamado</button>
                     </div>
                 }
                 else
@@ -124,37 +149,44 @@
                                 <div class="ticket-info">
                                     <p class="descricao-label">Título do chamado:</p>
                                     <h4 class="ticket-title">@c.Titulo</h4>
+
                                     <p class="descricao-label">Descrição do chamado:</p>
                                     <p class="ticket-description">@c.Descricao</p>
-                                    <p class="ia-suggestion-label">Comentário:</p>
-                                    <p class="ticket-ai-suggestion">Aqui vai o comentário do chamado...</p>
+
+                                    <p class="ia-suggestion-label">Último comentário:</p>
+                                    <p class="ticket-ai-suggestion">
+                                        @((!string.IsNullOrWhiteSpace(c.UltimoComentario)) ? c.UltimoComentario : "Nenhum comentário ainda.")
+                                    </p>
                                 </div>
 
                                 <div class="ticket-meta">
-                                    <span class="meta-item-data">Data de abertura: <br /> <strong>@c.DataAbertura.ToString("g")</strong></span>
-                                    <span class="meta-item-data">Prioridade: <br /> <strong>@c.Prioridade</strong></span>
-                                    <span class="meta-item-data">Status do chamado: <br /> <strong>@c.Status</strong></span>
+                                    <span class="meta-item-data">
+                                        Data de abertura: <br />
+                                        <strong>@c.DataAbertura.ToString("g")</strong>
+                                    </span>
+                                    <span class="meta-item-data">
+                                        Prioridade: <br />
+                                        <strong>@c.Prioridade</strong>
+                                    </span>
+                                    <span class="meta-item-data">
+                                        Status do chamado: <br />
+                                        <strong>@c.Status</strong>
+                                    </span>
                                 </div>
 
                                 <div class="ticket-actions">
                                     <button class="btn btn-details" @onclick="() => VerDetalhes(c.Id)">
                                         <i class="fas fa-eye"></i> Detalhes
                                     </button>
+
                                     <button class="btn btn-comment" @onclick="() => AbrirModalComentario(c.Id)">
                                         <i class="fas fa-comment"></i> Comentar
                                     </button>
 
-                                    @if (c.Status == "Fechado" || c.Status == "Resolvido")
+                                    @if (c.Status == "Resolvido")
                                     {
-                                        <button class="btn btn-reopen" @onclick="() => ReabrirChamado(c.Id)">
+                                        <button class="btn btn-reopen" @onclick="() => AbrirModalReabertura(c.Id)">
                                             <i class="fas fa-undo"></i> Reabrir
-                                        </button>
-                                    }
-
-                                    @if (c.Status == "Aguardando Confirmação")
-                                    {
-                                        <button class="btn btn-confirm" @onclick="() => ModalConfirmacao.Show(c.SugestaoGemini, c.Id)">
-                                            <i class="fas fa-check-circle"></i> Confirmar Sugestão
                                         </button>
                                     }
                                 </div>
@@ -165,6 +197,7 @@
             </section>
         }
 
+        @* ================= CHAT COM TÉCNICO ================= *@
         @if (AbaSelecionada == 3)
         {
             <section class="card chat-card">
@@ -213,52 +246,107 @@
             </section>
         }
 
+        @* ================= MODAL DETALHES DO CHAMADO ================= *@
         @if (MostrarDetalhes && ChamadoDetalhe != null)
         {
-            <section class="card" style="margin-top:16px;">
-                <h4>Detalhes do Chamado</h4>
-                <p><strong>Título:</strong> @ChamadoDetalhe.Titulo</p>
-                <p><strong>Descrição:</strong> @ChamadoDetalhe.Descricao</p>
-                <p><strong>Técnico:</strong> @(string.IsNullOrWhiteSpace(ChamadoDetalhe.TecnicoNome) ? "—" : ChamadoDetalhe.TecnicoNome)</p>
-                <p><strong>Sugestão IA:</strong> @(!string.IsNullOrEmpty(ChamadoDetalhe.SugestaoGemini) ? ChamadoDetalhe.SugestaoGemini : "—")</p>
+            <div class="modal-overlay">
+                <div class="modal-card">
+                    <div class="modal-header">
+                        <h4>Detalhes do Chamado</h4>
+                        <button class="modal-close" @onclick="FecharDetalhes">×</button>
+                    </div>
 
-                <div style="margin-top:8px;">
-                    <button class="btn-primary" @onclick="() => ModalConfirmacao.Show(ChamadoDetalhe.SugestaoGemini, ChamadoDetalhe.Id)">Confirmar Sugestão</button>
-                    <button class="btn-secondary" style="margin-left:8px;" @onclick="() => ReabrirChamado(ChamadoDetalhe.Id)">Reabrir</button>
-                    <button class="btn-danger" style="margin-left:8px;" @onclick="() => CancelarChamado(ChamadoDetalhe.Id)">Cancelar</button>
-                    <button class="btn-secondary" style="margin-left:8px;" @onclick="() => AbrirChatBootPara(ChamadoDetalhe.Id)">Abrir Chat</button>
-                </div>
+                    <div class="modal-body">
+                        <p><strong>Título:</strong> @ChamadoDetalhe.Titulo</p>
+                        <p><strong>Descrição:</strong> @ChamadoDetalhe.Descricao</p>
+                        <p><strong>Data de abertura:</strong> @ChamadoDetalhe.DataAbertura.ToString("g")</p>
+                        <p><strong>Prioridade:</strong> @ChamadoDetalhe.Prioridade</p>
+                        <p><strong>Status:</strong> @ChamadoDetalhe.Status</p>
 
-                <h5 style="margin-top:12px;">Mensagens</h5>
-                @if (ChamadoDetalhe.Mensagens?.Any() != true)
-                {
-                    <p>Nenhuma mensagem.</p>
-                }
-                else
-                {
-                    @foreach (var msg in ChamadoDetalhe.Mensagens)
-                    {
-                        <div style="border-left:3px solid #eee; padding:8px; margin-bottom:6px;">
-                            <small>@msg.AutorNome • @msg.DataHoraMensagem.ToString("g")</small>
-                            <div>@msg.Texto</div>
+                        <h5 class="modal-subtitle">Comentários</h5>
+                        @if (ChamadoDetalhe.Mensagens?.Any() != true)
+                        {
+                            <p class="modal-empty">Nenhum comentário registrado.</p>
+                        }
+                        else
+                        {
+                            @foreach (var msg in ChamadoDetalhe.Mensagens.OrderByDescending(m => m.DataHoraMensagem))
+                            {
+                                <div class="modal-message">
+                                    <small>@msg.AutorNome • @msg.DataHoraMensagem.ToString("g")</small>
+                                    <div>@msg.Texto</div>
+                                </div>
+                            }
+                        }
+
+                        <div class="modal-comment-area">
+                            <label>Novo comentário</label>
+                            <textarea class="textarea" rows="3" @bind="ComentarioTexto"></textarea>
                         </div>
-                    }
-                }
+                    </div>
 
-                <div style="margin-top:10px;">
-                    <label>Enviar comentário</label>
-                    <textarea class="textarea" rows="3" @bind="ComentarioTexto"></textarea>
-                    <div style="margin-top:8px;">
-                        <button class="btn-secondary" @onclick="FecharDetalhes">Fechar</button>
-                        <button class="btn-primary" style="margin-left:8px;" @onclick="EnviarComentario" disabled="@isSendingComentario">
+                    <div class="modal-footer">
+                        <button class="btn secondary" @onclick="FecharDetalhes">Fechar</button>
+                        <button class="btn primary" @onclick="EnviarComentario" disabled="@isSendingComentario">
                             @(isSendingComentario ? "Enviando..." : "Enviar comentário")
                         </button>
                     </div>
                 </div>
-            </section>
+            </div>
         }
 
-        <ModalConfirmacaoIA @ref="ModalConfirmacao" OnConfirmacao="ProcessarConfirmacaoIA" OnIrParaChat="IrParaChatDoModal" />
+        @* ================= MODAL REABERTURA DO CHAMADO ================= *@
+        @if (MostrarModalReabertura && ChamadoReabertura != null)
+        {
+            <div class="modal-overlay">
+                <div class="modal-card modal-card-wide">
+                    <div class="modal-header">
+                        <h4>Reabrir Chamado</h4>
+                        <button class="modal-close" @onclick="FecharModalReabertura">×</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="form-grid">
+                            <div class="form-control full">
+                                <label>Título</label>
+                                <input class="input" @bind="ChamadoReabertura.Titulo" />
+                            </div>
+
+                            <div class="form-control full">
+                                <label>Descrição</label>
+                                <textarea class="textarea" rows="4" @bind="ChamadoReabertura.Descricao"></textarea>
+                            </div>
+
+                            <div class="form-control">
+                                <label>Prioridade</label>
+                                <select class="input" @bind="ChamadoReabertura.Prioridade">
+                                    <option>Baixa</option>
+                                    <option>Média</option>
+                                    <option>Alta</option>
+                                </select>
+                            </div>
+
+                            <div class="form-control">
+                                <label>Categoria</label>
+                                <select class="input" @bind="ChamadoReabertura.Categoria">
+                                    <option>Suporte</option>
+                                    <option>Financeiro</option>
+                                    <option>Infraestrutura</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn secondary" @onclick="FecharModalReabertura">Cancelar</button>
+                        <button class="btn primary" @onclick="ConfirmarReaberturaChamado" disabled="@isSendingReabertura">
+                            @(isSendingReabertura ? "Reabrindo..." : "Confirmar Reabertura")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
         <ModalComentar @ref="ModalComentarRef"
                        OnEnviar="EnviarComentarioModal"
                        OnFechar="FecharModalComentario" />
@@ -274,6 +362,15 @@
         public bool Lida { get; set; } = false;
     }
 
+    // DTO usuário atual (para buscar nome correto via API)
+    class UsuarioAtualDTO
+    {
+        public string Id { get; set; } = "";
+        public string Nome { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Tipo { get; set; } = "";
+    }
+
     // Saudações / cabeçalho
     string UsuarioNome = "";
     string TituloChat = "Conversar com Técnico";
@@ -285,7 +382,7 @@
     // Sala "geral" compartilhada entre colaborador e técnico
     readonly Guid ChatChamadoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
-    // Modal para comentar no chamado
+    // Modal para comentar no chamado (modal simples)
     ModalComentar? ModalComentarRef;
     Guid ChamadoIdSelecionadoParaComentario;
 
@@ -323,9 +420,20 @@
 
             if (resp.IsSuccessStatusCode)
             {
+                // Atualiza o último comentário no card correspondente
+                var item = Chamados.FirstOrDefault(x => x.Id == ChamadoIdSelecionadoParaComentario);
+                if (item != null)
+                {
+                    item.UltimoComentario = texto;
+                }
+
                 await JS.InvokeVoidAsync("alert", "Comentário enviado com sucesso.");
                 ModalComentarRef?.Hide();
 
+                // Recarrega lista para garantir sincronismo com backend
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+
+                // Se o modal de detalhes estiver aberto para esse chamado, recarrega detalhes
                 if (ChamadoDetalhe != null && ChamadoDetalhe.Id == ChamadoIdSelecionadoParaComentario)
                 {
                     await VerDetalhes(ChamadoIdSelecionadoParaComentario);
@@ -370,6 +478,7 @@
         public string Status { get; set; } = "";
         public DateTime DataAbertura { get; set; } = DateTime.Now;
         public string SugestaoGemini { get; set; } = "";
+        public string UltimoComentario { get; set; } = "";
     }
 
     class ChamadoDetailDTO
@@ -379,6 +488,7 @@
         public string Descricao { get; set; } = "";
         public string SugestaoGemini { get; set; } = "";
         public string Status { get; set; } = "";
+        public string Prioridade { get; set; } = "";
         public DateTime DataAbertura { get; set; } = DateTime.Now;
         public List<MensagemDTO>? Mensagens { get; set; }
         public string TecnicoNome { get; set; } = "";
@@ -421,18 +531,47 @@
     int paginaAtual = 0;
     int tamanhoPagina = 10;
 
-    ModalConfirmacaoIA? ModalConfirmacao;
+    // Reabertura
+    bool MostrarModalReabertura = false;
+    bool isSendingReabertura = false;
+
+    class ChamadoReaberturaModel
+    {
+        public Guid Id { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descricao { get; set; } = "";
+        public string Prioridade { get; set; } = "Baixa";
+        public string Categoria { get; set; } = "Suporte";
+    }
+
+    ChamadoReaberturaModel? ChamadoReabertura { get; set; }
 
     // =============== CICLO DE VIDA ===============
     protected override async Task OnInitializedAsync()
     {
+        await CarregarUsuarioAtual();
+    }
+
+    async Task CarregarUsuarioAtual()
+    {
         try
         {
-            var nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "usuarioNome") ?? "";
+            if (!await InjetarToken())
+                return;
 
-            if (string.IsNullOrWhiteSpace(nomeBruto))
-                nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "email") ?? "";
+            var res = await Http.GetAsync("Usuario/eu");
+            if (res.IsSuccessStatusCode)
+            {
+                var usuario = await res.Content.ReadFromJsonAsync<UsuarioAtualDTO>();
+                if (usuario != null && !string.IsNullOrWhiteSpace(usuario.Nome))
+                {
+                    UsuarioNome = usuario.Nome;
+                    return;
+                }
+            }
 
+            // Fallback se a API não retornar o nome
+            var nomeBruto = await JS.InvokeAsync<string>("localStorage.getItem", "email") ?? "";
             UsuarioNome = ExtrairPrimeiroNome(nomeBruto);
         }
         catch
@@ -450,7 +589,6 @@
             valor = valor.Split('@')[0];
 
         var partes = valor.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
         var primeiro = partes[0];
 
         if (primeiro.Length == 1)
@@ -517,14 +655,14 @@
                                     {
                                         0 => "Aberto",
                                         1 => "Em andamento",
-                                        2 => "Fechado",
+                                        2 => "Resolvido",
                                         3 => "Resolvido",
-                                        4 => "Aguardando Confirmação",
-                                        _ => "Desconhecido"
+                                        4 => "Pendente",
+                                        _ => "Pendente"
                                     };
                                     break;
                                 case JsonValueKind.String:
-                                    item.Status = sp.GetString() ?? "Desconhecido";
+                                    item.Status = sp.GetString() ?? "Pendente";
                                     break;
                             }
                         }
@@ -540,11 +678,11 @@
                                         0 => "Baixa",
                                         1 => "Média",
                                         2 => "Alta",
-                                        _ => "Desconhecida"
+                                        _ => "Baixa"
                                     };
                                     break;
                                 case JsonValueKind.String:
-                                    item.Prioridade = pp.GetString() ?? "Desconhecida";
+                                    item.Prioridade = pp.GetString() ?? "Baixa";
                                     break;
                             }
                         }
@@ -557,6 +695,26 @@
 
                         if (el.TryGetProperty("sugestaoGemini", out var sg) && sg.ValueKind == JsonValueKind.String)
                             item.SugestaoGemini = sg.GetString() ?? "";
+
+                        // Carrega último comentário (se a API enviar mensagens)
+                        if (el.TryGetProperty("mensagens", out var msgs) && msgs.ValueKind == JsonValueKind.Array)
+                        {
+                            var ultima = msgs
+                                .EnumerateArray()
+                                .OrderByDescending(m =>
+                                {
+                                    if (m.TryGetProperty("dataHoraMensagem", out var dtm) && dtm.ValueKind == JsonValueKind.String
+                                        && DateTime.TryParse(dtm.GetString(), out var d))
+                                        return d;
+                                    return DateTime.MinValue;
+                                })
+                                .FirstOrDefault();
+
+                            if (ultima.ValueKind == JsonValueKind.Object && ultima.TryGetProperty("texto", out var txtMsg))
+                            {
+                                item.UltimoComentario = txtMsg.GetString() ?? "";
+                            }
+                        }
 
                         Chamados.Add(item);
                     }
@@ -647,6 +805,9 @@
 
                 LimparFormulario();
 
+                // Recarrega lista de chamados para refletir o novo chamado
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+
                 Navigation.NavigateTo("/chatboot");
             }
             else
@@ -708,15 +869,33 @@
                         {
                             0 => "Aberto",
                             1 => "Em andamento",
-                            2 => "Fechado",
+                            2 => "Resolvido",
                             3 => "Resolvido",
-                            4 => "Aguardando Confirmação",
-                            _ => "Desconhecido"
+                            4 => "Pendente",
+                            _ => "Pendente"
                         };
                     }
                     else
                     {
-                        det.Status = st.GetString() ?? "";
+                        det.Status = st.GetString() ?? "Pendente";
+                    }
+                }
+
+                if (root.TryGetProperty("prioridade", out var prio))
+                {
+                    if (prio.ValueKind == JsonValueKind.Number)
+                    {
+                        det.Prioridade = prio.GetInt32() switch
+                        {
+                            0 => "Baixa",
+                            1 => "Média",
+                            2 => "Alta",
+                            _ => "Baixa"
+                        };
+                    }
+                    else
+                    {
+                        det.Prioridade = prio.GetString() ?? "Baixa";
                     }
                 }
 
@@ -754,7 +933,8 @@
 
                         if (m.TryGetProperty("autor", out var autor) && autor.ValueKind == JsonValueKind.Object)
                         {
-                            if (autor.TryGetProperty("nome", out var nomeP)) md.AutorNome = nomeP.GetString() ?? "";
+                            if (autor.TryGetProperty("nome", out var nomeP))
+                                md.AutorNome = nomeP.GetString() ?? "";
                         }
 
                         det.Mensagens.Add(md);
@@ -783,7 +963,7 @@
         ComentarioTexto = "";
     }
 
-    // =================== COMENTAR ====================
+    // =================== COMENTAR (MODAL DE DETALHES) ====================
     async Task EnviarComentario()
     {
         if (ChamadoDetalhe == null) return;
@@ -804,15 +984,27 @@
             if (resp.IsSuccessStatusCode)
             {
                 ChamadoDetalhe.Mensagens ??= new List<MensagemDTO>();
-                ChamadoDetalhe.Mensagens.Add(new MensagemDTO
+                var nova = new MensagemDTO
                 {
                     Texto = ComentarioTexto,
                     DataHoraMensagem = DateTime.Now,
                     AutorNome = "Você"
-                });
+                };
+                ChamadoDetalhe.Mensagens.Add(nova);
+
+                // Atualiza último comentário no card
+                var item = Chamados.FirstOrDefault(x => x.Id == ChamadoDetalhe.Id);
+                if (item != null)
+                {
+                    item.UltimoComentario = ComentarioTexto;
+                }
 
                 ComentarioTexto = "";
                 StateHasChanged();
+
+                // Recarrega lista para manter em linha com backend
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+
                 await JS.InvokeVoidAsync("alert", "Comentário enviado.");
             }
             else
@@ -830,7 +1022,99 @@
         }
     }
 
-    // =================== AÇÕES: Cancelar / Reabrir / Confirmar Sugestão ====================
+    // =================== REABERTURA DO CHAMADO ====================
+    void AbrirModalReabertura(Guid id)
+    {
+        var chamado = Chamados.FirstOrDefault(x => x.Id == id);
+        if (chamado == null) return;
+
+        ChamadoReabertura = new ChamadoReaberturaModel
+        {
+            Id = chamado.Id,
+            Titulo = chamado.Titulo,
+            Descricao = chamado.Descricao,
+            Prioridade = string.IsNullOrWhiteSpace(chamado.Prioridade) ? "Baixa" : chamado.Prioridade,
+            Categoria = "Suporte"
+        };
+
+        MostrarModalReabertura = true;
+    }
+
+    void FecharModalReabertura()
+    {
+        MostrarModalReabertura = false;
+        ChamadoReabertura = null;
+    }
+
+    async Task ConfirmarReaberturaChamado()
+    {
+        if (ChamadoReabertura == null) return;
+
+        if (string.IsNullOrWhiteSpace(ChamadoReabertura.Titulo) ||
+            string.IsNullOrWhiteSpace(ChamadoReabertura.Descricao))
+        {
+            await JS.InvokeVoidAsync("alert", "Preencha título e descrição antes de reabrir.");
+            return;
+        }
+
+        if (!await InjetarToken()) return;
+
+        isSendingReabertura = true;
+
+        try
+        {
+            int prioridadeNum = ChamadoReabertura.Prioridade?.ToLower() switch
+            {
+                "baixa" => 0,
+                "média" => 1,
+                "media" => 1,
+                "alta" => 2,
+                _ => 0
+            };
+
+            var payload = new
+            {
+                titulo = ChamadoReabertura.Titulo,
+                descricao = ChamadoReabertura.Descricao,
+                prioridade = prioridadeNum,
+                categoria = new { nome = ChamadoReabertura.Categoria }
+            };
+
+            // Endpoint assumido aceitando dados atualizados
+            var resp = await Http.PatchAsJsonAsync($"Chamados/{ChamadoReabertura.Id}/reabrir", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Chamado reaberto e atualizado com sucesso.");
+
+                MostrarModalReabertura = false;
+                ChamadoReabertura = null;
+
+                // Recarrega lista e detalhes (se estiver aberto)
+                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
+
+                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == ChamadoReabertura?.Id)
+                {
+                    await VerDetalhes(ChamadoDetalhe.Id);
+                }
+            }
+            else
+            {
+                var txt = await resp.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {resp.StatusCode}\n{txt}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {ex.Message}");
+        }
+        finally
+        {
+            isSendingReabertura = false;
+        }
+    }
+
+    // =================== AÇÕES: Cancelar / Confirmar Sugestão ====================
     async Task CancelarChamado(Guid id)
     {
         if (!await InjetarToken()) return;
@@ -852,30 +1136,6 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Erro ao cancelar chamado: {ex.Message}");
-        }
-    }
-
-    async Task ReabrirChamado(Guid id)
-    {
-        if (!await InjetarToken()) return;
-
-        try
-        {
-            var resp = await Http.PatchAsync($"Chamados/{id}/reabrir", null);
-            if (resp.IsSuccessStatusCode)
-            {
-                await JS.InvokeVoidAsync("alert", "Chamado reaberto.");
-                await CarregarMeusChamados(paginaAtual, tamanhoPagina);
-                if (ChamadoDetalhe != null && ChamadoDetalhe.Id == id) await VerDetalhes(id);
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {resp.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Erro ao reabrir chamado: {ex.Message}");
         }
     }
 

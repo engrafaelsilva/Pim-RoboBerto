@@ -674,3 +674,42 @@ h1, h3 {
         padding: 16px;
     }
 }
+
+/* ALERTAS / STATUS GLOBAL */
+.tec-alert {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+}
+
+.tec-alert-success {
+    background-color: #eaf8e9;
+    color: #256029;
+    border-color: #c8e6c9;
+}
+
+.tec-alert-error {
+    background-color: #ffeaea;
+    color: #b71c1c;
+    border-color: #ffcdd2;
+}
+
+.tec-loading-bar {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    background: #eef2ff;
+    color: #3730a3;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* CARD ACATADOS NA HOME */
+.metric-acatados {
+    border-left: 4px solid #6366f1;
+}
+

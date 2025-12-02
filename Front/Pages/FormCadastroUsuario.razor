@@ -1,4 +1,4 @@
-﻿@page "/cadastre-se"
+﻿@page "/cadastrese"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
@@ -195,15 +195,6 @@
     private string mensagemErro;
     private string mensagemSucesso;
 
-    private class UsuarioInsertDto
-    {
-        public Guid Id { get; set; } = Guid.Empty;
-        public string Nome { get; set; }
-        public string Email { get; set; }
-        public string Telefone { get; set; }   // Somente dígitos
-        public string SenhaHash { get; set; }
-    }
-
     public class UsuarioCadastro
     {
         [Required(ErrorMessage = "O nome é obrigatório")]
@@ -259,29 +250,31 @@
 
         try
         {
-            // 🔥 Remove formatação antes de enviar para API
+            // telefone só com dígitos
             string telefoneSomenteNumeros = new string(usuario.Telefone.Where(char.IsDigit).ToArray());
 
-            var dto = new UsuarioInsertDto
+            // 🔴 MESMO CONTRATO DO PAINEL ADM (POST /Usuario)
+            var payload = new
             {
-                Id = Guid.Empty,
                 Nome = usuario.Nome,
                 Email = usuario.Email,
-                Telefone = telefoneSomenteNumeros, // ← ENVIA SÓ OS NÚMEROS
-                SenhaHash = usuario.Senha
+                SenhaHash = usuario.Senha,          // campo que a API espera
+                Tipo = "COLABORADOR",               // padrão para auto-cadastro
+                Ativo = true,                       // entra já ativo
+                DepartamentoId = (string?)null,     // sem depto no cadastro público
+                Telefone = telefoneSomenteNumeros   // extra (será ignorado se backend não usar)
             };
 
-            var resposta = await Http.PostAsJsonAsync("Usuario", dto);
+            var resposta = await Http.PostAsJsonAsync("Usuario", payload);
 
             if (resposta.IsSuccessStatusCode)
             {
-                mensagemSucesso = "Cadastro realizado com sucesso! Redirecionando...";
+                mensagemSucesso = "Cadastro realizado com sucesso! Redirecionando para o login...";
 
-                // 🔹 limpa qualquer token antigo (para não “herdar” chamados de outro usuário)
+                // limpa qualquer token antigo
                 await JS.InvokeVoidAsync("localStorage.removeItem", "token");
-
-                // 🔹 guarda o nome do usuário para o painel (também pode ser usado após login)
-                await JS.InvokeVoidAsync("localStorage.setItem", "usuarioNome", usuario.Nome);
+                await JS.InvokeVoidAsync("localStorage.removeItem", "role");
+                await JS.InvokeVoidAsync("localStorage.removeItem", "email");
 
                 await Task.Delay(1500);
                 Navigation.NavigateTo("/painelcolaborador");
@@ -291,11 +284,12 @@
                 string conteudo = await resposta.Content.ReadAsStringAsync();
 
                 if (resposta.StatusCode == HttpStatusCode.BadRequest)
-                    mensagemErro = "Erro de validação ao cadastrar usuário. Tente novamente.";
+                    mensagemErro = "Erro de validação ao cadastrar usuário. Verifique os dados e tente novamente.";
+                else if (resposta.StatusCode == HttpStatusCode.Conflict)
+                    mensagemErro = "Já existe um usuário cadastrado com este e-mail.";
                 else
-                    mensagemErro = $"Erro ao cadastrar: {conteudo}";
+                    mensagemErro = $"Erro ao cadastrar: {resposta.StatusCode} - {conteudo}";
 
-                // 🔥 Mostra erro detalhado no console
                 await JS.InvokeVoidAsync("console.error", "Erro ao cadastrar usuário:", conteudo);
             }
         }
