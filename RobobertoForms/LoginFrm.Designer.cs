@@ -39,6 +39,7 @@
             // lblEmail
             // 
             lblEmail.AutoSize = true;
+            lblEmail.BackColor = Color.Transparent;
             lblEmail.ForeColor = Color.White;
             lblEmail.Location = new Point(248, 126);
             lblEmail.Name = "lblEmail";
@@ -65,12 +66,14 @@
             // lblSenha
             // 
             lblSenha.AutoSize = true;
+            lblSenha.BackColor = Color.Transparent;
             lblSenha.ForeColor = Color.White;
             lblSenha.Location = new Point(248, 203);
             lblSenha.Name = "lblSenha";
             lblSenha.Size = new Size(112, 20);
             lblSenha.TabIndex = 2;
             lblSenha.Text = "Insira sua senha";
+            lblSenha.Click += lblSenha_Click;
             // 
             // btnEntrar
             // 
@@ -105,11 +108,13 @@
             Controls.Add(lblSenha);
             Controls.Add(txtEmail);
             Controls.Add(lblEmail);
-            FormBorderStyle = FormBorderStyle.FixedToolWindow;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
             Name = "LoginFrm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Login";
             Load += LoginFrm_Load;
+            Paint += LoginFrm_Paint;
             ResumeLayout(false);
             PerformLayout();
         }

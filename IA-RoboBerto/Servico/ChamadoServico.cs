@@ -165,6 +165,17 @@ namespace IA_RoboBerto.Servico
             return true;
         }
 
+        public async Task<List<ChamadoDTO>> ListarChamadosAbertoNaoExpiradosAcatadosAsync()
+        {
+            var tecnico = await _authService.ObterUsuarioLogadoAsync();
+
+            var chamados = await _ChamadoRepo
+                .ListarChamadosAbertoNaoExpiradosAcatadosAsync(tecnico.Id);
+
+            return chamados.Select(x => new ChamadoDTO(x)).ToList();
+        }
+
+
         private async Task CopiarDtoPraEntidadeUpdateUsuario(Chamado chamado, ChamadoDTO dto)
         {
 

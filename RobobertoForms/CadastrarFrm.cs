@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -13,9 +14,27 @@ namespace RobobertoForms
 {
     public partial class CadastrarFrm : Form
     {
+
+        private LoginFrm loginFrm;
         public CadastrarFrm()
         {
             InitializeComponent();
+        }
+        private void SetBackColorDegrade(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+
+            Rectangle rect = new Rectangle(0, 0, Width, Height);
+
+            // Cor base roxo = 192,0,192
+            Brush br = new LinearGradientBrush(
+                rect,
+                Color.FromArgb(192, 0, 192),   // cor inicial
+                Color.FromArgb(120, 0, 120),   // cor final (um roxo mais escuro)
+                90f                             // ângulo do degradê
+            );
+
+            g.FillRectangle(br, rect);
         }
 
         private void CadastrarFrm_Load(object sender, EventArgs e)
@@ -85,13 +104,15 @@ namespace RobobertoForms
                 senhaHash = senha // se sua API espera o hash, você pode aplicar hash aqui
             };
 
+            btnCadastrar.Enabled = false;
+
             string json = JsonSerializer.Serialize(usuario);
 
             using (HttpClient client = new HttpClient())
             {
                 try
                 {
-                    client.BaseAddress = new Uri("https://robobertoapi-e6cgbaawhxagdwg2.brazilsouth-01.azurewebsites.net/");
+                    client.BaseAddress = new Uri("https://robobertov2-cvc7cxgfdke9dfdy.brazilsouth-01.azurewebsites.net/");
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
                     HttpResponseMessage response = await client.PostAsync("Usuario", content);
 
@@ -108,6 +129,7 @@ namespace RobobertoForms
                     else
                     {
                         string respJson = await response.Content.ReadAsStringAsync();
+                        btnCadastrar.Enabled = true;
 
                         try
                         {
@@ -125,16 +147,19 @@ namespace RobobertoForms
                                     );
 
                                     MessageBox.Show(mensagens, "Erro de validação", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    btnCadastrar.Enabled = true;
                                 }
                             }
                             else
                             {
                                 MessageBox.Show("Erro desconhecido:\n" + respJson, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                btnCadastrar.Enabled = true;
                             }
                         }
                         catch
                         {
                             MessageBox.Show("Erro desconhecido:\n" + respJson, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            btnCadastrar.Enabled = true;
                         }
                     }
                 }
@@ -145,6 +170,18 @@ namespace RobobertoForms
             }
 
 
+        }
+
+        private void CadastrarFrm_Paint(object sender, PaintEventArgs e)
+        {
+            SetBackColorDegrade(sender, e);
+        }
+
+        private void btnVoltar_Click(object sender, EventArgs e)
+        {
+            loginFrm = new LoginFrm();  
+            loginFrm.ShowDialog();
+            this.Close();
         }
     }
 }

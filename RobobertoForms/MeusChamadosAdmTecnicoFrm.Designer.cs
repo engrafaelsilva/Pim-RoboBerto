@@ -1,6 +1,6 @@
 ﻿namespace RobobertoForms
 {
-    partial class MeusChamadosForm
+    partial class MeusChamadosAdmTecnicoFrm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,43 +28,46 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MeusChamadosAdmTecnicoFrm));
             dataGridView1 = new DataGridView();
             Titulo = new DataGridViewTextBoxColumn();
             Categoria = new DataGridViewTextBoxColumn();
             DatadaAbertura = new DataGridViewTextBoxColumn();
             Column7 = new DataGridViewTextBoxColumn();
             Column8 = new DataGridViewTextBoxColumn();
-            Column1 = new DataGridViewTextBoxColumn();
+            Id = new DataGridViewTextBoxColumn();
             Column4 = new DataGridViewTextBoxColumn();
             Column6 = new DataGridViewTextBoxColumn();
+            Imagem = new DataGridViewImageColumn();
             btnVoltar = new Button();
+            panel1 = new Panel();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            panel1.SuspendLayout();
             SuspendLayout();
             // 
             // dataGridView1
             // 
-            dataGridView1.AllowUserToAddRows = false;
             dataGridView1.AllowUserToDeleteRows = false;
             dataGridView1.AllowUserToResizeColumns = false;
             dataGridView1.AllowUserToResizeRows = false;
             dataGridView1.BackgroundColor = Color.FromArgb(192, 0, 192);
             dataGridView1.BorderStyle = BorderStyle.Fixed3D;
             dataGridView1.CellBorderStyle = DataGridViewCellBorderStyle.None;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = SystemColors.ButtonFace;
-            dataGridViewCellStyle2.Font = new Font("Arial Narrow", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = SystemColors.ButtonFace;
+            dataGridViewCellStyle1.Font = new Font("Arial Narrow", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridView1.ColumnHeadersHeight = 45;
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Titulo, Categoria, DatadaAbertura, Column7, Column8, Column1, Column4, Column6 });
+            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Titulo, Categoria, DatadaAbertura, Column7, Column8, Id, Column4, Column6, Imagem });
             dataGridView1.EnableHeadersVisualStyles = false;
             dataGridView1.GridColor = Color.Black;
-            dataGridView1.Location = new Point(12, 70);
+            dataGridView1.Location = new Point(5, 64);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.ReadOnly = true;
             dataGridView1.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
@@ -75,6 +78,8 @@
             dataGridView1.TabIndex = 0;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
             dataGridView1.CellDoubleClick += dataGridView1_CellDoubleClick;
+            dataGridView1.CellMouseEnter += dataGridView1_CellMouseEnter;
+            dataGridView1.CellMouseLeave += dataGridView1_CellMouseLeave;
             // 
             // Titulo
             // 
@@ -126,15 +131,15 @@
             Column8.ReadOnly = true;
             Column8.Resizable = DataGridViewTriState.False;
             // 
-            // Column1
+            // Id
             // 
-            Column1.DataPropertyName = "Id";
-            Column1.HeaderText = "Column1";
-            Column1.MinimumWidth = 6;
-            Column1.Name = "Column1";
-            Column1.ReadOnly = true;
-            Column1.Visible = false;
-            Column1.Width = 125;
+            Id.DataPropertyName = "Id";
+            Id.HeaderText = "Column1";
+            Id.MinimumWidth = 6;
+            Id.Name = "Id";
+            Id.ReadOnly = true;
+            Id.Visible = false;
+            Id.Width = 125;
             // 
             // Column4
             // 
@@ -157,11 +162,21 @@
             Column6.Visible = false;
             Column6.Width = 125;
             // 
+            // Imagem
+            // 
+            Imagem.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            Imagem.HeaderText = "";
+            Imagem.Image = (Image)resources.GetObject("Imagem.Image");
+            Imagem.MinimumWidth = 6;
+            Imagem.Name = "Imagem";
+            Imagem.ReadOnly = true;
+            Imagem.Width = 23;
+            // 
             // btnVoltar
             // 
             btnVoltar.BackColor = Color.White;
             btnVoltar.ForeColor = Color.Black;
-            btnVoltar.Location = new Point(12, 36);
+            btnVoltar.Location = new Point(5, 30);
             btnVoltar.Name = "btnVoltar";
             btnVoltar.Size = new Size(94, 28);
             btnVoltar.TabIndex = 2;
@@ -169,34 +184,47 @@
             btnVoltar.UseVisualStyleBackColor = false;
             btnVoltar.Click += btnVoltar_Click;
             // 
-            // MeusChamadosForm
+            // panel1
+            // 
+            panel1.Controls.Add(btnVoltar);
+            panel1.Controls.Add(dataGridView1);
+            panel1.Location = new Point(0, 1);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(1135, 558);
+            panel1.TabIndex = 3;
+            panel1.Paint += panel1_Paint;
+            // 
+            // MeusChamadosFrm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(192, 0, 192);
             ClientSize = new Size(1134, 560);
-            Controls.Add(btnVoltar);
-            Controls.Add(dataGridView1);
+            Controls.Add(panel1);
             ForeColor = Color.FromArgb(192, 0, 192);
             FormBorderStyle = FormBorderStyle.None;
-            Name = "MeusChamadosForm";
+            Name = "MeusChamadosFrm";
             Text = "MeusChamadosForm";
-            Load += MeusChamadosForm_Load;
+            Load += MeusChamadosAdmTecnicoFrm_Load;
+            Paint += panel1_Paint;
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            panel1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
         private DataGridView dataGridView1;
+        private Button btnVoltar;
         private DataGridViewTextBoxColumn Titulo;
         private DataGridViewTextBoxColumn Categoria;
         private DataGridViewTextBoxColumn DatadaAbertura;
         private DataGridViewTextBoxColumn Column7;
         private DataGridViewTextBoxColumn Column8;
-        private DataGridViewTextBoxColumn Column1;
+        private DataGridViewTextBoxColumn Id;
         private DataGridViewTextBoxColumn Column4;
         private DataGridViewTextBoxColumn Column6;
-        private Button btnVoltar;
+        private DataGridViewImageColumn Imagem;
+        private Panel panel1;
     }
 }

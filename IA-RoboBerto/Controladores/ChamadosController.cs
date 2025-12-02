@@ -143,5 +143,13 @@ namespace IA_RoboBerto.Controladores
             var chamadoAtualizado = await _servico.FecharChamadoAsync(id);
             return Ok(chamadoAtualizado);
         }
+
+        [Authorize(Roles = "ADM,TECNICO")]
+        [HttpGet("acatados")]
+        public async Task<ActionResult<List<ChamadoDTO>>> ListarChamadosAcatados()
+        {
+            var resultado = await _servico.ListarChamadosAbertoNaoExpiradosAcatadosAsync();
+            return Ok(resultado);
+        }
     }
 }

@@ -198,5 +198,20 @@ namespace IA_RoboBerto.Repositorio
                             && c.SugestaoResolveu == false)
                 .ToListAsync();
         }
+        public async Task<List<Chamado>> ListarChamadosAbertoNaoExpiradosAcatadosAsync(Guid tecnicoId)
+        {
+            return await _context.Chamado
+                .Include(c => c.Autor)
+                .Include(c => c.Categoria)
+                .Include(c => c.Tecnico)
+                .Where(c =>
+                    c.Status == EStatusChamado.ABERTO &&
+                    c.SugestaoResolveu == false &&
+                    c.Tecnico != null &&
+                    c.Tecnico.Id == tecnicoId
+                )
+                .ToListAsync();
+        }
+
     }
 }

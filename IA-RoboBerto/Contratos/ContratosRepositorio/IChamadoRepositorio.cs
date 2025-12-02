@@ -21,5 +21,6 @@ namespace IA_RoboBerto.Contratos.ContratosRepositorio
         Task<bool> IdExisteAsync(Guid id);
         Task<Chamado?> AlterarStatusParaFechadoAsync(Guid id);
         Task<Chamado?> AdicionarComentarioAsync(Chamado chamado, Mensagem mensagem);
+        Task<List<Chamado>> ListarChamadosAbertoNaoExpiradosAcatadosAsync(Guid tecnicoId);
     }
 }

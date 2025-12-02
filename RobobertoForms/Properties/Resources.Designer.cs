@@ -59,5 +59,15 @@ namespace RobobertoForms.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap _34617eeb_1076_477a_8d1b_43622cd18a0b_removalai_preview {
+            get {
+                object obj = ResourceManager.GetObject("34617eeb-1076-477a-8d1b-43622cd18a0b_removalai_preview", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
     }
 }

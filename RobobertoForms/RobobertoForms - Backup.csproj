@@ -21,27 +21,6 @@
     <Compile Update="ADMINISTRADOR\PainelAdministradorFrm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="MeusChamadosAdmTecnicoFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\ChamadosExpiradosFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\ChatDetalheChamadoFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\AssumirChamadoAbertoFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\ChamadosAssumidosFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\ChamadosAbertosFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="TECNICO\PainelTecnicoFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -54,6 +33,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="TECNICO\" />
   </ItemGroup>
 
 </Project>

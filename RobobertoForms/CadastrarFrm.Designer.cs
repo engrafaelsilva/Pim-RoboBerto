@@ -28,8 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            lblNome = new Label();
-            txtNome = new TextBox();
             txtEmail = new TextBox();
             lblEmail = new Label();
             txtTelefone = new TextBox();
@@ -39,25 +37,10 @@
             txtConfirmacaoSenha = new TextBox();
             lblConfirmacaoSenha = new Label();
             btnCadastrar = new Button();
+            lblNome = new Label();
+            txtNome = new TextBox();
+            btnVoltar = new Button();
             SuspendLayout();
-            // 
-            // lblNome
-            // 
-            lblNome.AutoSize = true;
-            lblNome.ForeColor = SystemColors.ButtonFace;
-            lblNome.Location = new Point(29, 18);
-            lblNome.Name = "lblNome";
-            lblNome.Size = new Size(170, 20);
-            lblNome.TabIndex = 0;
-            lblNome.Text = "Insira o nome completo:";
-            // 
-            // txtNome
-            // 
-            txtNome.Location = new Point(29, 41);
-            txtNome.Name = "txtNome";
-            txtNome.Size = new Size(327, 27);
-            txtNome.TabIndex = 1;
-            txtNome.TextChanged += txtNome_TextChanged;
             // 
             // txtEmail
             // 
@@ -70,6 +53,7 @@
             // lblEmail
             // 
             lblEmail.AutoSize = true;
+            lblEmail.BackColor = Color.Transparent;
             lblEmail.ForeColor = SystemColors.ButtonFace;
             lblEmail.Location = new Point(29, 85);
             lblEmail.Name = "lblEmail";
@@ -88,6 +72,7 @@
             // lblTelefone
             // 
             lblTelefone.AutoSize = true;
+            lblTelefone.BackColor = Color.Transparent;
             lblTelefone.ForeColor = SystemColors.ButtonFace;
             lblTelefone.Location = new Point(29, 164);
             lblTelefone.Name = "lblTelefone";
@@ -106,6 +91,7 @@
             // lblSenha
             // 
             lblSenha.AutoSize = true;
+            lblSenha.BackColor = Color.Transparent;
             lblSenha.ForeColor = SystemColors.ButtonFace;
             lblSenha.Location = new Point(29, 238);
             lblSenha.Name = "lblSenha";
@@ -124,6 +110,7 @@
             // lblConfirmacaoSenha
             // 
             lblConfirmacaoSenha.AutoSize = true;
+            lblConfirmacaoSenha.BackColor = Color.Transparent;
             lblConfirmacaoSenha.ForeColor = SystemColors.ButtonFace;
             lblConfirmacaoSenha.Location = new Point(29, 307);
             lblConfirmacaoSenha.Name = "lblConfirmacaoSenha";
@@ -134,7 +121,7 @@
             // 
             // btnCadastrar
             // 
-            btnCadastrar.Location = new Point(530, 393);
+            btnCadastrar.Location = new Point(29, 391);
             btnCadastrar.Name = "btnCadastrar";
             btnCadastrar.Size = new Size(202, 29);
             btnCadastrar.TabIndex = 10;
@@ -142,12 +129,42 @@
             btnCadastrar.UseVisualStyleBackColor = true;
             btnCadastrar.Click += btnCadastrar_Click;
             // 
+            // lblNome
+            // 
+            lblNome.AutoSize = true;
+            lblNome.BackColor = Color.Transparent;
+            lblNome.ForeColor = SystemColors.ButtonFace;
+            lblNome.Location = new Point(29, 18);
+            lblNome.Name = "lblNome";
+            lblNome.Size = new Size(170, 20);
+            lblNome.TabIndex = 0;
+            lblNome.Text = "Insira o nome completo:";
+            // 
+            // txtNome
+            // 
+            txtNome.Location = new Point(29, 41);
+            txtNome.Name = "txtNome";
+            txtNome.Size = new Size(327, 27);
+            txtNome.TabIndex = 1;
+            txtNome.TextChanged += txtNome_TextChanged;
+            // 
+            // btnVoltar
+            // 
+            btnVoltar.Location = new Point(255, 391);
+            btnVoltar.Name = "btnVoltar";
+            btnVoltar.Size = new Size(202, 29);
+            btnVoltar.TabIndex = 11;
+            btnVoltar.Text = "Voltar";
+            btnVoltar.UseVisualStyleBackColor = true;
+            btnVoltar.Click += btnVoltar_Click;
+            // 
             // CadastrarFrm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(192, 0, 192);
             ClientSize = new Size(800, 450);
+            Controls.Add(btnVoltar);
             Controls.Add(btnCadastrar);
             Controls.Add(txtConfirmacaoSenha);
             Controls.Add(lblConfirmacaoSenha);
@@ -164,14 +181,12 @@
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Cadastro";
             Load += CadastrarFrm_Load;
+            Paint += CadastrarFrm_Paint;
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-
-        private Label lblNome;
-        private TextBox txtNome;
         private TextBox txtEmail;
         private Label lblEmail;
         private TextBox txtTelefone;
@@ -181,5 +196,8 @@
         private TextBox txtConfirmacaoSenha;
         private Label lblConfirmacaoSenha;
         private Button btnCadastrar;
+        private Label lblNome;
+        private TextBox txtNome;
+        private Button btnVoltar;
     }
 }

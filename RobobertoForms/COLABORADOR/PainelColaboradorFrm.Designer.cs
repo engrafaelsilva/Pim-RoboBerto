@@ -1,7 +1,7 @@
 ﻿
 namespace RobobertoForms
 {
-    partial class PrincipalFrm
+    partial class PainelColaboradorFrm
     {
         /// <summary>
         ///  Required designer variable.
@@ -30,10 +30,12 @@ namespace RobobertoForms
         private void InitializeComponent()
         {
             menuStripPrincipal = new MenuStrip();
+            meuPerfilToolStripMenuItem = new ToolStripMenuItem();
+            verMeuPerfilToolStripMenuItem = new ToolStripMenuItem();
+            logoutToolStripMenuItem = new ToolStripMenuItem();
             chamadosToolStripMenuItem = new ToolStripMenuItem();
             abrirChamadoToolStripMenuItem = new ToolStripMenuItem();
             meusChamadosToolStripMenuItem = new ToolStripMenuItem();
-            sairToolStripMenuItem = new ToolStripMenuItem();
             panel1 = new Panel();
             menuStripPrincipal.SuspendLayout();
             SuspendLayout();
@@ -42,19 +44,44 @@ namespace RobobertoForms
             // 
             menuStripPrincipal.BackColor = Color.Orchid;
             menuStripPrincipal.ImageScalingSize = new Size(20, 20);
-            menuStripPrincipal.Items.AddRange(new ToolStripItem[] { chamadosToolStripMenuItem });
+            menuStripPrincipal.Items.AddRange(new ToolStripItem[] { meuPerfilToolStripMenuItem, chamadosToolStripMenuItem });
             menuStripPrincipal.Location = new Point(0, 0);
             menuStripPrincipal.Name = "menuStripPrincipal";
             menuStripPrincipal.Size = new Size(1134, 28);
             menuStripPrincipal.TabIndex = 0;
             menuStripPrincipal.Text = "menuStrip1";
             // 
+            // meuPerfilToolStripMenuItem
+            // 
+            meuPerfilToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { verMeuPerfilToolStripMenuItem, logoutToolStripMenuItem });
+            meuPerfilToolStripMenuItem.ForeColor = SystemColors.ControlLightLight;
+            meuPerfilToolStripMenuItem.Name = "meuPerfilToolStripMenuItem";
+            meuPerfilToolStripMenuItem.Size = new Size(89, 24);
+            meuPerfilToolStripMenuItem.Text = "Meu Perfil";
+            meuPerfilToolStripMenuItem.Click += meuPerfilToolStripMenuItem_Click;
+            // 
+            // verMeuPerfilToolStripMenuItem
+            // 
+            verMeuPerfilToolStripMenuItem.Name = "verMeuPerfilToolStripMenuItem";
+            verMeuPerfilToolStripMenuItem.Size = new Size(224, 26);
+            verMeuPerfilToolStripMenuItem.Text = "Ver meu perfil";
+            verMeuPerfilToolStripMenuItem.Click += verMeuPerfilToolStripMenuItem_Click;
+            // 
+            // logoutToolStripMenuItem
+            // 
+            logoutToolStripMenuItem.Name = "logoutToolStripMenuItem";
+            logoutToolStripMenuItem.Size = new Size(224, 26);
+            logoutToolStripMenuItem.Text = "Logout";
+            logoutToolStripMenuItem.Click += logoutToolStripMenuItem_Click_1;
+            // 
             // chamadosToolStripMenuItem
             // 
-            chamadosToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { abrirChamadoToolStripMenuItem, meusChamadosToolStripMenuItem, sairToolStripMenuItem });
+            chamadosToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { abrirChamadoToolStripMenuItem, meusChamadosToolStripMenuItem });
+            chamadosToolStripMenuItem.ForeColor = SystemColors.ControlLightLight;
             chamadosToolStripMenuItem.Name = "chamadosToolStripMenuItem";
             chamadosToolStripMenuItem.Size = new Size(93, 24);
             chamadosToolStripMenuItem.Text = "Chamados";
+            chamadosToolStripMenuItem.Click += chamadosToolStripMenuItem_Click;
             // 
             // abrirChamadoToolStripMenuItem
             // 
@@ -70,22 +97,17 @@ namespace RobobertoForms
             meusChamadosToolStripMenuItem.Text = "Meus chamados";
             meusChamadosToolStripMenuItem.Click += meusChamadosToolStripMenuItem_Click;
             // 
-            // sairToolStripMenuItem
-            // 
-            sairToolStripMenuItem.Name = "sairToolStripMenuItem";
-            sairToolStripMenuItem.Size = new Size(199, 26);
-            sairToolStripMenuItem.Text = "Sair";
-            // 
             // panel1
             // 
             panel1.Dock = DockStyle.Fill;
+            panel1.ForeColor = Color.Transparent;
             panel1.Location = new Point(0, 28);
             panel1.Name = "panel1";
             panel1.Size = new Size(1134, 532);
             panel1.TabIndex = 1;
             panel1.Paint += panel1_Paint;
             // 
-            // PrincipalFrm
+            // PainelColaboradorFrm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -93,14 +115,14 @@ namespace RobobertoForms
             ClientSize = new Size(1134, 560);
             Controls.Add(panel1);
             Controls.Add(menuStripPrincipal);
-            ForeColor = SystemColors.ActiveBorder;
+            ForeColor = SystemColors.Control;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripPrincipal;
             MaximizeBox = false;
-            Name = "PrincipalFrm";
+            Name = "PainelColaboradorFrm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ROBOBERTO - HELP DESK";
-            Load += PrincipalFrm_Load;
+            Load += PainelColaboradorFrm_Load;
             menuStripPrincipal.ResumeLayout(false);
             menuStripPrincipal.PerformLayout();
             ResumeLayout(false);
@@ -115,7 +137,9 @@ namespace RobobertoForms
         private ToolStripMenuItem chamadosToolStripMenuItem;
         private ToolStripMenuItem abrirChamadoToolStripMenuItem;
         private ToolStripMenuItem meusChamadosToolStripMenuItem;
-        private ToolStripMenuItem sairToolStripMenuItem;
         private Panel panel1;
+        private ToolStripMenuItem meuPerfilToolStripMenuItem;
+        private ToolStripMenuItem verMeuPerfilToolStripMenuItem;
+        private ToolStripMenuItem logoutToolStripMenuItem;
     }
 }
